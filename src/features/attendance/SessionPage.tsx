@@ -1,0 +1,292 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { motion } from 'motion/react'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Button } from '@/components/ui/Button'
+import { Card, CardBody } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
+import { Input } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/cn'
+import { ChevronRightIcon, UsersIcon } from '@/components/icons'
+import { useStudents } from '@/lib/queries/students'
+import {
+  useBulkUpsertAttendance,
+  useClassSession,
+  useSessionRecords,
+  useUpsertAttendance,
+} from '@/lib/queries/attendance'
+import {
+  studentFullName,
+  type AttendanceRecord,
+  type AttendanceStatus,
+} from '@/types/domain'
+import { tallyStatuses, ATTENDANCE_STATUSES } from './summary'
+import { STATUS_META } from './status'
+
+function formatSessionDate(iso: string): string {
+  const date = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+export function SessionPage({
+  classroomId,
+  sessionId,
+}: {
+  classroomId: string
+  sessionId: string
+}) {
+  const { data: session, isLoading: sessionLoading } = useClassSession(sessionId)
+  const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
+  const { data: records, isLoading: recordsLoading } = useSessionRecords(sessionId)
+  const upsert = useUpsertAttendance(sessionId, classroomId)
+  const bulkUpsert = useBulkUpsertAttendance(sessionId, classroomId)
+  const { toast } = useToast()
+
+  const recordByStudent = useMemo(
+    () => new Map((records ?? []).map((record) => [record.student_id, record])),
+    [records],
+  )
+
+  const counts = useMemo(() => tallyStatuses(records ?? []), [records])
+  const unrecorded = (students?.length ?? 0) - (records?.length ?? 0)
+
+  function setStatus(studentId: string, status: AttendanceStatus) {
+    const existing = recordByStudent.get(studentId)
+    upsert.mutate(
+      {
+        session_id: sessionId,
+        student_id: studentId,
+        status,
+        remarks: existing?.remarks ?? '',
+      },
+      {
+        onError: (error) =>
+          toast({
+            title: 'Could not save attendance',
+            description: error instanceof Error ? error.message : undefined,
+            tone: 'error',
+          }),
+      },
+    )
+  }
+
+  function saveRemarks(studentId: string, remarks: string) {
+    const existing = recordByStudent.get(studentId)
+    if ((existing?.remarks ?? '') === remarks) return
+    upsert.mutate(
+      {
+        session_id: sessionId,
+        student_id: studentId,
+        status: existing?.status ?? 'present',
+        remarks,
+      },
+      {
+        onError: (error) =>
+          toast({
+            title: 'Could not save remark',
+            description: error instanceof Error ? error.message : undefined,
+            tone: 'error',
+          }),
+      },
+    )
+  }
+
+  function markAllPresent() {
+    if (!students || students.length === 0) return
+    bulkUpsert.mutate(
+      students.map((student) => ({
+        session_id: sessionId,
+        student_id: student.id,
+        status: 'present' as const,
+        remarks: recordByStudent.get(student.id)?.remarks ?? '',
+      })),
+      {
+        onSuccess: () => toast({ title: 'Marked everyone present', tone: 'success' }),
+        onError: (error) =>
+          toast({
+            title: 'Could not mark all present',
+            description: error instanceof Error ? error.message : undefined,
+            tone: 'error',
+          }),
+      },
+    )
+  }
+
+  const title = session?.title?.trim() || 'Session'
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Link
+          to="/classrooms/$classroomId/attendance"
+          params={{ classroomId }}
+          className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >
+          <ChevronRightIcon className="size-4 rotate-180" /> Back to attendance
+        </Link>
+        <PageHeader
+          title={sessionLoading ? 'Session' : title}
+          description={
+            session
+              ? formatSessionDate(session.session_date)
+              : 'Mark attendance for this class session.'
+          }
+          actions={
+            students && students.length > 0 ? (
+              <Button
+                variant="secondary"
+                loading={bulkUpsert.isPending}
+                onClick={markAllPresent}
+              >
+                Mark all present
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+
+      {session?.notes?.trim() && (
+        <Card>
+          <CardBody className="p-4 text-sm text-[var(--color-ink-muted)]">
+            {session.notes}
+          </CardBody>
+        </Card>
+      )}
+
+      {students && students.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Badge tone="success">{counts.present} present</Badge>
+          <Badge tone="warning">{counts.late} late</Badge>
+          <Badge tone="accent">{counts.excused} excused</Badge>
+          <Badge tone="danger">{counts.absent} absent</Badge>
+          {unrecorded > 0 && <Badge tone="neutral">{unrecorded} unrecorded</Badge>}
+        </div>
+      )}
+
+      {studentsLoading || recordsLoading ? (
+        <div className="flex justify-center py-16">
+          <Spinner />
+        </div>
+      ) : !students || students.length === 0 ? (
+        <EmptyState
+          icon={<UsersIcon />}
+          title="No students to mark"
+          description="Add students to the roster before taking attendance."
+          action={
+            <Link to="/classrooms/$classroomId" params={{ classroomId }}>
+              <Button variant="secondary">Go to roster</Button>
+            </Link>
+          }
+        />
+      ) : (
+        <div className="grid gap-2">
+          {students.map((student) => (
+            <RosterRow
+              key={student.id}
+              name={studentFullName(student)}
+              record={recordByStudent.get(student.id)}
+              onSetStatus={(status) => setStatus(student.id, status)}
+              onSaveRemarks={(remarks) => saveRemarks(student.id, remarks)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RosterRow({
+  name,
+  record,
+  onSetStatus,
+  onSaveRemarks,
+}: {
+  name: string
+  record: AttendanceRecord | undefined
+  onSetStatus: (status: AttendanceStatus) => void
+  onSaveRemarks: (remarks: string) => void
+}) {
+  const recorded = !!record
+  const [remarks, setRemarks] = useState(record?.remarks ?? '')
+
+  // Keep the local draft in sync when the persisted value changes underneath us
+  // (e.g. after "mark all present" or a rollback), but never clobber the field
+  // while it is unchanged from the source.
+  useEffect(() => {
+    setRemarks(record?.remarks ?? '')
+  }, [record?.remarks])
+
+  return (
+    <Card className={cn(!recorded && 'border-dashed')}>
+      <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-2 sm:w-56 sm:shrink-0">
+          <span className="truncate font-medium text-[var(--color-ink)]">{name}</span>
+          {!recorded && <Badge tone="neutral">unrecorded</Badge>}
+        </div>
+
+        <StatusToggle value={record?.status} onChange={onSetStatus} />
+
+        <Input
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+          onBlur={() => onSaveRemarks(remarks.trim())}
+          placeholder="Remarks"
+          className="sm:flex-1"
+          aria-label={`Remarks for ${name}`}
+        />
+      </CardBody>
+    </Card>
+  )
+}
+
+function StatusToggle({
+  value,
+  onChange,
+}: {
+  value: AttendanceStatus | undefined
+  onChange: (status: AttendanceStatus) => void
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Attendance status"
+      className="flex shrink-0 gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface-1)] p-1"
+    >
+      {ATTENDANCE_STATUSES.map((status) => {
+        const meta = STATUS_META[status]
+        const active = value === status
+        const isUnsetDefault = value === undefined && status === 'present'
+        return (
+          <motion.button
+            key={status}
+            type="button"
+            whileTap={{ scale: 0.94 }}
+            aria-pressed={active}
+            onClick={() => onChange(status)}
+            className={cn(
+              'rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors sm:px-3',
+              active
+                ? meta.activeClass
+                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]',
+              isUnsetDefault &&
+                'text-[var(--color-ink-faint)] outline outline-1 outline-dashed outline-[var(--color-border-strong)]',
+            )}
+            title={meta.label}
+          >
+            <span className="sm:hidden">{meta.short}</span>
+            <span className="hidden sm:inline">{meta.label}</span>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
