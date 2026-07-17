@@ -51,17 +51,17 @@ src/
 
 Ten tables (see `supabase/migrations/0001`–`0006`):
 
-| Table                 | Holds                                                       |
-| --------------------- | ---------------------------------------------------------- |
-| `profiles`            | One row per auth user; `role` = `admin` \| `teacher`.       |
-| `classrooms`          | A course offering (owner, name/code, year, block, weights). |
-| `students`            | Roster entries, scoped to a classroom.                     |
-| `grading_periods`     | Weighted periods within a classroom.                       |
-| `activity_categories` | Categories per period component (`lecture` \| `laboratory`). |
-| `activities`          | Graded items in a category (max score, date).              |
-| `scores`              | A student's score on an activity (composite PK).           |
-| `class_sessions`      | An attendance session for a classroom.                     |
-| `attendance_records`  | A student's status per session (`present`/`absent`/`late`/`excused`). |
+| Table                 | Holds                                                                      |
+| --------------------- | -------------------------------------------------------------------------- |
+| `profiles`            | One row per auth user; `role` = `admin` \| `teacher`.                      |
+| `classrooms`          | A course offering (owner, name/code, year, block, weights).                |
+| `students`            | Roster entries, scoped to a classroom.                                     |
+| `grading_periods`     | Weighted periods within a classroom.                                       |
+| `activity_categories` | Categories per period component (`lecture` \| `laboratory`).               |
+| `activities`          | Graded items in a category (max score, date).                              |
+| `scores`              | A student's score on an activity (composite PK).                           |
+| `class_sessions`      | An attendance session for a classroom.                                     |
+| `attendance_records`  | A student's status per session (`present`/`absent`/`late`/`excused`).      |
 | `teaching_modules`    | Metadata for files in Storage (`lesson_plan`/`activity_story`/`resource`). |
 
 Plus the `v_class_roster` view (classroom ⋈ students, `security_invoker`) and two

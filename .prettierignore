@@ -3,3 +3,6 @@ dist
 dev-dist
 pnpm-lock.yaml
 src/routeTree.gen.ts
+src/types/database.ts
+.claude
+supabase/.temp

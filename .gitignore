@@ -21,3 +21,6 @@ yarn-error.log*
 
 # build info
 *.tsbuildinfo
+
+# supabase CLI local state
+supabase/.temp

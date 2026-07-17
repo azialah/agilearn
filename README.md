@@ -48,8 +48,8 @@ Then open the printed local URL.
 
 Common scripts:
 
-| Script              | Purpose                      |
-| ------------------- | ---------------------------- |
+| Script               | Purpose                      |
+| -------------------- | ---------------------------- |
 | `pnpm dev`           | Start the dev server         |
 | `pnpm run build`     | Typecheck and build for prod |
 | `pnpm run preview`   | Preview the production build |
