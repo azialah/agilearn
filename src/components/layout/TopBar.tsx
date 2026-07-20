@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { MenuIcon, SignOutIcon } from '@/components/icons'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { signOut, useProfile } from '@/lib/queries/profiles'
 import { useToast } from '@/components/ui/toast'
 
@@ -39,6 +40,8 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
       </IconButton>
 
       <div className="flex-1" />
+
+      <ThemeToggle />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

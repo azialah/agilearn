@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { TopBar } from './TopBar'
 import { IconButton } from '@/components/ui/IconButton'
@@ -24,6 +25,12 @@ const NAV: NavItem[] = [
   { to: '/classrooms', label: 'Classrooms', icon: ClassroomIcon },
   { to: '/modules', label: 'Modules', icon: ModuleIcon },
   { to: '/admin/users', label: 'Users', icon: UsersIcon, adminOnly: true },
+  {
+    to: '/admin/domain-requests',
+    label: 'Requests',
+    icon: Inbox,
+    adminOnly: true,
+  },
 ]
 
 function NavLinks({

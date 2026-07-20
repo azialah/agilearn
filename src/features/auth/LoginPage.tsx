@@ -1,17 +1,21 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { supabase } from '@/lib/supabase'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { supabase, REMEMBER_KEY } from '@/lib/supabase'
 import { Route } from '@/routes/login'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
 import { Card } from '@/components/ui/Card'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { redirect } = Route.useSearch()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -19,6 +23,9 @@ export function LoginPage() {
     event.preventDefault()
     setError(null)
     setSubmitting(true)
+    // Persist the session to localStorage only when "remember me" is checked;
+    // the storage adapter in supabase.ts reads this flag.
+    localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0')
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
@@ -37,7 +44,12 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center bg-[var(--color-surface-0)] px-4">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,rgba(59,155,245,0.16),transparent)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
+
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+
       <Card className="relative w-full max-w-sm">
         <div className="p-6">
           <div className="mb-6 flex items-center gap-2">
@@ -49,10 +61,10 @@ export function LoginPage() {
 
           <h1 className="text-lg font-semibold">Sign in</h1>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Use the credentials provided by your administrator.
+            Welcome back. Sign in to your Agilearn account.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -66,10 +78,17 @@ export function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)]"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={password}
@@ -77,6 +96,16 @@ export function LoginPage() {
                 placeholder="••••••••"
               />
             </div>
+
+            <label className="flex items-center gap-2 text-sm text-[var(--color-ink-muted)] select-none">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="size-4 rounded border-[var(--color-border)] accent-[var(--color-accent-400)]"
+              />
+              Remember me
+            </label>
 
             {error && (
               <p
@@ -87,10 +116,25 @@ export function LoginPage() {
               </p>
             )}
 
-            <Button type="submit" className="w-full" loading={submitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full rounded-full"
+              loading={submitting}
+            >
               Sign in
             </Button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-[var(--color-ink-muted)]">
+            New teacher?{' '}
+            <Link
+              to="/signup"
+              className="font-medium text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)]"
+            >
+              Create an account
+            </Link>
+          </p>
         </div>
       </Card>
     </div>
