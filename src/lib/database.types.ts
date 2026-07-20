@@ -16,6 +16,13 @@ export type Database = {
           id: string
           email: string
           full_name: string
+          first_name: string
+          last_name: string
+          middle_name: string | null
+          suffix: string | null
+          school: string | null
+          location: string | null
+          teaching_levels: Database['public']['Enums']['teaching_level'][] | null
           role: Database['public']['Enums']['app_role']
           created_at: string
           updated_at: string
@@ -24,6 +31,13 @@ export type Database = {
           id: string
           email: string
           full_name?: string
+          first_name?: string
+          last_name?: string
+          middle_name?: string | null
+          suffix?: string | null
+          school?: string | null
+          location?: string | null
+          teaching_levels?: Database['public']['Enums']['teaching_level'][] | null
           role?: Database['public']['Enums']['app_role']
           created_at?: string
           updated_at?: string
@@ -32,9 +46,61 @@ export type Database = {
           id?: string
           email?: string
           full_name?: string
+          first_name?: string
+          last_name?: string
+          middle_name?: string | null
+          suffix?: string | null
+          school?: string | null
+          location?: string | null
+          teaching_levels?: Database['public']['Enums']['teaching_level'][] | null
           role?: Database['public']['Enums']['app_role']
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      allowed_email_domains: {
+        Row: {
+          domain: string
+          created_at: string
+        }
+        Insert: {
+          domain: string
+          created_at?: string
+        }
+        Update: {
+          domain?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      domain_requests: {
+        Row: {
+          id: string
+          name: string
+          school: string
+          domain: string
+          message: string | null
+          ip: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          school: string
+          domain: string
+          message?: string | null
+          ip?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          school?: string
+          domain?: string
+          message?: string | null
+          ip?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -422,9 +488,19 @@ export type Database = {
         Args: { cid: string }
         Returns: boolean
       }
+      submit_domain_request: {
+        Args: {
+          p_name: string
+          p_school: string
+          p_domain: string
+          p_message?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: 'admin' | 'teacher'
+      teaching_level: 'preschool' | 'elementary' | 'high_school' | 'college'
       grade_component: 'lecture' | 'laboratory'
       attendance_status: 'present' | 'absent' | 'late' | 'excused'
       module_kind: 'lesson_plan' | 'activity_story' | 'resource'

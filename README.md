@@ -21,8 +21,9 @@ teaching modules into one calm, dark-leaning workspace.
 - **Import / export** — read and write rosters and grades as Excel workbooks
   (`xlsx`) and export to PDF (`pdf-lib`).
 - **Admin & roles** — admin and teacher roles enforced end to end with Postgres
-  Row Level Security; teachers only ever see their own classrooms. Admins manage
-  users from a dedicated page — there is no public sign-up.
+  Row Level Security; teachers only ever see their own classrooms. Teachers
+  self-onboard from an approved email domain (`allowed_email_domains`); admins are
+  provisioned out-of-band and manage users from a dedicated page.
 - **Installable PWA** — offline-ready shell with an auto-updating service worker.
 
 See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for how these fit together.

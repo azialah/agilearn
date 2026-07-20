@@ -38,12 +38,16 @@ additional_redirect_urls = ["http://127.0.0.1:5173"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
-# No public sign-up: administrators create users (see docs/DEPLOYMENT.md).
-enable_signup = false
+# Teacher self-sign-up is allowed but gated: handle_new_user() rejects any email
+# whose domain is not in public.allowed_email_domains (migration 0007). Admins
+# are still provisioned out-of-band.
+enable_signup = true
 
 [auth.email]
-enable_signup = false
-enable_confirmations = false
+enable_signup = true
+# Require email verification. The signup flow verifies a 6-digit OTP; make sure
+# the "Confirm signup" and "Reset password" templates include {{ .Token }}.
+enable_confirmations = true
 
 [analytics]
 enabled = false

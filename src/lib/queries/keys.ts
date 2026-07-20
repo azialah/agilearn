@@ -15,6 +15,9 @@ export const keys = {
     detail: (id: string) => ['profiles', 'detail', id] as const,
   },
 
+  allowedDomains: ['allowed-email-domains'] as const,
+  domainRequests: ['domain-requests'] as const,
+
   classrooms: {
     all: ['classrooms', 'list'] as const,
     detail: (id: string) => ['classrooms', 'detail', id] as const,

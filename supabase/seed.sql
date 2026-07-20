@@ -15,6 +15,13 @@
 -- teacher: 00000000-0000-0000-0000-000000000002
 -- teacher: 00000000-0000-0000-0000-000000000003
 
+-- Allowlisted sign-up domains. Must exist before the auth.users inserts below,
+-- since the on_auth_user_created trigger now rejects unlisted domains.
+-- 'school.edu' is here so you can walk the /signup wizard locally.
+insert into public.allowed_email_domains (domain)
+values ('agilearn.dev'), ('school.edu')
+on conflict (domain) do nothing;
+
 insert into auth.users (
   instance_id, id, aud, role, email,
   encrypted_password, email_confirmed_at,

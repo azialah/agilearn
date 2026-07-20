@@ -60,24 +60,48 @@ against a hosted project.
 
 ## 4. Enable email auth
 
-In **Authentication → Providers**, enable **Email**. There is no public
-sign-up in Agilearn — administrators create users. For internal testing you may
-keep "Confirm email" off; otherwise confirm invited users.
+In **Authentication → Providers**, enable **Email**. Teacher sign-up is
+self-serve but gated: the `handle_new_user()` trigger only admits emails whose
+domain is listed in `public.allowed_email_domains` (seed your school domains
+there). Keep **"Confirm email" on** so the signup wizard's 6-digit OTP fires, and
+make sure the **Confirm signup** and **Reset password** email templates include
+`{{ .Token }}`. Admins are still created out-of-band (next step) — their email
+domain must also be allowlisted.
 
 ## 5. Create the first admin
 
-1. **Authentication → Users → Add user** — set an email and password, and
-   confirm the user.
-2. The `on_auth_user_created` trigger creates a matching `profiles` row with
-   role `teacher`. Promote it in the **SQL editor**:
+There is no admin self-sign-up, and two DB guards are in play: `handle_new_user()`
+rejects users whose email domain isn't allowlisted, and `enforce_role_change()`
+blocks role changes made without an admin identity (so a plain `update` in the SQL
+editor fails). Bootstrap the first admin like this:
+
+1. **Allowlist the admin's domain** (SQL editor) so the new user is accepted:
 
    ```sql
-   update public.profiles
-     set role = 'admin'
-     where email = 'you@example.com';
+   insert into public.allowed_email_domains (domain)
+   values ('example.com')          -- the admin's email domain, lowercase
+   on conflict (domain) do nothing;
    ```
 
-3. Sign in — the **Users** admin page is now available for managing other roles.
+2. **Authentication → Users → Add user** — set the email and password, and tick
+   **Auto Confirm User**. The `on_auth_user_created` trigger creates a matching
+   `profiles` row with role `teacher`.
+
+3. **Promote to admin** (SQL editor). The role-change trigger has to be bypassed
+   for this one bootstrap write — the SQL editor has no admin identity yet:
+
+   ```sql
+   alter table public.profiles disable trigger profiles_before_update;
+   update public.profiles set role = 'admin' where email = 'you@example.com';
+   alter table public.profiles enable trigger profiles_before_update;
+   ```
+
+4. Verify, then sign in — the **Users** admin page can now promote everyone else
+   (an existing admin passes the trigger, so no disabling is needed after this):
+
+   ```sql
+   select id, email, role from public.profiles where email = 'you@example.com';
+   ```
 
 ## 6. Regenerate the database types
 

@@ -78,7 +78,10 @@ these up per component, then combines lecture and laboratory by the classroom's
 
 ## Auth & roles
 
-- Email auth, **no public sign-up** — admins create users.
+- Email auth. **Teacher sign-up is self-serve but domain-gated**: the
+  `handle_new_user()` trigger rejects any email whose domain isn't in
+  `allowed_email_domains`. No admin self-sign-up — admins are provisioned
+  out-of-band.
 - A new auth user gets a `profiles` row via the `on_auth_user_created` trigger,
   defaulting to `teacher`.
 - The `enforce_role_change()` trigger blocks a teacher from promoting themselves;

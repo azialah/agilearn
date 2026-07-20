@@ -63,7 +63,7 @@ grep -q '"strict": true' tsconfig*.json && echo "OK: strict" || echo "REVIEW: st
 
 ### Auth
 
-- [ ] No public sign-up (admins create users)
+- [ ] Teacher sign-up gated by `allowed_email_domains` (no admin self-sign-up)
 - [ ] Sign-out fully clears the session
 - [ ] Email confirmation configured appropriately for the environment
 

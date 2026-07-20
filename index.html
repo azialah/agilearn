@@ -1,15 +1,38 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0d12" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#faf5ec" />
     <meta
       name="description"
-      content="Agilearn — school management platform for teachers and administrators."
+      content="Agilearn: school management platform for teachers and administrators."
     />
+    <!-- Installed-PWA (iOS): run standalone without Safari chrome / URL bar. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Agilearn" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>Agilearn</title>
+    <!-- Apply the stored/system theme before first paint to avoid a flash. -->
+    <script>
+      ;(function () {
+        try {
+          var t = localStorage.getItem('agilearn-theme') || 'system'
+          var dark =
+            t === 'dark' ||
+            (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          var m = document.querySelector('meta[name="theme-color"]')
+          if (m) m.setAttribute('content', dark ? '#17110d' : '#faf5ec')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
