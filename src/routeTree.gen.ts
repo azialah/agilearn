@@ -19,6 +19,7 @@ import { Route as TeacherSignupIndexRouteImport } from './routes/teacher.signup.
 import { Route as AuthTeacherDashboardRouteImport } from './routes/_auth/teacher/dashboard'
 import { Route as AuthAdminUsersRouteImport } from './routes/_auth/admin/users'
 import { Route as AuthAdminDomainRequestsRouteImport } from './routes/_auth/admin/domain-requests'
+import { Route as AuthAdminAuditLogRouteImport } from './routes/_auth/admin/audit-log'
 import { Route as AuthTeacherModulesIndexRouteImport } from './routes/_auth/teacher/modules/index'
 import { Route as AuthTeacherClassroomsIndexRouteImport } from './routes/_auth/teacher/classrooms/index'
 import { Route as TeacherSignupStep6WelcomeToAgilearnRouteImport } from './routes/teacher.signup.step-6.welcome-to-agilearn'
@@ -80,6 +81,11 @@ const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
 const AuthAdminDomainRequestsRoute = AuthAdminDomainRequestsRouteImport.update({
   id: '/admin/domain-requests',
   path: '/admin/domain-requests',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAdminAuditLogRoute = AuthAdminAuditLogRouteImport.update({
+  id: '/admin/audit-log',
+  path: '/admin/audit-log',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthTeacherModulesIndexRoute = AuthTeacherModulesIndexRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof AuthSettingsRoute
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
+  '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/settings': typeof AuthSettingsRoute
+  '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
+  '/_auth/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/_auth/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/_auth/admin/users': typeof AuthAdminUsersRoute
   '/_auth/teacher/dashboard': typeof AuthTeacherDashboardRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/teacher/signup'
+    | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
     | '/teacher/dashboard'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/settings'
+    | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
     | '/teacher/dashboard'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_auth/settings'
     | '/teacher/signup'
+    | '/_auth/admin/audit-log'
     | '/_auth/admin/domain-requests'
     | '/_auth/admin/users'
     | '/_auth/teacher/dashboard'
@@ -388,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminDomainRequestsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/admin/audit-log': {
+      id: '/_auth/admin/audit-log'
+      path: '/admin/audit-log'
+      fullPath: '/admin/audit-log'
+      preLoaderRoute: typeof AuthAdminAuditLogRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/teacher/modules/': {
       id: '/_auth/teacher/modules/'
       path: '/teacher/modules'
@@ -484,6 +503,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthRouteChildren {
   AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthAdminAuditLogRoute: typeof AuthAdminAuditLogRoute
   AuthAdminDomainRequestsRoute: typeof AuthAdminDomainRequestsRoute
   AuthAdminUsersRoute: typeof AuthAdminUsersRoute
   AuthTeacherDashboardRoute: typeof AuthTeacherDashboardRoute
@@ -498,6 +518,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsRoute: AuthSettingsRoute,
+  AuthAdminAuditLogRoute: AuthAdminAuditLogRoute,
   AuthAdminDomainRequestsRoute: AuthAdminDomainRequestsRoute,
   AuthAdminUsersRoute: AuthAdminUsersRoute,
   AuthTeacherDashboardRoute: AuthTeacherDashboardRoute,

@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

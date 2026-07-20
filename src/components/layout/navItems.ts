@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react'
 import { Inbox } from 'lucide-react'
-import { ClassroomIcon, DashboardIcon, ModuleIcon, UsersIcon } from '@/components/icons'
+import {
+  ClassroomIcon,
+  DashboardIcon,
+  HistoryIcon,
+  ModuleIcon,
+  UsersIcon,
+} from '@/components/icons'
 import type { MessageKey } from '@/lib/locale'
 
 export interface NavItem {
@@ -20,6 +26,12 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/admin/domain-requests',
     labelKey: 'requests',
     icon: Inbox,
+    adminOnly: true,
+  },
+  {
+    to: '/admin/audit-log',
+    labelKey: 'auditLog',
+    icon: HistoryIcon,
     adminOnly: true,
   },
 ]

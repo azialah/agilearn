@@ -468,6 +468,44 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          id: string
+          actor_id: string | null
+          action: string
+          target_table: string
+          target_id: string
+          detail: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          action: string
+          target_table: string
+          target_id: string
+          detail?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          action?: string
+          target_table?: string
+          target_id?: string
+          detail?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audit_log_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       v_class_roster: {
