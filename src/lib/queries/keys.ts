@@ -42,4 +42,8 @@ export const keys = {
     all: ['modules', 'list'] as const,
     detail: (id: string) => ['modules', 'detail', id] as const,
   },
+
+  auditLog: {
+    all: (limit: number) => ['audit-log', limit] as const,
+  },
 } as const

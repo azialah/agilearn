@@ -115,6 +115,7 @@ export function SignupWizard({ step }: SignupWizardProps) {
   const { data: profile } = useProfile()
   const navigate = useNavigate()
   const reduce = useReducedMotion()
+  const verifyEmail = email || session?.user.email || profile?.email || ''
 
   function goToStep(nextStep: OnboardingStep) {
     setStep(nextStep)
@@ -122,19 +123,23 @@ export function SignupWizard({ step }: SignupWizardProps) {
   }
 
   // Resume / guard: an authenticated visitor with a completed name is already
-  // onboarded; one without has verified but not finished — drop them at the name
-  // step. Unauthenticated visitors stay on whatever step the store holds.
+  // onboarded — but only bounce to the dashboard if they're still on an early
+  // step (credentials/verify/name); once they're past name (school/level/
+  // welcome) the redirect would strand them before those optional steps ever
+  // render. Unauthenticated visitors stay on whatever step the store holds.
   useEffect(() => {
     setStep(step)
     if (sessionPending) return
-    if (profile?.last_name) {
+    if (profile?.last_name && STEP_INDEX[step] <= STEP_INDEX.name) {
       navigate({ to: '/teacher/dashboard' })
     } else if (!session && step !== 'credentials' && step !== 'verify') {
       goToStep('credentials')
-    } else if (session && profile && step !== 'welcome' && step !== 'name') {
+    } else if (session && profile && STEP_INDEX[step] < STEP_INDEX.name) {
       goToStep('name')
+    } else if (step === 'verify' && !verifyEmail && !sessionPending) {
+      goToStep('credentials')
     }
-  }, [session, sessionPending, profile, step, setStep, navigate])
+  }, [session, sessionPending, profile, step, setStep, navigate, verifyEmail])
 
   const currentIndex = STEP_INDEX[step]
   const rail: AuthRailContent = {
@@ -176,7 +181,7 @@ export function SignupWizard({ step }: SignupWizardProps) {
           )}
           {step === 'verify' && (
             <VerifyStep
-              email={email}
+              email={verifyEmail}
               onBack={() => goToStep('credentials')}
               onVerified={() => goToStep('name')}
             />

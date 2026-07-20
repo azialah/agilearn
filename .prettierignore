@@ -5,4 +5,8 @@ pnpm-lock.yaml
 src/routeTree.gen.ts
 src/types/database.ts
 .claude
+.agents
+.codex
+AGENTS.md
+package-lock.json
 supabase/.temp

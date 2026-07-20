@@ -133,6 +133,14 @@ export const MoonIcon = (p: IconProps) => (
   </Icon>
 )
 
+export const HistoryIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 12a9 9 0 1 0 3-6.7" />
+    <path d="M3 4v4h4" />
+    <path d="M12 7v5l3.5 2" />
+  </Icon>
+)
+
 export const MonitorIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="3" y="4" width="18" height="12" rx="2" />

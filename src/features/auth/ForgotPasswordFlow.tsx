@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PinInput } from '@/components/ui/PinInput'
+import { useToast } from '@/components/ui/toast'
 import { newPasswordSchema, fieldErrors } from './schemas'
 import { AuthShell, Field, FormError, StickyCta, type AuthRailContent } from './wizard-ui'
 
@@ -32,6 +33,7 @@ const RECOVERY_RAIL: Record<Stage, AuthRailContent> = {
 
 export function ForgotPasswordFlow() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const reduce = useReducedMotion()
   const [stage, setStage] = useState<Stage>('email')
   const [email, setEmail] = useState('')
@@ -42,18 +44,31 @@ export function ForgotPasswordFlow() {
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function sendCode(event: FormEvent) {
-    event.preventDefault()
+  async function requestCode() {
     setFormError(null)
     setSubmitting(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim())
     setSubmitting(false)
     if (error) {
       setFormError(error.message)
-      return
+      return false
     }
-    setCode('')
-    setStage('code')
+    return true
+  }
+
+  async function sendCode(event: FormEvent) {
+    event.preventDefault()
+    if (await requestCode()) {
+      setCode('')
+      setStage('code')
+    }
+  }
+
+  async function resendCode() {
+    if (await requestCode()) {
+      setCode('')
+      toast({ title: 'New code sent', tone: 'success' })
+    }
   }
 
   async function verify(token: string) {
@@ -88,6 +103,7 @@ export function ForgotPasswordFlow() {
       setFormError(error.message)
       return
     }
+    toast({ title: 'Password updated', tone: 'success' })
     navigate({ to: '/teacher/dashboard' })
   }
 
@@ -152,13 +168,23 @@ export function ForgotPasswordFlow() {
                   />
                 </Field>
                 {formError && <FormError message={formError} />}
-                <button
-                  type="button"
-                  onClick={() => setStage('email')}
-                  className="text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
-                >
-                  Use a different email
-                </button>
+                <div className="flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStage('email')}
+                    className="text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                  >
+                    Use a different email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resendCode}
+                    disabled={submitting}
+                    className="text-sm text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)] disabled:opacity-50"
+                  >
+                    Send a new code
+                  </button>
+                </div>
                 <StickyCta
                   label="Verify"
                   type="button"
