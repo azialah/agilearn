@@ -98,6 +98,21 @@ export type Database = {
           },
         ]
       }
+      allowed_email_domains: {
+        Row: {
+          created_at: string
+          domain: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           remarks: string
@@ -233,6 +248,36 @@ export type Database = {
           },
         ]
       }
+      domain_requests: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          ip: string | null
+          message: string | null
+          name: string
+          school: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          ip?: string | null
+          message?: string | null
+          name: string
+          school: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          ip?: string | null
+          message?: string | null
+          name?: string
+          school?: string
+        }
+        Relationships: []
+      }
       grading_periods: {
         Row: {
           classroom_id: string
@@ -274,27 +319,60 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_color: string
           created_at: string
           email: string
+          first_name: string
           full_name: string
           id: string
+          last_name: string
+          location: string | null
+          middle_name: string | null
+          preferred_locale: string
           role: Database["public"]["Enums"]["app_role"]
+          school: string | null
+          suffix: string | null
+          teaching_levels:
+            | Database["public"]["Enums"]["teaching_level"][]
+            | null
           updated_at: string
         }
         Insert: {
+          avatar_color?: string
           created_at?: string
           email: string
+          first_name?: string
           full_name?: string
           id: string
+          last_name?: string
+          location?: string | null
+          middle_name?: string | null
+          preferred_locale?: string
           role?: Database["public"]["Enums"]["app_role"]
+          school?: string | null
+          suffix?: string | null
+          teaching_levels?:
+            | Database["public"]["Enums"]["teaching_level"][]
+            | null
           updated_at?: string
         }
         Update: {
+          avatar_color?: string
           created_at?: string
           email?: string
+          first_name?: string
           full_name?: string
           id?: string
+          last_name?: string
+          location?: string | null
+          middle_name?: string | null
+          preferred_locale?: string
           role?: Database["public"]["Enums"]["app_role"]
+          school?: string | null
+          suffix?: string | null
+          teaching_levels?:
+            | Database["public"]["Enums"]["teaching_level"][]
+            | null
           updated_at?: string
         }
         Relationships: []
@@ -476,12 +554,22 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       owns_classroom: { Args: { cid: string }; Returns: boolean }
+      submit_domain_request: {
+        Args: {
+          p_domain: string
+          p_message?: string
+          p_name: string
+          p_school: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "teacher"
       attendance_status: "present" | "absent" | "late" | "excused"
       grade_component: "lecture" | "laboratory"
       module_kind: "lesson_plan" | "activity_story" | "resource"
+      teaching_level: "preschool" | "elementary" | "high_school" | "college"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -613,6 +701,7 @@ export const Constants = {
       attendance_status: ["present", "absent", "late", "excused"],
       grade_component: ["lecture", "laboratory"],
       module_kind: ["lesson_plan", "activity_story", "resource"],
+      teaching_level: ["preschool", "elementary", "high_school", "college"],
     },
   },
 } as const

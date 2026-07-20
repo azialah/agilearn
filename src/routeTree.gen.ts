@@ -9,27 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
-import { Route as AuthModulesIndexRouteImport } from './routes/_auth/modules/index'
-import { Route as AuthClassroomsIndexRouteImport } from './routes/_auth/classrooms/index'
+import { Route as TeacherSignupRouteImport } from './routes/teacher.signup'
+import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
+import { Route as TeacherSignupIndexRouteImport } from './routes/teacher.signup.index'
+import { Route as AuthTeacherDashboardRouteImport } from './routes/_auth/teacher/dashboard'
 import { Route as AuthAdminUsersRouteImport } from './routes/_auth/admin/users'
 import { Route as AuthAdminDomainRequestsRouteImport } from './routes/_auth/admin/domain-requests'
-import { Route as AuthClassroomsClassroomIdIndexRouteImport } from './routes/_auth/classrooms/$classroomId/index'
-import { Route as AuthClassroomsClassroomIdSlideshowRouteImport } from './routes/_auth/classrooms/$classroomId/slideshow'
-import { Route as AuthClassroomsClassroomIdGradesRouteImport } from './routes/_auth/classrooms/$classroomId/grades'
-import { Route as AuthClassroomsClassroomIdAttendanceIndexRouteImport } from './routes/_auth/classrooms/$classroomId/attendance/index'
-import { Route as AuthClassroomsClassroomIdAttendanceSessionIdRouteImport } from './routes/_auth/classrooms/$classroomId/attendance/$sessionId'
+import { Route as AuthTeacherModulesIndexRouteImport } from './routes/_auth/teacher/modules/index'
+import { Route as AuthTeacherClassroomsIndexRouteImport } from './routes/_auth/teacher/classrooms/index'
+import { Route as TeacherSignupStep6WelcomeToAgilearnRouteImport } from './routes/teacher.signup.step-6.welcome-to-agilearn'
+import { Route as TeacherSignupStep5TeachingLevelsRouteImport } from './routes/teacher.signup.step-5.teaching-levels'
+import { Route as TeacherSignupStep4YourSchoolRouteImport } from './routes/teacher.signup.step-4.your-school'
+import { Route as TeacherSignupStep3TellUsAboutYouRouteImport } from './routes/teacher.signup.step-3.tell-us-about-you'
+import { Route as TeacherSignupStep2VerifyYourEmailRouteImport } from './routes/teacher.signup.step-2.verify-your-email'
+import { Route as TeacherSignupStep1CreateYourAccountRouteImport } from './routes/teacher.signup.step-1.create-your-account'
+import { Route as AuthTeacherClassroomsClassroomIdIndexRouteImport } from './routes/_auth/teacher/classrooms/$classroomId/index'
+import { Route as AuthTeacherClassroomsClassroomIdSlideshowRouteImport } from './routes/_auth/teacher/classrooms/$classroomId/slideshow'
+import { Route as AuthTeacherClassroomsClassroomIdGradesRouteImport } from './routes/_auth/teacher/classrooms/$classroomId/grades'
+import { Route as AuthTeacherClassroomsClassroomIdAttendanceIndexRouteImport } from './routes/_auth/teacher/classrooms/$classroomId/attendance/index'
+import { Route as AuthTeacherClassroomsClassroomIdAttendanceSessionIdRouteImport } from './routes/_auth/teacher/classrooms/$classroomId/attendance/$sessionId'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -49,19 +52,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthDashboardRoute = AuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const TeacherSignupRoute = TeacherSignupRouteImport.update({
+  id: '/teacher/signup',
+  path: '/teacher/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSettingsRoute = AuthSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthModulesIndexRoute = AuthModulesIndexRouteImport.update({
-  id: '/modules/',
-  path: '/modules/',
-  getParentRoute: () => AuthRoute,
+const TeacherSignupIndexRoute = TeacherSignupIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TeacherSignupRoute,
 } as any)
-const AuthClassroomsIndexRoute = AuthClassroomsIndexRouteImport.update({
-  id: '/classrooms/',
-  path: '/classrooms/',
+const AuthTeacherDashboardRoute = AuthTeacherDashboardRouteImport.update({
+  id: '/teacher/dashboard',
+  path: '/teacher/dashboard',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
@@ -74,34 +82,81 @@ const AuthAdminDomainRequestsRoute = AuthAdminDomainRequestsRouteImport.update({
   path: '/admin/domain-requests',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthClassroomsClassroomIdIndexRoute =
-  AuthClassroomsClassroomIdIndexRouteImport.update({
-    id: '/classrooms/$classroomId/',
-    path: '/classrooms/$classroomId/',
+const AuthTeacherModulesIndexRoute = AuthTeacherModulesIndexRouteImport.update({
+  id: '/teacher/modules/',
+  path: '/teacher/modules/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeacherClassroomsIndexRoute =
+  AuthTeacherClassroomsIndexRouteImport.update({
+    id: '/teacher/classrooms/',
+    path: '/teacher/classrooms/',
     getParentRoute: () => AuthRoute,
   } as any)
-const AuthClassroomsClassroomIdSlideshowRoute =
-  AuthClassroomsClassroomIdSlideshowRouteImport.update({
-    id: '/classrooms/$classroomId/slideshow',
-    path: '/classrooms/$classroomId/slideshow',
+const TeacherSignupStep6WelcomeToAgilearnRoute =
+  TeacherSignupStep6WelcomeToAgilearnRouteImport.update({
+    id: '/step-6/welcome-to-agilearn',
+    path: '/step-6/welcome-to-agilearn',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const TeacherSignupStep5TeachingLevelsRoute =
+  TeacherSignupStep5TeachingLevelsRouteImport.update({
+    id: '/step-5/teaching-levels',
+    path: '/step-5/teaching-levels',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const TeacherSignupStep4YourSchoolRoute =
+  TeacherSignupStep4YourSchoolRouteImport.update({
+    id: '/step-4/your-school',
+    path: '/step-4/your-school',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const TeacherSignupStep3TellUsAboutYouRoute =
+  TeacherSignupStep3TellUsAboutYouRouteImport.update({
+    id: '/step-3/tell-us-about-you',
+    path: '/step-3/tell-us-about-you',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const TeacherSignupStep2VerifyYourEmailRoute =
+  TeacherSignupStep2VerifyYourEmailRouteImport.update({
+    id: '/step-2/verify-your-email',
+    path: '/step-2/verify-your-email',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const TeacherSignupStep1CreateYourAccountRoute =
+  TeacherSignupStep1CreateYourAccountRouteImport.update({
+    id: '/step-1/create-your-account',
+    path: '/step-1/create-your-account',
+    getParentRoute: () => TeacherSignupRoute,
+  } as any)
+const AuthTeacherClassroomsClassroomIdIndexRoute =
+  AuthTeacherClassroomsClassroomIdIndexRouteImport.update({
+    id: '/teacher/classrooms/$classroomId/',
+    path: '/teacher/classrooms/$classroomId/',
     getParentRoute: () => AuthRoute,
   } as any)
-const AuthClassroomsClassroomIdGradesRoute =
-  AuthClassroomsClassroomIdGradesRouteImport.update({
-    id: '/classrooms/$classroomId/grades',
-    path: '/classrooms/$classroomId/grades',
+const AuthTeacherClassroomsClassroomIdSlideshowRoute =
+  AuthTeacherClassroomsClassroomIdSlideshowRouteImport.update({
+    id: '/teacher/classrooms/$classroomId/slideshow',
+    path: '/teacher/classrooms/$classroomId/slideshow',
     getParentRoute: () => AuthRoute,
   } as any)
-const AuthClassroomsClassroomIdAttendanceIndexRoute =
-  AuthClassroomsClassroomIdAttendanceIndexRouteImport.update({
-    id: '/classrooms/$classroomId/attendance/',
-    path: '/classrooms/$classroomId/attendance/',
+const AuthTeacherClassroomsClassroomIdGradesRoute =
+  AuthTeacherClassroomsClassroomIdGradesRouteImport.update({
+    id: '/teacher/classrooms/$classroomId/grades',
+    path: '/teacher/classrooms/$classroomId/grades',
     getParentRoute: () => AuthRoute,
   } as any)
-const AuthClassroomsClassroomIdAttendanceSessionIdRoute =
-  AuthClassroomsClassroomIdAttendanceSessionIdRouteImport.update({
-    id: '/classrooms/$classroomId/attendance/$sessionId',
-    path: '/classrooms/$classroomId/attendance/$sessionId',
+const AuthTeacherClassroomsClassroomIdAttendanceIndexRoute =
+  AuthTeacherClassroomsClassroomIdAttendanceIndexRouteImport.update({
+    id: '/teacher/classrooms/$classroomId/attendance/',
+    path: '/teacher/classrooms/$classroomId/attendance/',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute =
+  AuthTeacherClassroomsClassroomIdAttendanceSessionIdRouteImport.update({
+    id: '/teacher/classrooms/$classroomId/attendance/$sessionId',
+    path: '/teacher/classrooms/$classroomId/attendance/$sessionId',
     getParentRoute: () => AuthRoute,
   } as any)
 
@@ -109,33 +164,48 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/settings': typeof AuthSettingsRoute
+  '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
-  '/classrooms/': typeof AuthClassroomsIndexRoute
-  '/modules/': typeof AuthModulesIndexRoute
-  '/classrooms/$classroomId/grades': typeof AuthClassroomsClassroomIdGradesRoute
-  '/classrooms/$classroomId/slideshow': typeof AuthClassroomsClassroomIdSlideshowRoute
-  '/classrooms/$classroomId/': typeof AuthClassroomsClassroomIdIndexRoute
-  '/classrooms/$classroomId/attendance/$sessionId': typeof AuthClassroomsClassroomIdAttendanceSessionIdRoute
-  '/classrooms/$classroomId/attendance/': typeof AuthClassroomsClassroomIdAttendanceIndexRoute
+  '/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/teacher/signup/': typeof TeacherSignupIndexRoute
+  '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
+  '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
+  '/teacher/signup/step-3/tell-us-about-you': typeof TeacherSignupStep3TellUsAboutYouRoute
+  '/teacher/signup/step-4/your-school': typeof TeacherSignupStep4YourSchoolRoute
+  '/teacher/signup/step-5/teaching-levels': typeof TeacherSignupStep5TeachingLevelsRoute
+  '/teacher/signup/step-6/welcome-to-agilearn': typeof TeacherSignupStep6WelcomeToAgilearnRoute
+  '/teacher/classrooms/': typeof AuthTeacherClassroomsIndexRoute
+  '/teacher/modules/': typeof AuthTeacherModulesIndexRoute
+  '/teacher/classrooms/$classroomId/grades': typeof AuthTeacherClassroomsClassroomIdGradesRoute
+  '/teacher/classrooms/$classroomId/slideshow': typeof AuthTeacherClassroomsClassroomIdSlideshowRoute
+  '/teacher/classrooms/$classroomId/': typeof AuthTeacherClassroomsClassroomIdIndexRoute
+  '/teacher/classrooms/$classroomId/attendance/$sessionId': typeof AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute
+  '/teacher/classrooms/$classroomId/attendance/': typeof AuthTeacherClassroomsClassroomIdAttendanceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/dashboard': typeof AuthDashboardRoute
+  '/settings': typeof AuthSettingsRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
-  '/classrooms': typeof AuthClassroomsIndexRoute
-  '/modules': typeof AuthModulesIndexRoute
-  '/classrooms/$classroomId/grades': typeof AuthClassroomsClassroomIdGradesRoute
-  '/classrooms/$classroomId/slideshow': typeof AuthClassroomsClassroomIdSlideshowRoute
-  '/classrooms/$classroomId': typeof AuthClassroomsClassroomIdIndexRoute
-  '/classrooms/$classroomId/attendance/$sessionId': typeof AuthClassroomsClassroomIdAttendanceSessionIdRoute
-  '/classrooms/$classroomId/attendance': typeof AuthClassroomsClassroomIdAttendanceIndexRoute
+  '/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/teacher/signup': typeof TeacherSignupIndexRoute
+  '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
+  '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
+  '/teacher/signup/step-3/tell-us-about-you': typeof TeacherSignupStep3TellUsAboutYouRoute
+  '/teacher/signup/step-4/your-school': typeof TeacherSignupStep4YourSchoolRoute
+  '/teacher/signup/step-5/teaching-levels': typeof TeacherSignupStep5TeachingLevelsRoute
+  '/teacher/signup/step-6/welcome-to-agilearn': typeof TeacherSignupStep6WelcomeToAgilearnRoute
+  '/teacher/classrooms': typeof AuthTeacherClassroomsIndexRoute
+  '/teacher/modules': typeof AuthTeacherModulesIndexRoute
+  '/teacher/classrooms/$classroomId/grades': typeof AuthTeacherClassroomsClassroomIdGradesRoute
+  '/teacher/classrooms/$classroomId/slideshow': typeof AuthTeacherClassroomsClassroomIdSlideshowRoute
+  '/teacher/classrooms/$classroomId': typeof AuthTeacherClassroomsClassroomIdIndexRoute
+  '/teacher/classrooms/$classroomId/attendance/$sessionId': typeof AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute
+  '/teacher/classrooms/$classroomId/attendance': typeof AuthTeacherClassroomsClassroomIdAttendanceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,17 +213,25 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/settings': typeof AuthSettingsRoute
+  '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/_auth/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/_auth/admin/users': typeof AuthAdminUsersRoute
-  '/_auth/classrooms/': typeof AuthClassroomsIndexRoute
-  '/_auth/modules/': typeof AuthModulesIndexRoute
-  '/_auth/classrooms/$classroomId/grades': typeof AuthClassroomsClassroomIdGradesRoute
-  '/_auth/classrooms/$classroomId/slideshow': typeof AuthClassroomsClassroomIdSlideshowRoute
-  '/_auth/classrooms/$classroomId/': typeof AuthClassroomsClassroomIdIndexRoute
-  '/_auth/classrooms/$classroomId/attendance/$sessionId': typeof AuthClassroomsClassroomIdAttendanceSessionIdRoute
-  '/_auth/classrooms/$classroomId/attendance/': typeof AuthClassroomsClassroomIdAttendanceIndexRoute
+  '/_auth/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/teacher/signup/': typeof TeacherSignupIndexRoute
+  '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
+  '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
+  '/teacher/signup/step-3/tell-us-about-you': typeof TeacherSignupStep3TellUsAboutYouRoute
+  '/teacher/signup/step-4/your-school': typeof TeacherSignupStep4YourSchoolRoute
+  '/teacher/signup/step-5/teaching-levels': typeof TeacherSignupStep5TeachingLevelsRoute
+  '/teacher/signup/step-6/welcome-to-agilearn': typeof TeacherSignupStep6WelcomeToAgilearnRoute
+  '/_auth/teacher/classrooms/': typeof AuthTeacherClassroomsIndexRoute
+  '/_auth/teacher/modules/': typeof AuthTeacherModulesIndexRoute
+  '/_auth/teacher/classrooms/$classroomId/grades': typeof AuthTeacherClassroomsClassroomIdGradesRoute
+  '/_auth/teacher/classrooms/$classroomId/slideshow': typeof AuthTeacherClassroomsClassroomIdSlideshowRoute
+  '/_auth/teacher/classrooms/$classroomId/': typeof AuthTeacherClassroomsClassroomIdIndexRoute
+  '/_auth/teacher/classrooms/$classroomId/attendance/$sessionId': typeof AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute
+  '/_auth/teacher/classrooms/$classroomId/attendance/': typeof AuthTeacherClassroomsClassroomIdAttendanceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,50 +239,73 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/signup'
-    | '/dashboard'
+    | '/settings'
+    | '/teacher/signup'
     | '/admin/domain-requests'
     | '/admin/users'
-    | '/classrooms/'
-    | '/modules/'
-    | '/classrooms/$classroomId/grades'
-    | '/classrooms/$classroomId/slideshow'
-    | '/classrooms/$classroomId/'
-    | '/classrooms/$classroomId/attendance/$sessionId'
-    | '/classrooms/$classroomId/attendance/'
+    | '/teacher/dashboard'
+    | '/teacher/signup/'
+    | '/teacher/signup/step-1/create-your-account'
+    | '/teacher/signup/step-2/verify-your-email'
+    | '/teacher/signup/step-3/tell-us-about-you'
+    | '/teacher/signup/step-4/your-school'
+    | '/teacher/signup/step-5/teaching-levels'
+    | '/teacher/signup/step-6/welcome-to-agilearn'
+    | '/teacher/classrooms/'
+    | '/teacher/modules/'
+    | '/teacher/classrooms/$classroomId/grades'
+    | '/teacher/classrooms/$classroomId/slideshow'
+    | '/teacher/classrooms/$classroomId/'
+    | '/teacher/classrooms/$classroomId/attendance/$sessionId'
+    | '/teacher/classrooms/$classroomId/attendance/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/signup'
-    | '/dashboard'
+    | '/settings'
     | '/admin/domain-requests'
     | '/admin/users'
-    | '/classrooms'
-    | '/modules'
-    | '/classrooms/$classroomId/grades'
-    | '/classrooms/$classroomId/slideshow'
-    | '/classrooms/$classroomId'
-    | '/classrooms/$classroomId/attendance/$sessionId'
-    | '/classrooms/$classroomId/attendance'
+    | '/teacher/dashboard'
+    | '/teacher/signup'
+    | '/teacher/signup/step-1/create-your-account'
+    | '/teacher/signup/step-2/verify-your-email'
+    | '/teacher/signup/step-3/tell-us-about-you'
+    | '/teacher/signup/step-4/your-school'
+    | '/teacher/signup/step-5/teaching-levels'
+    | '/teacher/signup/step-6/welcome-to-agilearn'
+    | '/teacher/classrooms'
+    | '/teacher/modules'
+    | '/teacher/classrooms/$classroomId/grades'
+    | '/teacher/classrooms/$classroomId/slideshow'
+    | '/teacher/classrooms/$classroomId'
+    | '/teacher/classrooms/$classroomId/attendance/$sessionId'
+    | '/teacher/classrooms/$classroomId/attendance'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/forgot-password'
     | '/login'
-    | '/signup'
-    | '/_auth/dashboard'
+    | '/_auth/settings'
+    | '/teacher/signup'
     | '/_auth/admin/domain-requests'
     | '/_auth/admin/users'
-    | '/_auth/classrooms/'
-    | '/_auth/modules/'
-    | '/_auth/classrooms/$classroomId/grades'
-    | '/_auth/classrooms/$classroomId/slideshow'
-    | '/_auth/classrooms/$classroomId/'
-    | '/_auth/classrooms/$classroomId/attendance/$sessionId'
-    | '/_auth/classrooms/$classroomId/attendance/'
+    | '/_auth/teacher/dashboard'
+    | '/teacher/signup/'
+    | '/teacher/signup/step-1/create-your-account'
+    | '/teacher/signup/step-2/verify-your-email'
+    | '/teacher/signup/step-3/tell-us-about-you'
+    | '/teacher/signup/step-4/your-school'
+    | '/teacher/signup/step-5/teaching-levels'
+    | '/teacher/signup/step-6/welcome-to-agilearn'
+    | '/_auth/teacher/classrooms/'
+    | '/_auth/teacher/modules/'
+    | '/_auth/teacher/classrooms/$classroomId/grades'
+    | '/_auth/teacher/classrooms/$classroomId/slideshow'
+    | '/_auth/teacher/classrooms/$classroomId/'
+    | '/_auth/teacher/classrooms/$classroomId/attendance/$sessionId'
+    | '/_auth/teacher/classrooms/$classroomId/attendance/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -212,18 +313,11 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
-  SignupRoute: typeof SignupRoute
+  TeacherSignupRoute: typeof TeacherSignupRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -252,25 +346,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/dashboard': {
-      id: '/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthDashboardRouteImport
+    '/teacher/signup': {
+      id: '/teacher/signup'
+      path: '/teacher/signup'
+      fullPath: '/teacher/signup'
+      preLoaderRoute: typeof TeacherSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/settings': {
+      id: '/_auth/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthSettingsRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/modules/': {
-      id: '/_auth/modules/'
-      path: '/modules'
-      fullPath: '/modules/'
-      preLoaderRoute: typeof AuthModulesIndexRouteImport
-      parentRoute: typeof AuthRoute
+    '/teacher/signup/': {
+      id: '/teacher/signup/'
+      path: '/'
+      fullPath: '/teacher/signup/'
+      preLoaderRoute: typeof TeacherSignupIndexRouteImport
+      parentRoute: typeof TeacherSignupRoute
     }
-    '/_auth/classrooms/': {
-      id: '/_auth/classrooms/'
-      path: '/classrooms'
-      fullPath: '/classrooms/'
-      preLoaderRoute: typeof AuthClassroomsIndexRouteImport
+    '/_auth/teacher/dashboard': {
+      id: '/_auth/teacher/dashboard'
+      path: '/teacher/dashboard'
+      fullPath: '/teacher/dashboard'
+      preLoaderRoute: typeof AuthTeacherDashboardRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/admin/users': {
@@ -287,81 +388,168 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminDomainRequestsRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/classrooms/$classroomId/': {
-      id: '/_auth/classrooms/$classroomId/'
-      path: '/classrooms/$classroomId'
-      fullPath: '/classrooms/$classroomId/'
-      preLoaderRoute: typeof AuthClassroomsClassroomIdIndexRouteImport
+    '/_auth/teacher/modules/': {
+      id: '/_auth/teacher/modules/'
+      path: '/teacher/modules'
+      fullPath: '/teacher/modules/'
+      preLoaderRoute: typeof AuthTeacherModulesIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/classrooms/$classroomId/slideshow': {
-      id: '/_auth/classrooms/$classroomId/slideshow'
-      path: '/classrooms/$classroomId/slideshow'
-      fullPath: '/classrooms/$classroomId/slideshow'
-      preLoaderRoute: typeof AuthClassroomsClassroomIdSlideshowRouteImport
+    '/_auth/teacher/classrooms/': {
+      id: '/_auth/teacher/classrooms/'
+      path: '/teacher/classrooms'
+      fullPath: '/teacher/classrooms/'
+      preLoaderRoute: typeof AuthTeacherClassroomsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/classrooms/$classroomId/grades': {
-      id: '/_auth/classrooms/$classroomId/grades'
-      path: '/classrooms/$classroomId/grades'
-      fullPath: '/classrooms/$classroomId/grades'
-      preLoaderRoute: typeof AuthClassroomsClassroomIdGradesRouteImport
+    '/teacher/signup/step-6/welcome-to-agilearn': {
+      id: '/teacher/signup/step-6/welcome-to-agilearn'
+      path: '/step-6/welcome-to-agilearn'
+      fullPath: '/teacher/signup/step-6/welcome-to-agilearn'
+      preLoaderRoute: typeof TeacherSignupStep6WelcomeToAgilearnRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/teacher/signup/step-5/teaching-levels': {
+      id: '/teacher/signup/step-5/teaching-levels'
+      path: '/step-5/teaching-levels'
+      fullPath: '/teacher/signup/step-5/teaching-levels'
+      preLoaderRoute: typeof TeacherSignupStep5TeachingLevelsRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/teacher/signup/step-4/your-school': {
+      id: '/teacher/signup/step-4/your-school'
+      path: '/step-4/your-school'
+      fullPath: '/teacher/signup/step-4/your-school'
+      preLoaderRoute: typeof TeacherSignupStep4YourSchoolRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/teacher/signup/step-3/tell-us-about-you': {
+      id: '/teacher/signup/step-3/tell-us-about-you'
+      path: '/step-3/tell-us-about-you'
+      fullPath: '/teacher/signup/step-3/tell-us-about-you'
+      preLoaderRoute: typeof TeacherSignupStep3TellUsAboutYouRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/teacher/signup/step-2/verify-your-email': {
+      id: '/teacher/signup/step-2/verify-your-email'
+      path: '/step-2/verify-your-email'
+      fullPath: '/teacher/signup/step-2/verify-your-email'
+      preLoaderRoute: typeof TeacherSignupStep2VerifyYourEmailRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/teacher/signup/step-1/create-your-account': {
+      id: '/teacher/signup/step-1/create-your-account'
+      path: '/step-1/create-your-account'
+      fullPath: '/teacher/signup/step-1/create-your-account'
+      preLoaderRoute: typeof TeacherSignupStep1CreateYourAccountRouteImport
+      parentRoute: typeof TeacherSignupRoute
+    }
+    '/_auth/teacher/classrooms/$classroomId/': {
+      id: '/_auth/teacher/classrooms/$classroomId/'
+      path: '/teacher/classrooms/$classroomId'
+      fullPath: '/teacher/classrooms/$classroomId/'
+      preLoaderRoute: typeof AuthTeacherClassroomsClassroomIdIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/classrooms/$classroomId/attendance/': {
-      id: '/_auth/classrooms/$classroomId/attendance/'
-      path: '/classrooms/$classroomId/attendance'
-      fullPath: '/classrooms/$classroomId/attendance/'
-      preLoaderRoute: typeof AuthClassroomsClassroomIdAttendanceIndexRouteImport
+    '/_auth/teacher/classrooms/$classroomId/slideshow': {
+      id: '/_auth/teacher/classrooms/$classroomId/slideshow'
+      path: '/teacher/classrooms/$classroomId/slideshow'
+      fullPath: '/teacher/classrooms/$classroomId/slideshow'
+      preLoaderRoute: typeof AuthTeacherClassroomsClassroomIdSlideshowRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/classrooms/$classroomId/attendance/$sessionId': {
-      id: '/_auth/classrooms/$classroomId/attendance/$sessionId'
-      path: '/classrooms/$classroomId/attendance/$sessionId'
-      fullPath: '/classrooms/$classroomId/attendance/$sessionId'
-      preLoaderRoute: typeof AuthClassroomsClassroomIdAttendanceSessionIdRouteImport
+    '/_auth/teacher/classrooms/$classroomId/grades': {
+      id: '/_auth/teacher/classrooms/$classroomId/grades'
+      path: '/teacher/classrooms/$classroomId/grades'
+      fullPath: '/teacher/classrooms/$classroomId/grades'
+      preLoaderRoute: typeof AuthTeacherClassroomsClassroomIdGradesRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teacher/classrooms/$classroomId/attendance/': {
+      id: '/_auth/teacher/classrooms/$classroomId/attendance/'
+      path: '/teacher/classrooms/$classroomId/attendance'
+      fullPath: '/teacher/classrooms/$classroomId/attendance/'
+      preLoaderRoute: typeof AuthTeacherClassroomsClassroomIdAttendanceIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teacher/classrooms/$classroomId/attendance/$sessionId': {
+      id: '/_auth/teacher/classrooms/$classroomId/attendance/$sessionId'
+      path: '/teacher/classrooms/$classroomId/attendance/$sessionId'
+      fullPath: '/teacher/classrooms/$classroomId/attendance/$sessionId'
+      preLoaderRoute: typeof AuthTeacherClassroomsClassroomIdAttendanceSessionIdRouteImport
       parentRoute: typeof AuthRoute
     }
   }
 }
 
 interface AuthRouteChildren {
-  AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthSettingsRoute: typeof AuthSettingsRoute
   AuthAdminDomainRequestsRoute: typeof AuthAdminDomainRequestsRoute
   AuthAdminUsersRoute: typeof AuthAdminUsersRoute
-  AuthClassroomsIndexRoute: typeof AuthClassroomsIndexRoute
-  AuthModulesIndexRoute: typeof AuthModulesIndexRoute
-  AuthClassroomsClassroomIdGradesRoute: typeof AuthClassroomsClassroomIdGradesRoute
-  AuthClassroomsClassroomIdSlideshowRoute: typeof AuthClassroomsClassroomIdSlideshowRoute
-  AuthClassroomsClassroomIdIndexRoute: typeof AuthClassroomsClassroomIdIndexRoute
-  AuthClassroomsClassroomIdAttendanceSessionIdRoute: typeof AuthClassroomsClassroomIdAttendanceSessionIdRoute
-  AuthClassroomsClassroomIdAttendanceIndexRoute: typeof AuthClassroomsClassroomIdAttendanceIndexRoute
+  AuthTeacherDashboardRoute: typeof AuthTeacherDashboardRoute
+  AuthTeacherClassroomsIndexRoute: typeof AuthTeacherClassroomsIndexRoute
+  AuthTeacherModulesIndexRoute: typeof AuthTeacherModulesIndexRoute
+  AuthTeacherClassroomsClassroomIdGradesRoute: typeof AuthTeacherClassroomsClassroomIdGradesRoute
+  AuthTeacherClassroomsClassroomIdSlideshowRoute: typeof AuthTeacherClassroomsClassroomIdSlideshowRoute
+  AuthTeacherClassroomsClassroomIdIndexRoute: typeof AuthTeacherClassroomsClassroomIdIndexRoute
+  AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute: typeof AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute
+  AuthTeacherClassroomsClassroomIdAttendanceIndexRoute: typeof AuthTeacherClassroomsClassroomIdAttendanceIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthDashboardRoute: AuthDashboardRoute,
+  AuthSettingsRoute: AuthSettingsRoute,
   AuthAdminDomainRequestsRoute: AuthAdminDomainRequestsRoute,
   AuthAdminUsersRoute: AuthAdminUsersRoute,
-  AuthClassroomsIndexRoute: AuthClassroomsIndexRoute,
-  AuthModulesIndexRoute: AuthModulesIndexRoute,
-  AuthClassroomsClassroomIdGradesRoute: AuthClassroomsClassroomIdGradesRoute,
-  AuthClassroomsClassroomIdSlideshowRoute:
-    AuthClassroomsClassroomIdSlideshowRoute,
-  AuthClassroomsClassroomIdIndexRoute: AuthClassroomsClassroomIdIndexRoute,
-  AuthClassroomsClassroomIdAttendanceSessionIdRoute:
-    AuthClassroomsClassroomIdAttendanceSessionIdRoute,
-  AuthClassroomsClassroomIdAttendanceIndexRoute:
-    AuthClassroomsClassroomIdAttendanceIndexRoute,
+  AuthTeacherDashboardRoute: AuthTeacherDashboardRoute,
+  AuthTeacherClassroomsIndexRoute: AuthTeacherClassroomsIndexRoute,
+  AuthTeacherModulesIndexRoute: AuthTeacherModulesIndexRoute,
+  AuthTeacherClassroomsClassroomIdGradesRoute:
+    AuthTeacherClassroomsClassroomIdGradesRoute,
+  AuthTeacherClassroomsClassroomIdSlideshowRoute:
+    AuthTeacherClassroomsClassroomIdSlideshowRoute,
+  AuthTeacherClassroomsClassroomIdIndexRoute:
+    AuthTeacherClassroomsClassroomIdIndexRoute,
+  AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute:
+    AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute,
+  AuthTeacherClassroomsClassroomIdAttendanceIndexRoute:
+    AuthTeacherClassroomsClassroomIdAttendanceIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface TeacherSignupRouteChildren {
+  TeacherSignupIndexRoute: typeof TeacherSignupIndexRoute
+  TeacherSignupStep1CreateYourAccountRoute: typeof TeacherSignupStep1CreateYourAccountRoute
+  TeacherSignupStep2VerifyYourEmailRoute: typeof TeacherSignupStep2VerifyYourEmailRoute
+  TeacherSignupStep3TellUsAboutYouRoute: typeof TeacherSignupStep3TellUsAboutYouRoute
+  TeacherSignupStep4YourSchoolRoute: typeof TeacherSignupStep4YourSchoolRoute
+  TeacherSignupStep5TeachingLevelsRoute: typeof TeacherSignupStep5TeachingLevelsRoute
+  TeacherSignupStep6WelcomeToAgilearnRoute: typeof TeacherSignupStep6WelcomeToAgilearnRoute
+}
+
+const TeacherSignupRouteChildren: TeacherSignupRouteChildren = {
+  TeacherSignupIndexRoute: TeacherSignupIndexRoute,
+  TeacherSignupStep1CreateYourAccountRoute:
+    TeacherSignupStep1CreateYourAccountRoute,
+  TeacherSignupStep2VerifyYourEmailRoute:
+    TeacherSignupStep2VerifyYourEmailRoute,
+  TeacherSignupStep3TellUsAboutYouRoute: TeacherSignupStep3TellUsAboutYouRoute,
+  TeacherSignupStep4YourSchoolRoute: TeacherSignupStep4YourSchoolRoute,
+  TeacherSignupStep5TeachingLevelsRoute: TeacherSignupStep5TeachingLevelsRoute,
+  TeacherSignupStep6WelcomeToAgilearnRoute:
+    TeacherSignupStep6WelcomeToAgilearnRoute,
+}
+
+const TeacherSignupRouteWithChildren = TeacherSignupRoute._addFileChildren(
+  TeacherSignupRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
-  SignupRoute: SignupRoute,
+  TeacherSignupRoute: TeacherSignupRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

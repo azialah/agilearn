@@ -19,8 +19,8 @@ import {
 } from '@/components/icons'
 import { ScrollGradient } from './ScrollGradient'
 import { FlowingTextBackdrop } from './FlowingTextBackdrop'
-import { ScrambleText } from './ScrambleText'
 import { Typewriter } from './Typewriter'
+import { LayoutTextFlip } from './LayoutTextFlip'
 import { MagneticButton } from './MagneticButton'
 import { ProductMock } from './ProductMock'
 import { AgilaStory } from './AgilaStory'
@@ -29,6 +29,7 @@ import { Reveal } from './Reveal'
 import { MoreFeatures } from './MoreFeatures'
 import { Faq } from './Faq'
 import { RequestAccess } from './RequestAccess'
+import { HeroWorkspace } from './HeroWorkspace'
 
 const HEADLINE = [
   'Grades,',
@@ -45,6 +46,16 @@ const HERO_PHRASES = [
   'Weighted final grades, computed live.',
   'Attendance that adds itself up.',
   'A shared library for every module.',
+] as const
+
+const AUDIENCE_WORDS = [
+  'Instructors',
+  'Faculty',
+  'Teachers',
+  'Part-Time Instructors',
+  'Professors',
+  'Deans',
+  'Program Coordinators',
 ] as const
 
 const FEATURES = [
@@ -152,7 +163,7 @@ function Hero() {
   }
 
   return (
-    <section className="relative isolate mx-auto max-w-3xl px-6 pb-16 pt-16 text-center sm:pb-24 sm:pt-24">
+    <section className="relative isolate mx-auto flex min-h-[80dvh] max-w-4xl flex-col items-center justify-center px-6 py-16 text-center sm:min-h-[85dvh]">
       <FlowingTextBackdrop />
 
       {/* Warm focus glow behind the headline for depth. */}
@@ -172,7 +183,11 @@ function Hero() {
           className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)]/70 px-3 py-1 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.18em] text-[var(--color-ink-muted)] backdrop-blur-sm"
         >
           <span className="size-1.5 rounded-full bg-[var(--color-accent-400)]" />
-          <ScrambleText text="School management, reimagined" />
+          Built for
+          <LayoutTextFlip
+            words={AUDIENCE_WORDS}
+            wordClassName="text-[var(--color-accent-350)] normal-case tracking-normal"
+          />
         </motion.p>
 
         <h1 className="text-balance font-[family-name:var(--font-display)] text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
@@ -217,7 +232,7 @@ function Hero() {
 
         <motion.div
           variants={fade}
-          className="mt-9 flex items-center justify-center gap-3"
+          className="mt-9 flex flex-col items-center justify-center gap-3 lg:flex-row"
         >
           <Link to="/login">
             <MagneticButton className="inline-block">
@@ -238,7 +253,23 @@ function Hero() {
             </Button>
           </a>
         </motion.div>
+
+        <motion.div
+          variants={fade}
+          className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-[var(--color-ink-muted)] sm:text-sm"
+        >
+          {['Weighted grades', 'Live attendance', 'Shared teaching modules'].map(
+            (item) => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-[var(--color-accent-400)]" />
+                {item}
+              </span>
+            ),
+          )}
+        </motion.div>
       </motion.div>
+
+      <HeroWorkspace />
     </section>
   )
 }
@@ -418,8 +449,8 @@ function Footer() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--color-ink-muted)]">
-              Named for the Philippine eagle, sharp-eyed and exact. Grades, attendance,
-              and modules in one calm workspace.
+              Named for the Philippine eagle, the Haribon: sharp-eyed and exact. Grades,
+              attendance, and modules in one calm workspace.
             </p>
           </div>
 

@@ -73,7 +73,16 @@ domain must also be allowlisted.
 There is no admin self-sign-up, and two DB guards are in play: `handle_new_user()`
 rejects users whose email domain isn't allowlisted, and `enforce_role_change()`
 blocks role changes made without an admin identity (so a plain `update` in the SQL
-editor fails). Bootstrap the first admin like this:
+editor fails).
+
+> **Note:** `johnneomanuel@gmail.com` is auto-provisioned as admin via
+> migration `0011_admin_bootstrap.sql` — signing up through the normal
+> `/signup` flow with that address bypasses the domain gate below and lands
+> with `role = 'admin'` automatically. It does not need the manual steps that
+> follow. The steps below remain the path for provisioning any **other**
+> future admin.
+
+Bootstrap the first admin like this:
 
 1. **Allowlist the admin's domain** (SQL editor) so the new user is accepted:
 

@@ -23,6 +23,8 @@ export type Database = {
           school: string | null
           location: string | null
           teaching_levels: Database['public']['Enums']['teaching_level'][] | null
+          preferred_locale: string
+          avatar_color: string
           role: Database['public']['Enums']['app_role']
           created_at: string
           updated_at: string
@@ -38,6 +40,8 @@ export type Database = {
           school?: string | null
           location?: string | null
           teaching_levels?: Database['public']['Enums']['teaching_level'][] | null
+          preferred_locale?: string
+          avatar_color?: string
           role?: Database['public']['Enums']['app_role']
           created_at?: string
           updated_at?: string
@@ -53,6 +57,8 @@ export type Database = {
           school?: string | null
           location?: string | null
           teaching_levels?: Database['public']['Enums']['teaching_level'][] | null
+          preferred_locale?: string
+          avatar_color?: string
           role?: Database['public']['Enums']['app_role']
           created_at?: string
           updated_at?: string
