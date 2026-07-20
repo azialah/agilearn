@@ -4,9 +4,15 @@ import { computeFinalGrade } from '@/lib/grading'
 import { cn } from '@/lib/cn'
 import { Reveal } from './Reveal'
 
-// Sample component grades for one student, so the demo computes something real.
-const LECTURE = 84
-const LABORATORY = 91
+// Starting component grades for the demo — visitors can edit both.
+const DEFAULT_LECTURE = 84
+const DEFAULT_LABORATORY = 91
+
+function clampGrade(raw: string): number {
+  const n = Number(raw)
+  if (Number.isNaN(n)) return 0
+  return Math.min(100, Math.max(0, n))
+}
 
 const PRESETS = [
   { label: '40 / 60', lecture: 40 },
@@ -39,10 +45,12 @@ function AnimatedGrade({ value }: { value: number }) {
  */
 export function MultiplierDemo() {
   const [lectureWeight, setLectureWeight] = useState(40)
+  const [lecture, setLecture] = useState(DEFAULT_LECTURE)
+  const [laboratory, setLaboratory] = useState(DEFAULT_LABORATORY)
   const labWeight = 100 - lectureWeight
 
   const final =
-    computeFinalGrade(LECTURE, LABORATORY, lectureWeight / 100, labWeight / 100) ?? 0
+    computeFinalGrade(lecture, laboratory, lectureWeight / 100, labWeight / 100) ?? 0
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
@@ -51,8 +59,8 @@ export function MultiplierDemo() {
           Set the weight once. We compute the rest.
         </h2>
         <p className="mt-3 text-base text-[var(--color-ink-muted)]">
-          Decide how much lecture and laboratory count. Every final grade updates the
-          moment you do.
+          Decide how much lecture and laboratory count, or drop in your own grades below.
+          Every final grade updates the moment you do.
         </p>
       </Reveal>
 
@@ -102,20 +110,43 @@ export function MultiplierDemo() {
               })}
             </div>
 
-            <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5">
-                <dt className="text-[var(--color-ink-faint)]">Lecture average</dt>
-                <dd className="mt-0.5 font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)]">
-                  {LECTURE.toFixed(2)}
-                </dd>
+            <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 transition-colors focus-within:border-[var(--color-accent-400)]">
+                <label htmlFor="demo-lecture" className="text-[var(--color-ink-faint)]">
+                  Lecture average
+                </label>
+                <input
+                  id="demo-lecture"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  value={lecture}
+                  onChange={(e) => setLecture(clampGrade(e.target.value))}
+                  className="mt-0.5 w-full bg-transparent font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)] focus-visible:outline-none"
+                />
               </div>
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5">
-                <dt className="text-[var(--color-ink-faint)]">Laboratory average</dt>
-                <dd className="mt-0.5 font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)]">
-                  {LABORATORY.toFixed(2)}
-                </dd>
+              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 transition-colors focus-within:border-[var(--color-accent-400)]">
+                <label
+                  htmlFor="demo-laboratory"
+                  className="text-[var(--color-ink-faint)]"
+                >
+                  Laboratory average
+                </label>
+                <input
+                  id="demo-laboratory"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  value={laboratory}
+                  onChange={(e) => setLaboratory(clampGrade(e.target.value))}
+                  className="mt-0.5 w-full bg-transparent font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)] focus-visible:outline-none"
+                />
               </div>
-            </dl>
+            </div>
           </div>
 
           {/* Live result */}
@@ -125,7 +156,7 @@ export function MultiplierDemo() {
               <AnimatedGrade value={final} />
             </p>
             <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-ink-faint)]">
-              {LECTURE} x {(lectureWeight / 100).toFixed(2)} + {LABORATORY} x{' '}
+              {lecture} x {(lectureWeight / 100).toFixed(2)} + {laboratory} x{' '}
               {(labWeight / 100).toFixed(2)}
             </p>
           </div>

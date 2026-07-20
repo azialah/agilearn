@@ -1,37 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { TopBar } from './TopBar'
+import { CommandPalette } from './CommandPalette'
 import { IconButton } from '@/components/ui/IconButton'
-import {
-  ClassroomIcon,
-  CloseIcon,
-  DashboardIcon,
-  ModuleIcon,
-  UsersIcon,
-} from '@/components/icons'
+import { CloseIcon } from '@/components/icons'
 import { useProfile } from '@/lib/queries/profiles'
-
-interface NavItem {
-  to: string
-  label: string
-  icon: (props: { className?: string }) => ReactNode
-  adminOnly?: boolean
-}
-
-const NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { to: '/classrooms', label: 'Classrooms', icon: ClassroomIcon },
-  { to: '/modules', label: 'Modules', icon: ModuleIcon },
-  { to: '/admin/users', label: 'Users', icon: UsersIcon, adminOnly: true },
-  {
-    to: '/admin/domain-requests',
-    label: 'Requests',
-    icon: Inbox,
-    adminOnly: true,
-  },
-]
+import { useLocale } from '@/lib/locale'
+import { NAV_ITEMS } from './navItems'
 
 function NavLinks({
   isAdmin,
@@ -40,9 +16,10 @@ function NavLinks({
   isAdmin: boolean
   onNavigate?: () => void
 }) {
+  const { t } = useLocale()
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
+      {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => {
         const IconComp = item.icon
         return (
           <Link
@@ -57,7 +34,7 @@ function NavLinks({
             activeOptions={{ exact: false }}
           >
             <IconComp className="text-lg text-[var(--color-ink-faint)] group-hover:text-[var(--color-accent-350)]" />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         )
       })}
@@ -67,7 +44,7 @@ function NavLinks({
 
 function Brand() {
   return (
-    <Link to="/dashboard" className="flex items-center gap-2 px-2">
+    <Link to="/teacher/dashboard" className="flex items-center gap-2 px-2">
       <span className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
         A
       </span>
@@ -80,6 +57,7 @@ function Brand() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { data: profile } = useProfile()
   const isAdmin = profile?.role === 'admin'
 
@@ -113,11 +91,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-col">
-        <TopBar onOpenNav={() => setDrawerOpen(true)} />
+        <TopBar
+          onOpenNav={() => setDrawerOpen(true)}
+          onOpenSearch={() => setSearchOpen(true)}
+        />
         <main className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6')}>
           {children}
         </main>
       </div>
+
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   )
 }

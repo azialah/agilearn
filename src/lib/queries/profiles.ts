@@ -133,6 +133,41 @@ interface ProfilingDetailsInput {
   teachingLevels?: TeachingLevel[]
 }
 
+interface ProfilePreferencesInput {
+  preferredLocale?: 'en' | 'tl'
+  avatarColor?: 'orange' | 'plum' | 'teal' | 'blue'
+}
+
+/** Persist lightweight workspace preferences on the caller's own profile row. */
+export function useUpdateProfilePreferences() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ProfilePreferencesInput) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in.')
+
+      const patch: ProfileUpdate = {}
+      if (input.preferredLocale !== undefined)
+        patch.preferred_locale = input.preferredLocale
+      if (input.avatarColor !== undefined) patch.avatar_color = input.avatarColor
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(patch)
+        .eq('id', user.id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.profiles.current })
+    },
+  })
+}
+
 /**
  * Save optional onboarding profiling on the caller's own row (RLS-allowed).
  * Only the provided keys are patched, so the school step and the level step
@@ -190,5 +225,6 @@ export function useUpdateProfileRole() {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut()
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }

@@ -6,7 +6,7 @@ export const Route = createFileRoute('/forgot-password')({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession()
     if (data.session) {
-      throw redirect({ to: '/dashboard' })
+      throw redirect({ to: '/teacher/dashboard' })
     }
   },
   component: ForgotPasswordFlow,

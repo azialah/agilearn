@@ -1,46 +1,162 @@
 import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
+import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Label } from '@/components/ui/Label'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { BackgroundLines } from '@/components/ui/BackgroundLines'
 import { cn } from '@/lib/cn'
 
-/** Branded auth page frame: backdrop, theme toggle, centered card. */
-export function AuthShell({ children }: { children: ReactNode }) {
+export interface AuthRailMilestone {
+  label: string
+  state: 'complete' | 'current' | 'upcoming'
+}
+
+export interface AuthRailContent {
+  eyebrow: string
+  title: string
+  body: string
+  milestones?: readonly AuthRailMilestone[]
+}
+
+function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
+  const reduce = useReducedMotion()
   return (
-    <div className="relative flex min-h-dvh justify-center bg-[var(--color-surface-0)] md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:[background-size:16px_16px]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
-      <div className="absolute right-4 top-4 z-30">
-        <ThemeToggle />
+    <BackgroundLines className="hidden min-h-dvh text-[var(--color-accent-300)] lg:block">
+      <div className="absolute inset-0 z-10 bg-[linear-gradient(145deg,#1d120c_0%,#302016_52%,#4b260d_100%)] opacity-90" />
+      <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_20%_20%,var(--color-accent-400),transparent_38%)] opacity-25" />
+      <div className="relative z-20 flex min-h-dvh max-w-xl flex-col px-10 py-10 xl:px-14">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className="flex items-center gap-2 text-[var(--color-surface-1)]"
+        >
+          <span className="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
+            A
+          </span>
+          <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+        </motion.div>
+
+        <motion.div
+          key={title}
+          initial={reduce ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: reduce ? 0 : 0.12 }}
+          className="my-auto py-12"
+        >
+          <p className="font-[family-name:var(--font-mono)] text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--color-accent-200)]">
+            {eyebrow}
+          </p>
+          <h2 className="mt-4 max-w-md text-balance font-[family-name:var(--font-display)] text-4xl font-semibold leading-[1.02] tracking-tight text-[var(--color-surface-1)] xl:text-5xl">
+            {title}
+          </h2>
+          <p className="mt-5 max-w-sm text-pretty text-base leading-relaxed text-[color:color-mix(in_srgb,var(--color-surface-1)_72%,transparent)]">
+            {body}
+          </p>
+
+          {milestones && (
+            <ol className="mt-10 space-y-3" aria-label="Account setup progress">
+              {milestones.map((milestone) => (
+                <li key={milestone.label} className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors',
+                      milestone.state === 'complete' &&
+                        'border-[var(--color-accent-400)] bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]',
+                      milestone.state === 'current' &&
+                        'border-[var(--color-accent-200)] bg-[var(--color-accent-200)]/15 text-[var(--color-accent-100)]',
+                      milestone.state === 'upcoming' &&
+                        'border-[color:color-mix(in_srgb,var(--color-surface-1)_20%,transparent)] text-[color:color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]',
+                    )}
+                  >
+                    {milestone.state === 'complete' ? (
+                      <Check aria-hidden className="size-3.5" />
+                    ) : null}
+                    {milestone.state === 'current' ? (
+                      <span className="size-1.5 rounded-full bg-current" />
+                    ) : null}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-sm transition-colors',
+                      milestone.state === 'upcoming'
+                        ? 'text-[color:color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]'
+                        : 'font-medium text-[var(--color-surface-1)]',
+                    )}
+                  >
+                    {milestone.label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </motion.div>
+
+        <motion.p
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: reduce ? 0 : 0.3 }}
+          className="max-w-xs text-sm leading-relaxed text-[color:color-mix(in_srgb,var(--color-surface-1)_58%,transparent)]"
+        >
+          One place for grades, attendance, and the materials that make class happen.
+        </motion.p>
       </div>
-      <Card className="relative w-full md:max-w-md max-md:min-h-dvh max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none">
-        <div className="p-6 max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]">
-          <div className="mb-6 flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
-              A
-            </span>
-            <span className="text-lg font-semibold tracking-tight">Agilearn</span>
-          </div>
-          {children}
-        </div>
-      </Card>
-    </div>
+    </BackgroundLines>
   )
 }
 
-/** Segmented progress bar for a wizard (current is 0-indexed). */
-export function Stepper({ current, total }: { current: number; total: number }) {
+/** Branded auth page frame: a desktop narrative rail and centered form card. */
+export function AuthShell({
+  children,
+  rail,
+}: {
+  children: ReactNode
+  rail?: AuthRailContent
+}) {
+  const reduce = useReducedMotion()
   return (
-    <div className="mb-5 flex gap-1.5" aria-hidden>
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          className={cn(
-            'h-1.5 flex-1 rounded-full transition-colors',
-            i <= current ? 'bg-[var(--color-accent-400)]' : 'bg-[var(--color-surface-3)]',
-          )}
-        />
-      ))}
+    <div className="relative grid min-h-dvh bg-[var(--color-surface-0)] lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
+      {rail && <AuthRail {...rail} />}
+      <div className="relative flex min-h-dvh justify-center bg-[var(--color-surface-0)] md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:[background-size:16px_16px]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
+        <div className="absolute right-4 top-4 z-30">
+          <ThemeToggle />
+        </div>
+        {/* opacity + margin-top (not a transform) so the card eases in on
+          mount without giving StickyCta's `position: fixed` a new
+          containing block. */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, marginTop: 12 }}
+          animate={{ opacity: 1, marginTop: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="relative w-full md:max-w-md"
+        >
+          <Card className="max-md:min-h-dvh max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none">
+            <div className="p-6 max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]">
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: 'easeOut', delay: reduce ? 0 : 0.08 }}
+                className="mb-6 flex items-center gap-2"
+              >
+                <span className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
+                  A
+                </span>
+                <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+              </motion.div>
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: 'easeOut', delay: reduce ? 0 : 0.14 }}
+              >
+                {children}
+              </motion.div>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   )
 }

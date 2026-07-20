@@ -28,8 +28,17 @@ codebase.
 
 ```
 src/
-  routes/**            Thin. Wire params/loaders, render a feature. (routeTree.gen.ts is generated)
-  features/<name>/     All UI + orchestration for a feature.
+  routes/**                  Thin. Wire params/loaders, render a feature. (routeTree.gen.ts is generated)
+    _auth/teacher/**          Authenticated core teaching surfaces (dashboard, classrooms, grades, attendance, modules, slideshow)
+    _auth/admin/**            Authenticated admin management surfaces (users, domain requests)
+    _auth/settings.tsx        Shared account settings (both roles)
+    teacher.signup*.tsx       Pre-auth teacher onboarding wizard (domain-gated self-signup)
+    login.tsx, forgot-password.tsx, index.tsx   Shared / public, ungrouped
+  features/
+    teacher/<name>/           Core teaching UI: onboarding, dashboard, classrooms, grades, attendance, modules, slideshow, io
+    admin/                    Admin management UI: users, domain requests
+    auth/                     Shared auth UI: LoginPage, ForgotPasswordFlow, shared schema/wizard-ui primitives
+    settings/, landing/       Shared / public UI, ungrouped
   lib/queries/*        The ONLY place Supabase is read/written — TanStack Query hooks.
   lib/queries/keys.ts  Query-key factory. Invalidation depends on it; no inline key tuples.
   lib/grading.ts       Pure grade math. No Supabase imports. Unit-tested.
@@ -88,6 +97,16 @@ these up per component, then combines lecture and laboratory by the classroom's
   only an admin can change a role.
 - Teachers are isolated to classrooms they own (via `owns_classroom()`); admins
   see everything (via `is_admin()`).
+
+**Folder convention vs. security boundary.** Routes and features are grouped
+into `teacher/` (the core teaching product surface plus onboarding — used by
+both roles, since admins reach it too) and `admin/` (the management surface —
+users, domain requests) purely for organization. Both groupings sit behind the
+same single `_auth` pathless layout, and access within them is enforced
+identically by RLS regardless of which folder a route lives in. Moving a route
+from `_auth/dashboard.tsx` to `_auth/teacher/dashboard.tsx` changes nothing
+about who can reach it — `owns_classroom()` and `is_admin()` in Postgres are
+still the only real gate.
 
 ## Storage
 

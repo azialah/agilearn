@@ -22,7 +22,7 @@ export function DomainRequestsPage() {
 
   useEffect(() => {
     if (!profileLoading && profile && !isAdmin) {
-      navigate({ to: '/dashboard' })
+      navigate({ to: '/teacher/dashboard' })
     }
   }, [profileLoading, profile, isAdmin, navigate])
 
