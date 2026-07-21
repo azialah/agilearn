@@ -8,7 +8,7 @@ import { useSlideshowData } from './useSlideshowData'
 import { SlidePlayer } from './SlidePlayer'
 
 export function SlideshowPage({ classroomId }: { classroomId: string }) {
-  const { classroom, students, periods, weights, isLoading, isError } =
+  const { classroom, students, periods, components, isLoading, isError } =
     useSlideshowData(classroomId)
 
   if (isLoading) {
@@ -64,7 +64,7 @@ export function SlideshowPage({ classroomId }: { classroomId: string }) {
       classroom={classroom}
       students={students}
       periods={periods}
-      weights={weights}
+      components={components}
     />
   )
 }

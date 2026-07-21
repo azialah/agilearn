@@ -16,7 +16,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TeacherSignupRouteImport } from './routes/teacher.signup'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as TeacherSignupIndexRouteImport } from './routes/teacher.signup.index'
+import { Route as AuthTeacherUsageRouteImport } from './routes/_auth/teacher/usage'
+import { Route as AuthTeacherProfileRouteImport } from './routes/_auth/teacher/profile'
 import { Route as AuthTeacherDashboardRouteImport } from './routes/_auth/teacher/dashboard'
+import { Route as AuthTeacherCalendarRouteImport } from './routes/_auth/teacher/calendar'
+import { Route as AuthTeacherAnalyticsRouteImport } from './routes/_auth/teacher/analytics'
 import { Route as AuthAdminUsersRouteImport } from './routes/_auth/admin/users'
 import { Route as AuthAdminDomainRequestsRouteImport } from './routes/_auth/admin/domain-requests'
 import { Route as AuthAdminAuditLogRouteImport } from './routes/_auth/admin/audit-log'
@@ -68,9 +72,29 @@ const TeacherSignupIndexRoute = TeacherSignupIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TeacherSignupRoute,
 } as any)
+const AuthTeacherUsageRoute = AuthTeacherUsageRouteImport.update({
+  id: '/teacher/usage',
+  path: '/teacher/usage',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeacherProfileRoute = AuthTeacherProfileRouteImport.update({
+  id: '/teacher/profile',
+  path: '/teacher/profile',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthTeacherDashboardRoute = AuthTeacherDashboardRouteImport.update({
   id: '/teacher/dashboard',
   path: '/teacher/dashboard',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeacherCalendarRoute = AuthTeacherCalendarRouteImport.update({
+  id: '/teacher/calendar',
+  path: '/teacher/calendar',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeacherAnalyticsRoute = AuthTeacherAnalyticsRouteImport.update({
+  id: '/teacher/analytics',
+  path: '/teacher/analytics',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
@@ -175,7 +199,11 @@ export interface FileRoutesByFullPath {
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
+  '/teacher/analytics': typeof AuthTeacherAnalyticsRoute
+  '/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/teacher/profile': typeof AuthTeacherProfileRoute
+  '/teacher/usage': typeof AuthTeacherUsageRoute
   '/teacher/signup/': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -199,7 +227,11 @@ export interface FileRoutesByTo {
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
+  '/teacher/analytics': typeof AuthTeacherAnalyticsRoute
+  '/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/teacher/profile': typeof AuthTeacherProfileRoute
+  '/teacher/usage': typeof AuthTeacherUsageRoute
   '/teacher/signup': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -226,7 +258,11 @@ export interface FileRoutesById {
   '/_auth/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/_auth/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/_auth/admin/users': typeof AuthAdminUsersRoute
+  '/_auth/teacher/analytics': typeof AuthTeacherAnalyticsRoute
+  '/_auth/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/_auth/teacher/dashboard': typeof AuthTeacherDashboardRoute
+  '/_auth/teacher/profile': typeof AuthTeacherProfileRoute
+  '/_auth/teacher/usage': typeof AuthTeacherUsageRoute
   '/teacher/signup/': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -253,7 +289,11 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
+    | '/teacher/analytics'
+    | '/teacher/calendar'
     | '/teacher/dashboard'
+    | '/teacher/profile'
+    | '/teacher/usage'
     | '/teacher/signup/'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -277,7 +317,11 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
+    | '/teacher/analytics'
+    | '/teacher/calendar'
     | '/teacher/dashboard'
+    | '/teacher/profile'
+    | '/teacher/usage'
     | '/teacher/signup'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -303,7 +347,11 @@ export interface FileRouteTypes {
     | '/_auth/admin/audit-log'
     | '/_auth/admin/domain-requests'
     | '/_auth/admin/users'
+    | '/_auth/teacher/analytics'
+    | '/_auth/teacher/calendar'
     | '/_auth/teacher/dashboard'
+    | '/_auth/teacher/profile'
+    | '/_auth/teacher/usage'
     | '/teacher/signup/'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -379,11 +427,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherSignupIndexRouteImport
       parentRoute: typeof TeacherSignupRoute
     }
+    '/_auth/teacher/usage': {
+      id: '/_auth/teacher/usage'
+      path: '/teacher/usage'
+      fullPath: '/teacher/usage'
+      preLoaderRoute: typeof AuthTeacherUsageRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teacher/profile': {
+      id: '/_auth/teacher/profile'
+      path: '/teacher/profile'
+      fullPath: '/teacher/profile'
+      preLoaderRoute: typeof AuthTeacherProfileRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/teacher/dashboard': {
       id: '/_auth/teacher/dashboard'
       path: '/teacher/dashboard'
       fullPath: '/teacher/dashboard'
       preLoaderRoute: typeof AuthTeacherDashboardRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teacher/calendar': {
+      id: '/_auth/teacher/calendar'
+      path: '/teacher/calendar'
+      fullPath: '/teacher/calendar'
+      preLoaderRoute: typeof AuthTeacherCalendarRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teacher/analytics': {
+      id: '/_auth/teacher/analytics'
+      path: '/teacher/analytics'
+      fullPath: '/teacher/analytics'
+      preLoaderRoute: typeof AuthTeacherAnalyticsRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/admin/users': {
@@ -506,7 +582,11 @@ interface AuthRouteChildren {
   AuthAdminAuditLogRoute: typeof AuthAdminAuditLogRoute
   AuthAdminDomainRequestsRoute: typeof AuthAdminDomainRequestsRoute
   AuthAdminUsersRoute: typeof AuthAdminUsersRoute
+  AuthTeacherAnalyticsRoute: typeof AuthTeacherAnalyticsRoute
+  AuthTeacherCalendarRoute: typeof AuthTeacherCalendarRoute
   AuthTeacherDashboardRoute: typeof AuthTeacherDashboardRoute
+  AuthTeacherProfileRoute: typeof AuthTeacherProfileRoute
+  AuthTeacherUsageRoute: typeof AuthTeacherUsageRoute
   AuthTeacherClassroomsIndexRoute: typeof AuthTeacherClassroomsIndexRoute
   AuthTeacherModulesIndexRoute: typeof AuthTeacherModulesIndexRoute
   AuthTeacherClassroomsClassroomIdGradesRoute: typeof AuthTeacherClassroomsClassroomIdGradesRoute
@@ -521,7 +601,11 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAdminAuditLogRoute: AuthAdminAuditLogRoute,
   AuthAdminDomainRequestsRoute: AuthAdminDomainRequestsRoute,
   AuthAdminUsersRoute: AuthAdminUsersRoute,
+  AuthTeacherAnalyticsRoute: AuthTeacherAnalyticsRoute,
+  AuthTeacherCalendarRoute: AuthTeacherCalendarRoute,
   AuthTeacherDashboardRoute: AuthTeacherDashboardRoute,
+  AuthTeacherProfileRoute: AuthTeacherProfileRoute,
+  AuthTeacherUsageRoute: AuthTeacherUsageRoute,
   AuthTeacherClassroomsIndexRoute: AuthTeacherClassroomsIndexRoute,
   AuthTeacherModulesIndexRoute: AuthTeacherModulesIndexRoute,
   AuthTeacherClassroomsClassroomIdGradesRoute:

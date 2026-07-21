@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Mail } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -8,18 +9,22 @@ import { GradeIcon, PlusIcon } from '@/components/icons'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { useStudents } from '@/lib/queries/students'
 import { useGradebookStructure, useScores } from '@/lib/queries/grades'
-import { DEFAULT_WEIGHTS, type ComponentWeights } from '@/lib/grading'
+import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { ExportMenu } from '@/features/teacher/io/ExportMenu'
 import { StructurePanel } from './StructurePanel'
 import { PeriodDialog } from './PeriodDialog'
 import { GradeGrid } from './GradeGrid'
 import { SummaryTable } from './SummaryTable'
+import { GradeReportDialog } from './GradeReportDialog'
 
 type View = { kind: 'period'; periodId: string } | { kind: 'summary' }
 
 export function GradesPage({ classroomId }: { classroomId: string }) {
   const classroomQuery = useClassroom(classroomId)
-  const structureQuery = useGradebookStructure(classroomId)
+  const subjectsQuery = useCourseSubjects(classroomId)
+  const [subjectId, setSubjectId] = useState('')
+  const activeSubjectId = subjectId || subjectsQuery.data?.[0]?.id
+  const structureQuery = useGradebookStructure(classroomId, activeSubjectId)
   const studentsQuery = useStudents(classroomId)
 
   const structure = structureQuery.data
@@ -30,15 +35,12 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
   const scoresQuery = useScores(classroomId, activityIds)
   const scores = scoresQuery.data ?? {}
 
-  const weights: ComponentWeights = classroomQuery.data
-    ? {
-        lecture: classroomQuery.data.lecture_weight,
-        laboratory: classroomQuery.data.laboratory_weight,
-      }
-    : DEFAULT_WEIGHTS
-
   const periods = structure?.periods ?? []
   const [view, setView] = useState<View>({ kind: 'summary' })
+  const [reportOpen, setReportOpen] = useState(false)
+  const activeSubject = subjectsQuery.data?.find(
+    (subject) => subject.id === activeSubjectId,
+  )
 
   // Keep the selected period valid if periods change underneath us.
   useEffect(() => {
@@ -51,7 +53,10 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
   }, [periods])
 
   const loading =
-    classroomQuery.isLoading || structureQuery.isLoading || studentsQuery.isLoading
+    classroomQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    structureQuery.isLoading ||
+    studentsQuery.isLoading
 
   const students = studentsQuery.data ?? []
   const nextPeriodPosition = Math.max(-1, ...periods.map((p) => p.position)) + 1
@@ -61,6 +66,7 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
       {structure && (
         <StructurePanel
           classroomId={classroomId}
+          courseSubjectId={activeSubjectId ?? ''}
           structure={structure}
           trigger={
             <Button variant="outline" size="sm">
@@ -70,6 +76,9 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
         />
       )}
       <ExportMenu classroomId={classroomId} />
+      <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+        <Mail className="size-4" /> Preview report
+      </Button>
     </div>
   )
 
@@ -77,9 +86,34 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
     <div className="space-y-6">
       <PageHeader
         title="Grade sheet"
-        description="Record activity scores and compute lecture, laboratory, and final grades."
+        description={
+          activeSubject
+            ? `${activeSubject.name} · Record scores and compute configured grades.`
+            : 'Record activity scores and compute configured grades.'
+        }
         actions={!loading && structure ? toolbar : undefined}
       />
+
+      {(subjectsQuery.data?.length ?? 0) > 1 && (
+        <div className="max-w-sm">
+          <label htmlFor="grade-subject" className="mb-1.5 block text-sm font-medium">
+            Course subject
+          </label>
+          <select
+            id="grade-subject"
+            aria-label="Course subject"
+            value={activeSubjectId}
+            onChange={(event) => setSubjectId(event.target.value)}
+            className="h-10 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 text-sm"
+          >
+            {subjectsQuery.data?.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <GridSkeleton />
@@ -106,6 +140,7 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
           action={
             <PeriodDialog
               classroomId={classroomId}
+              courseSubjectId={activeSubjectId ?? ''}
               nextPosition={0}
               trigger={
                 <Button size="sm">
@@ -138,7 +173,6 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
                   structure={structure!}
                   scores={scores}
                   students={students}
-                  weights={weights}
                 />
               ) : (
                 <GradeGrid
@@ -147,7 +181,6 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
                   scores={scores}
                   students={students}
                   periodId={view.periodId}
-                  weights={weights}
                 />
               )}
             </motion.div>
@@ -165,6 +198,7 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
             <div className="flex justify-end">
               <PeriodDialog
                 classroomId={classroomId}
+                courseSubjectId={activeSubjectId ?? ''}
                 nextPosition={nextPeriodPosition}
                 trigger={
                   <Button variant="ghost" size="sm">
@@ -175,6 +209,16 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
             </div>
           )}
         </div>
+      )}
+      {structure && classroomQuery.data && (
+        <GradeReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          classroomName={activeSubject?.name ?? classroomQuery.data.course_name}
+          structure={structure}
+          scores={scores}
+          students={students}
+        />
       )}
     </div>
   )

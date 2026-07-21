@@ -11,12 +11,14 @@ import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/icons'
 import { useProfile } from '@/lib/queries/profiles'
 import { useClassroom } from '@/lib/queries/classrooms'
+import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useDeleteStudent, useStudents } from '@/lib/queries/students'
 import { studentFullName } from '@/types/domain'
 import { ImportButton } from '@/features/teacher/io/ImportButton'
 import { ExportMenu } from '@/features/teacher/io/ExportMenu'
 import { ClassroomFormDialog } from './ClassroomFormDialog'
 import { StudentFormDialog } from './StudentFormDialog'
+import { MeetingSlotDialog } from '@/features/teacher/calendar/MeetingSlotDialog'
 
 const TABS = [
   { label: 'Roster', to: '/teacher/classrooms/$classroomId', exact: true },
@@ -33,6 +35,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
   const { data: profile } = useProfile()
   const { data: classroom, isLoading } = useClassroom(classroomId)
   const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
+  const { data: subjects = [] } = useCourseSubjects(classroomId)
   const deleteStudent = useDeleteStudent()
   const { toast } = useToast()
 
@@ -96,10 +99,21 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="accent">Lecture {classroom.lecture_weight}</Badge>
-        <Badge tone="accent">Laboratory {classroom.laboratory_weight}</Badge>
         <Badge>{students?.length ?? 0} students</Badge>
+        {subjects.map((subject) => (
+          <Badge key={subject.id} tone="accent">
+            {subject.name}
+          </Badge>
+        ))}
       </div>
+
+      {subjects.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {subjects.map((subject) => (
+            <MeetingSlotDialog key={subject.id} subject={subject} />
+          ))}
+        </div>
+      )}
 
       <nav className="flex gap-1 border-b border-[var(--color-border)]">
         {TABS.map((tab) => (

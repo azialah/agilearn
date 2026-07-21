@@ -1,9 +1,12 @@
 import { useTheme, type Theme } from '@/lib/theme'
 import { MonitorIcon, MoonIcon, SunIcon } from '@/components/icons'
+import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
+const CalmWhiteIcon = () => <Sparkles />
 const OPTIONS: { value: Theme; label: string; Icon: typeof SunIcon }[] = [
   { value: 'light', label: 'Light', Icon: SunIcon },
+  { value: 'white', label: 'Calm White', Icon: CalmWhiteIcon },
   { value: 'system', label: 'System', Icon: MonitorIcon },
   { value: 'dark', label: 'Dark', Icon: MoonIcon },
 ]

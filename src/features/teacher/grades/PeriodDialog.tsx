@@ -30,11 +30,13 @@ function initialState(period?: GradingPeriod, nextPosition = 0): PeriodForm {
 
 export function PeriodDialog({
   classroomId,
+  courseSubjectId,
   period,
   nextPosition,
   trigger,
 }: {
   classroomId: string
+  courseSubjectId: string
   period?: GradingPeriod
   nextPosition?: number
   trigger: ReactNode
@@ -67,7 +69,11 @@ export function PeriodDialog({
         await updatePeriod.mutateAsync({ id: period.id, patch })
         toast({ title: 'Period updated', tone: 'success' })
       } else {
-        await createPeriod.mutateAsync({ classroom_id: classroomId, ...patch })
+        await createPeriod.mutateAsync({
+          classroom_id: classroomId,
+          course_subject_id: courseSubjectId,
+          ...patch,
+        })
         toast({ title: 'Period added', tone: 'success' })
       }
       setOpen(false)

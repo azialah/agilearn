@@ -6,7 +6,7 @@
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import {
-  computeStudentGradebook,
+  computeConfiguredStudentGradebook,
   round2,
   type GradebookStructure,
   type ScoreMap,
@@ -50,18 +50,11 @@ export async function buildGradeReportPdf(
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const bold = await doc.embedFont(StandardFonts.HelveticaBold)
 
-  const weights = {
-    lecture: classroom.lecture_weight,
-    laboratory: classroom.laboratory_weight,
-  }
-
   const rows = students.map((student) => {
-    const book = computeStudentGradebook(structure, scores, student.id, weights)
+    const book = computeConfiguredStudentGradebook(structure, scores, student.id)
     return {
       no: student.student_no,
       name: studentFullName(student),
-      lecture: fmt(book.lecture),
-      laboratory: fmt(book.laboratory),
       final: fmt(book.final),
     }
   })
@@ -69,10 +62,8 @@ export async function buildGradeReportPdf(
   const tableWidth = PAGE.width - MARGIN * 2
   const columns: Column[] = [
     { label: 'Student No', width: tableWidth * 0.16, align: 'left' },
-    { label: 'Name', width: tableWidth * 0.4, align: 'left' },
-    { label: 'Lecture', width: tableWidth * 0.14, align: 'center' },
-    { label: 'Laboratory', width: tableWidth * 0.15, align: 'center' },
-    { label: 'Final', width: tableWidth * 0.15, align: 'center' },
+    { label: 'Name', width: tableWidth * 0.62, align: 'left' },
+    { label: 'Final', width: tableWidth * 0.22, align: 'center' },
   ]
 
   const rowHeight = 22
@@ -191,13 +182,7 @@ export async function buildGradeReportPdf(
       pages.push(page)
       y = drawTableHeader(page, drawPageHeader(page))
     }
-    drawCells(
-      page,
-      [row.no, row.name, row.lecture, row.laboratory, row.final],
-      y,
-      font,
-      bodySize,
-    )
+    drawCells(page, [row.no, row.name, row.final], y, font, bodySize)
     drawRowBorders(page, y)
     y -= rowHeight
   }

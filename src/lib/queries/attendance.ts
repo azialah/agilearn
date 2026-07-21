@@ -15,17 +15,19 @@ export type ClassSessionWithRecords = ClassSession & {
 }
 
 /** All sessions for a classroom, newest first, each carrying its record statuses. */
-export function useClassSessions(classroomId: string) {
+export function useClassSessions(classroomId: string, courseSubjectId?: string) {
   return useQuery({
-    queryKey: keys.attendance.sessions(classroomId),
+    queryKey: keys.attendance.sessions(classroomId, courseSubjectId),
     enabled: !!classroomId,
     queryFn: async (): Promise<ClassSessionWithRecords[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('class_sessions')
         .select('*, attendance_records(student_id, status)')
         .eq('classroom_id', classroomId)
         .order('session_date', { ascending: false })
         .order('created_at', { ascending: false })
+      if (courseSubjectId) query = query.eq('course_subject_id', courseSubjectId)
+      const { data, error } = await query
       if (error) throw error
       return (data ?? []) as ClassSessionWithRecords[]
     },
@@ -35,7 +37,7 @@ export function useClassSessions(classroomId: string) {
 /** A single class session by id. */
 export function useClassSession(sessionId: string) {
   return useQuery({
-    queryKey: ['attendance', 'session', sessionId] as const,
+    queryKey: keys.attendance.session(sessionId),
     enabled: !!sessionId,
     queryFn: async (): Promise<ClassSession | null> => {
       const { data, error } = await supabase
@@ -65,6 +67,22 @@ export function useSessionRecords(sessionId: string) {
   })
 }
 
+/** Every session visible to the signed-in teacher via classroom RLS. */
+export function useAllClassSessions() {
+  return useQuery({
+    queryKey: keys.attendance.allSessions,
+    queryFn: async (): Promise<ClassSessionWithRecords[]> => {
+      const { data, error } = await supabase
+        .from('class_sessions')
+        .select('*, attendance_records(student_id, status)')
+        .order('session_date', { ascending: false })
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as ClassSessionWithRecords[]
+    },
+  })
+}
+
 export function useCreateSession() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -79,8 +97,9 @@ export function useCreateSession() {
     },
     onSuccess: (row) => {
       queryClient.invalidateQueries({
-        queryKey: keys.attendance.sessions(row.classroom_id),
+        queryKey: keys.attendance.sessionsBase(row.classroom_id),
       })
+      queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
     },
   })
 }
@@ -100,10 +119,11 @@ export function useUpdateSession() {
     },
     onSuccess: (row) => {
       queryClient.invalidateQueries({
-        queryKey: keys.attendance.sessions(row.classroom_id),
+        queryKey: keys.attendance.sessionsBase(row.classroom_id),
       })
+      queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
       queryClient.invalidateQueries({
-        queryKey: ['attendance', 'session', row.id],
+        queryKey: keys.attendance.session(row.id),
       })
     },
   })
@@ -119,8 +139,9 @@ export function useDeleteSession() {
     },
     onSuccess: (_id, variables) => {
       queryClient.invalidateQueries({
-        queryKey: keys.attendance.sessions(variables.classroomId),
+        queryKey: keys.attendance.sessionsBase(variables.classroomId),
       })
+      queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
     },
   })
 }
@@ -176,8 +197,9 @@ export function useUpsertAttendance(sessionId: string, classroomId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key })
       queryClient.invalidateQueries({
-        queryKey: keys.attendance.sessions(classroomId),
+        queryKey: keys.attendance.sessionsBase(classroomId),
       })
+      queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
     },
   })
 }
@@ -210,8 +232,9 @@ export function useBulkUpsertAttendance(sessionId: string, classroomId: string) 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key })
       queryClient.invalidateQueries({
-        queryKey: keys.attendance.sessions(classroomId),
+        queryKey: keys.attendance.sessionsBase(classroomId),
       })
+      queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
     },
   })
 }

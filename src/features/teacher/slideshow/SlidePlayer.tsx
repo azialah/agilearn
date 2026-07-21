@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import type { ComponentWeights } from '@/lib/grading'
-import type { Classroom, GradingPeriod } from '@/types/domain'
+import type { Classroom, GradeComponentRecord, GradingPeriod } from '@/types/domain'
 import type { SlideshowStudent } from './useSlideshowData'
 import { buildSlides, slideAt, slideCounter } from './sequencing'
 import { AverageSlide, GradeBreakdownSlide } from './Slides'
@@ -17,10 +16,15 @@ interface SlidePlayerProps {
   classroom: Classroom
   students: SlideshowStudent[]
   periods: GradingPeriod[]
-  weights: ComponentWeights
+  components: GradeComponentRecord[]
 }
 
-export function SlidePlayer({ classroom, students, periods, weights }: SlidePlayerProps) {
+export function SlidePlayer({
+  classroom,
+  students,
+  periods,
+  components,
+}: SlidePlayerProps) {
   const navigate = useNavigate()
   const reducedMotion = usePrefersReducedMotion()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -131,7 +135,7 @@ export function SlidePlayer({ classroom, students, periods, weights }: SlidePlay
                     student={currentStudent}
                     classroom={classroom}
                     periods={periods}
-                    weights={weights}
+                    components={components}
                     reducedMotion={reducedMotion}
                   />
                 ) : (
@@ -139,7 +143,7 @@ export function SlidePlayer({ classroom, students, periods, weights }: SlidePlay
                     student={currentStudent}
                     classroom={classroom}
                     periods={periods}
-                    weights={weights}
+                    components={components}
                     reducedMotion={reducedMotion}
                   />
                 ))}

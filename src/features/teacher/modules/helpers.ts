@@ -7,10 +7,18 @@ export const MODULE_KIND_META: Record<ModuleKind, { label: string; tone: BadgeTo
   lesson_plan: { label: 'Lesson plan', tone: 'accent' },
   activity_story: { label: 'Activity story', tone: 'success' },
   resource: { label: 'Resource', tone: 'neutral' },
+  syllabus: { label: 'Syllabus', tone: 'accent' },
+  teaching_material: { label: 'Teaching material', tone: 'success' },
 }
 
 /** Ordered list of kinds for building selects and filters. */
-export const MODULE_KINDS: ModuleKind[] = ['lesson_plan', 'activity_story', 'resource']
+export const MODULE_KINDS: ModuleKind[] = [
+  'lesson_plan',
+  'activity_story',
+  'resource',
+  'syllabus',
+  'teaching_material',
+]
 
 /**
  * Human-readable file size. Uses binary units (1024) and keeps one decimal for
@@ -62,7 +70,7 @@ export function filterModules(
     if (filters.mineOnly && module.owner_id !== currentUserId) return false
     if (term) {
       const haystack =
-        `${module.title} ${module.description} ${module.owner?.full_name ?? ''}`.toLowerCase()
+        `${module.title} ${module.description} ${module.tags.join(' ')} ${module.owner?.full_name ?? ''}`.toLowerCase()
       if (!haystack.includes(term)) return false
     }
     return true

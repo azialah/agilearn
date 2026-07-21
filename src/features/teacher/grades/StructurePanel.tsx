@@ -18,17 +18,13 @@ import { round2 } from '@/lib/grading'
 import {
   useDeleteActivity,
   useDeleteCategory,
+  useDeleteGradeComponent,
   useDeletePeriod,
 } from '@/lib/queries/grades'
-import type { GradeComponent } from '@/types/domain'
 import { PeriodDialog } from './PeriodDialog'
 import { CategoryDialog } from './CategoryDialog'
 import { ActivityDialog } from './ActivityDialog'
-
-const COMPONENTS: { key: GradeComponent; label: string }[] = [
-  { key: 'lecture', label: 'Lecture' },
-  { key: 'laboratory', label: 'Laboratory' },
-]
+import { GradeComponentDialog } from './GradeComponentDialog'
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -38,12 +34,26 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
+function belongsToComponent(
+  category: GradebookStructure['categories'][number],
+  componentId: string,
+) {
+  return (
+    category.grade_component_id === componentId ||
+    (category.grade_component_id === null &&
+      ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
+        (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
+  )
+}
+
 export function StructurePanel({
   classroomId,
+  courseSubjectId,
   structure,
   trigger,
 }: {
   classroomId: string
+  courseSubjectId: string
   structure: GradebookStructure
   trigger: React.ReactNode
 }) {
@@ -53,6 +63,7 @@ export function StructurePanel({
   )
   const deletePeriod = useDeletePeriod()
   const deleteCategory = useDeleteCategory()
+  const deleteComponent = useDeleteGradeComponent()
   const deleteActivity = useDeleteActivity()
   const { toast } = useToast()
 
@@ -99,6 +110,19 @@ export function StructurePanel({
     }
   }
 
+  async function removeComponent(id: string) {
+    try {
+      await deleteComponent.mutateAsync({ id, classroomId })
+      toast({ title: 'Component deleted', tone: 'success' })
+    } catch (error) {
+      toast({
+        title: 'Could not delete component',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -118,6 +142,7 @@ export function StructurePanel({
               <SectionTitle>Grading periods</SectionTitle>
               <PeriodDialog
                 classroomId={classroomId}
+                courseSubjectId={courseSubjectId}
                 nextPosition={nextPeriodPosition}
                 trigger={
                   <Button size="sm" variant="secondary">
@@ -144,6 +169,7 @@ export function StructurePanel({
                     <div className="flex items-center gap-1">
                       <PeriodDialog
                         classroomId={classroomId}
+                        courseSubjectId={courseSubjectId}
                         period={period}
                         trigger={
                           <IconButton label="Edit period" size="sm">
@@ -168,21 +194,82 @@ export function StructurePanel({
             )}
           </section>
 
-          {/* Categories per component */}
+          {/* Components and period-scoped categories */}
           <section className="space-y-3">
-            <SectionTitle>Activity categories</SectionTitle>
+            <div className="flex items-center justify-between">
+              <SectionTitle>Grade components</SectionTitle>
+              <GradeComponentDialog
+                classroomId={classroomId}
+                courseSubjectId={courseSubjectId}
+                nextPosition={structure.components.length}
+                trigger={
+                  <Button size="sm" variant="secondary">
+                    <PlusIcon className="size-4" /> Add component
+                  </Button>
+                }
+              />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {structure.components.map((component) => (
+                <div
+                  key={component.id}
+                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2"
+                >
+                  <span className="text-sm font-medium">{component.name}</span>
+                  <div className="flex items-center gap-1">
+                    <Badge tone="accent">w {round2(component.weight)}</Badge>
+                    {!component.id.startsWith('legacy-') && (
+                      <>
+                        <GradeComponentDialog
+                          classroomId={classroomId}
+                          courseSubjectId={courseSubjectId}
+                          component={component}
+                          trigger={
+                            <IconButton label="Edit component" size="sm">
+                              <EditIcon className="size-4" />
+                            </IconButton>
+                          }
+                        />
+                        <ConfirmDialog
+                          title="Delete grade component?"
+                          description="Its categories must be moved or deleted first."
+                          onConfirm={() => removeComponent(component.id)}
+                          trigger={
+                            <IconButton
+                              label="Delete component"
+                              size="sm"
+                              variant="danger"
+                            >
+                              <TrashIcon className="size-4" />
+                            </IconButton>
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <SectionTitle>
+              Categories for {selectedPeriod?.name ?? 'this period'}
+            </SectionTitle>
             <div className="grid gap-4 sm:grid-cols-2">
-              {COMPONENTS.map(({ key, label }) => {
-                const categories = structure.categories.filter((c) => c.component === key)
+              {structure.components.map((component) => {
+                const categories = structure.categories.filter(
+                  (c) =>
+                    belongsToComponent(c, component.id) &&
+                    (c.grading_period_id === selectedPeriod?.id ||
+                      c.grading_period_id === null),
+                )
                 const weightSum = round2(categories.reduce((sum, c) => sum + c.weight, 0))
                 return (
                   <div
-                    key={key}
+                    key={component.id}
                     className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-[var(--color-ink)]">
-                        {label}
+                        {component.name}
                       </span>
                       <Badge tone={categories.length === 0 ? 'neutral' : 'accent'}>
                         Σ {weightSum}
@@ -208,6 +295,11 @@ export function StructurePanel({
                             <div className="flex items-center gap-1">
                               <CategoryDialog
                                 classroomId={classroomId}
+                                courseSubjectId={courseSubjectId}
+                                periodId={
+                                  selectedPeriod?.id ?? category.grading_period_id ?? ''
+                                }
+                                components={structure.components}
                                 category={category}
                                 trigger={
                                   <IconButton label="Edit category" size="sm">
@@ -234,16 +326,21 @@ export function StructurePanel({
                         ))}
                       </ul>
                     )}
-                    <CategoryDialog
-                      classroomId={classroomId}
-                      defaultComponent={key}
-                      trigger={
-                        <Button size="sm" variant="ghost" className="w-full">
-                          <PlusIcon className="size-4" /> Add {label.toLowerCase()}{' '}
-                          category
-                        </Button>
-                      }
-                    />
+                    {selectedPeriod && !component.id.startsWith('legacy-') && (
+                      <CategoryDialog
+                        classroomId={classroomId}
+                        courseSubjectId={courseSubjectId}
+                        periodId={selectedPeriod.id}
+                        components={structure.components}
+                        defaultComponentId={component.id}
+                        trigger={
+                          <Button size="sm" variant="ghost" className="w-full">
+                            <PlusIcon className="size-4" /> Add{' '}
+                            {component.name.toLowerCase()} category
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                 )
               })}
@@ -262,7 +359,11 @@ export function StructurePanel({
                 <ActivityDialog
                   classroomId={classroomId}
                   periodId={selectedPeriod.id}
-                  categories={structure.categories}
+                  categories={structure.categories.filter(
+                    (category) =>
+                      category.grading_period_id === selectedPeriod.id ||
+                      category.grading_period_id === null,
+                  )}
                   nextPosition={
                     Math.max(
                       -1,
@@ -344,7 +445,11 @@ export function StructurePanel({
                                 <ActivityDialog
                                   classroomId={classroomId}
                                   periodId={selectedPeriod.id}
-                                  categories={structure.categories}
+                                  categories={structure.categories.filter(
+                                    (category) =>
+                                      category.grading_period_id === selectedPeriod.id ||
+                                      category.grading_period_id === null,
+                                  )}
                                   activity={activity}
                                   trigger={
                                     <IconButton label="Edit activity" size="sm">

@@ -1,6 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Bell, Command, KeyRound, Languages, Palette, SunMoon } from 'lucide-react'
+import {
+  Bell,
+  BookOpenCheck,
+  Command,
+  KeyRound,
+  Languages,
+  Palette,
+  Package,
+  ShieldCheck,
+  Smartphone,
+  SunMoon,
+} from 'lucide-react'
 import { Avatar, type AvatarColor } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -60,6 +71,10 @@ export function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+  const installed =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches
 
   async function handleLocaleChange(nextLocale: AppLocale) {
     setLocale(nextLocale)
@@ -126,7 +141,24 @@ export function SettingsPage() {
         description="Personalize and secure your teaching workspace."
       />
 
-      <Card>
+      <nav className="flex flex-wrap gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1.5 shadow-[var(--shadow-card)]">
+        {[
+          ['Profile', '#profile'],
+          ['Workspace', '#workspace'],
+          ['Privacy', '#privacy'],
+          ['About', '#about'],
+        ].map(([label, href]) => (
+          <a
+            key={href}
+            href={href}
+            className="rounded-full px-4 py-2 text-sm text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
+      <Card id="profile" className="rounded-[2rem]">
         <CardHeader>
           <CardTitle>{t('profile')}</CardTitle>
           <p className="text-sm text-[var(--color-ink-muted)]">
@@ -135,7 +167,7 @@ export function SettingsPage() {
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="inline-flex w-fit items-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] py-2 pl-2 pr-5">
             <Avatar
               name={profile?.full_name || profile?.email}
               color={profile?.avatar_color}
@@ -152,7 +184,7 @@ export function SettingsPage() {
         </CardBody>
       </Card>
 
-      <Card>
+      <Card id="workspace">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <SunMoon className="size-4 text-[var(--color-accent-350)]" /> Appearance
@@ -166,6 +198,100 @@ export function SettingsPage() {
           <div className="mt-2">
             <ThemeToggle />
           </div>
+          <p className="mt-3 text-xs leading-5 text-[var(--color-ink-faint)]">
+            Warm Light keeps the familiar cream workspace. Calm White is a clearer
+            paper-white option; Dark and System remain available.
+          </p>
+        </CardBody>
+      </Card>
+
+      <Card id="privacy">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpenCheck className="size-4 text-[var(--color-accent-350)]" /> Teaching
+            workspace
+          </CardTitle>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Set the defaults you return to when organizing a new course.
+          </p>
+        </CardHeader>
+        <CardBody className="grid gap-3 sm:grid-cols-3">
+          <SettingHint
+            title="Class setup"
+            detail="Choose an academic year, term, and editable template when creating a class."
+          />
+          <SettingHint
+            title="Grades"
+            detail="Use your own breakdowns; templates are starting points, not locked policy."
+          />
+          <SettingHint
+            title="Course materials"
+            detail="Keep syllabi, lesson plans, activities, and resources together with light tags."
+          />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-[var(--color-accent-350)]" /> Privacy and
+            exports
+          </CardTitle>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Grade reports are prepared one learner at a time, so a teacher stays in
+            control of what leaves the workspace.
+          </p>
+        </CardHeader>
+        <CardBody>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Student and guardian contacts are optional. Agilearn opens your own mail app
+            only after you preview a report; it does not send grades in the background.
+          </p>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Smartphone className="size-4 text-[var(--color-accent-350)]" /> PWA and this
+            device
+          </CardTitle>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Agilearn keeps an offline application shell and checks for service-worker
+            updates on supported browsers.
+          </p>
+        </CardHeader>
+        <CardBody className="grid gap-3 sm:grid-cols-2">
+          <SettingHint
+            title="Install status"
+            detail={
+              installed
+                ? 'Agilearn is running as an installed app.'
+                : 'Use your browser install action to add Agilearn to this device.'
+            }
+          />
+          <SettingHint
+            title="Offline behavior"
+            detail="Previously opened application screens can start offline; live teaching records still synchronize through Supabase."
+          />
+        </CardBody>
+      </Card>
+
+      <Card id="about" className="rounded-[2rem]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="size-4 text-[var(--color-accent-350)]" /> About Agilearn
+          </CardTitle>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            A calm teacher workspace for semesters, classroom cohorts, course subjects,
+            rosters, grades, attendance, and private teaching materials.
+          </p>
+        </CardHeader>
+        <CardBody className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <span className="text-[var(--color-ink-muted)]">
+            Version 1.0 · Progressive Web App
+          </span>
+          <span className="text-[var(--color-ink-faint)]">© 2026 Agilearn</span>
         </CardBody>
       </Card>
 
@@ -352,4 +478,13 @@ export function SettingsPage() {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Please try again.'
+}
+
+function SettingHint({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-3">
+      <p className="text-sm font-medium">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-[var(--color-ink-muted)]">{detail}</p>
+    </div>
+  )
 }

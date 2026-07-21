@@ -25,6 +25,7 @@
 import type {
   Activity,
   ActivityCategory,
+  GradeComponentRecord,
   GradeComponent,
   GradingPeriod,
 } from '@/types/domain'
@@ -32,8 +33,142 @@ import type {
 /** The static shape of a classroom's gradebook (no scores). */
 export interface GradebookStructure {
   periods: GradingPeriod[]
+  components: GradeComponentRecord[]
   categories: ActivityCategory[]
   activities: Activity[]
+}
+
+export interface ConfiguredStudentGradebook {
+  perPeriod: Record<string, Record<string, number | null>>
+  components: Record<string, number | null>
+  final: number | null
+}
+
+/** Existing classrooms have no persisted component rows. Keep their historical
+ * lecture/laboratory categories readable until a teacher explicitly adopts the
+ * new component structure. */
+function categoryUsesComponent(category: ActivityCategory, componentId: string): boolean {
+  if (category.grade_component_id === componentId) return true
+  return (
+    category.grade_component_id === null &&
+    ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
+      (componentId === 'legacy-laboratory' && category.component === 'laboratory'))
+  )
+}
+
+/** Grade one configured component for a period. Legacy categories remain visible
+ * across periods; new categories are scoped by `grading_period_id`. */
+export function computeConfiguredPeriodComponentGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId: string,
+  componentId: string,
+): number | null {
+  const categories = structure.categories.filter(
+    (category) =>
+      categoryUsesComponent(category, componentId) &&
+      (category.grading_period_id === null || category.grading_period_id === periodId),
+  )
+  let weighted = 0
+  let totalWeight = 0
+  for (const category of categories) {
+    const activities = structure.activities.filter(
+      (activity) =>
+        activity.category_id === category.id && activity.grading_period_id === periodId,
+    )
+    const percent = computeCategoryPercent(activities, scores, studentId)
+    if (percent === null) continue
+    weighted += percent * category.weight
+    totalWeight += category.weight
+  }
+  return totalWeight > 0 ? weighted / totalWeight : null
+}
+
+export function computeConfiguredStudentGradebook(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+): ConfiguredStudentGradebook {
+  const perPeriod: ConfiguredStudentGradebook['perPeriod'] = {}
+  const components: ConfiguredStudentGradebook['components'] = {}
+  for (const period of structure.periods) {
+    perPeriod[period.id] = {}
+    for (const component of structure.components) {
+      perPeriod[period.id][component.id] = computeConfiguredPeriodComponentGrade(
+        structure,
+        scores,
+        studentId,
+        period.id,
+        component.id,
+      )
+    }
+  }
+  for (const component of structure.components) {
+    let weighted = 0
+    let totalWeight = 0
+    for (const period of structure.periods) {
+      const grade = perPeriod[period.id][component.id]
+      if (grade === null) continue
+      weighted += grade * period.weight
+      totalWeight += period.weight
+    }
+    components[component.id] = totalWeight > 0 ? weighted / totalWeight : null
+  }
+  let total = 0
+  let totalWeight = 0
+  for (const component of structure.components) {
+    const grade = components[component.id]
+    if (grade === null) continue
+    total += grade * component.weight
+    totalWeight += component.weight
+  }
+  return {
+    perPeriod,
+    components,
+    final: totalWeight > 0 ? round2(total / totalWeight) : null,
+  }
+}
+
+/** Combine configured components for a single grading period. */
+export function computeConfiguredPeriodFinalGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId: string,
+): number | null {
+  let total = 0
+  let totalWeight = 0
+  for (const component of structure.components) {
+    const grade = computeConfiguredPeriodComponentGrade(
+      structure,
+      scores,
+      studentId,
+      periodId,
+      component.id,
+    )
+    if (grade === null) continue
+    total += grade * component.weight
+    totalWeight += component.weight
+  }
+  return totalWeight > 0 ? round2(total / totalWeight) : null
+}
+
+/** Required score coverage for reports. A partially scored category may be
+ * useful while entering grades, but it must not be sent as a final report. */
+export function isConfiguredGradeComplete(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId?: string,
+): boolean {
+  const activities = structure.activities.filter(
+    (activity) => periodId === undefined || activity.grading_period_id === periodId,
+  )
+  return (
+    activities.length > 0 &&
+    activities.every((activity) => scoreFor(scores, activity.id, studentId) !== null)
+  )
 }
 
 /** activityId -> studentId -> score (null when ungraded). */
@@ -160,6 +295,22 @@ export function computeFinalGrade(
   return round2(lectureGrade * lectureWeight + laboratoryGrade * laboratoryWeight)
 }
 
+/** Combine the two component grades for one named grading period. */
+export function computePeriodFinalGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId: string,
+  weights: ComponentWeights = DEFAULT_WEIGHTS,
+): number | null {
+  return computeFinalGrade(
+    computePeriodComponentGrade(structure, scores, studentId, periodId, 'lecture'),
+    computePeriodComponentGrade(structure, scores, studentId, periodId, 'laboratory'),
+    weights.lecture,
+    weights.laboratory,
+  )
+}
+
 export interface StudentGradebook {
   perPeriod: Record<string, { lecture: number | null; laboratory: number | null }>
   lecture: number | null
@@ -199,6 +350,17 @@ export function computeStudentGradebook(
 
   const lecture = computeComponentGrade(structure, scores, studentId, 'lecture')
   const laboratory = computeComponentGrade(structure, scores, studentId, 'laboratory')
+  // A new classroom starts with one Overall component. The legacy display shape
+  // represents that component in the lecture slot until all consumers migrate
+  // to `computeConfiguredStudentGradebook`.
+  if (structure.components.length === 1 && structure.components[0]?.name === 'Overall') {
+    return {
+      perPeriod,
+      lecture,
+      laboratory: null,
+      final: lecture === null ? null : round2(lecture),
+    }
+  }
   const final = computeFinalGrade(
     lecture,
     laboratory,

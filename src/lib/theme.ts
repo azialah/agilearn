@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-export type Theme = 'system' | 'light' | 'dark'
+export type Theme = 'system' | 'light' | 'white' | 'dark'
 
 const STORAGE_KEY = 'agilearn-theme'
 const META_DARK = '#17110d'
@@ -8,7 +8,7 @@ const META_LIGHT = '#faf5ec'
 
 export function getStoredTheme(): Theme {
   const v = localStorage.getItem(STORAGE_KEY)
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+  return v === 'light' || v === 'white' || v === 'dark' || v === 'system' ? v : 'system'
 }
 
 function prefersDark(): boolean {
@@ -24,6 +24,7 @@ export function resolvesDark(theme: Theme): boolean {
 export function applyTheme(theme: Theme): void {
   const dark = resolvesDark(theme)
   document.documentElement.classList.toggle('dark', dark)
+  document.documentElement.classList.toggle('calm-white', theme === 'white')
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', dark ? META_DARK : META_LIGHT)

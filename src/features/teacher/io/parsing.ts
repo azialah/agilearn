@@ -85,6 +85,71 @@ function isExampleRow(studentNo: string, lastName: string): boolean {
   )
 }
 
+function headerIndex(cells: string[], tokens: string[]): number {
+  return cells.findIndex((cell) => {
+    const value = cell.toLowerCase().replace(/[^a-z]/g, '')
+    return tokens.includes(value)
+  })
+}
+
+/**
+ * Learns the common class-record layout: student number and a single
+ * `Last name, First name` column can appear anywhere in a header row.
+ * It deliberately imports roster identity only; assessment formulas are never
+ * trusted from an uploaded workbook.
+ */
+function mapHeaderBasedRoster(
+  matrix: string[][],
+): { rows: string[][]; rowOffset: number } | null {
+  for (
+    let headerRowIndex = 0;
+    headerRowIndex < Math.min(20, matrix.length);
+    headerRowIndex++
+  ) {
+    const header = matrix[headerRowIndex]
+    const studentNoColumn = headerIndex(header, [
+      'studentno',
+      'studentid',
+      'studentnumber',
+    ])
+    const combinedNameColumn = headerIndex(header, ['studentname', 'fullname', 'name'])
+    const lastNameColumn = headerIndex(header, ['lastname', 'last'])
+    const firstNameColumn = headerIndex(header, ['firstname', 'first'])
+    const middleInitialColumn = headerIndex(header, [
+      'middleinitial',
+      'middlename',
+      'mi',
+      'middle',
+    ])
+
+    if (
+      studentNoColumn < 0 ||
+      (combinedNameColumn < 0 && (lastNameColumn < 0 || firstNameColumn < 0))
+    ) {
+      continue
+    }
+
+    return {
+      rowOffset: headerRowIndex + 1,
+      rows: matrix.slice(headerRowIndex + 1).map((row) => {
+        const studentNo = row[studentNoColumn] ?? ''
+        if (combinedNameColumn >= 0) {
+          const fullName = row[combinedNameColumn] ?? ''
+          const [lastName = '', ...givenName] = fullName.split(',')
+          return [studentNo, lastName.trim(), givenName.join(',').trim(), '']
+        }
+        return [
+          studentNo,
+          row[lastNameColumn] ?? '',
+          row[firstNameColumn] ?? '',
+          middleInitialColumn >= 0 ? (row[middleInitialColumn] ?? '') : '',
+        ]
+      }),
+    }
+  }
+  return null
+}
+
 /**
  * Validate a sheet's array-of-arrays into a preview of roster rows.
  *
@@ -106,22 +171,25 @@ export function parseRosterRows(
   }
 
   const normalized = matrix.map((row) => (row ?? []).map(toText))
+  const headerMapped = mapHeaderBasedRoster(normalized)
+  const source = headerMapped?.rows ?? normalized
+  const rowOffset = headerMapped?.rowOffset ?? 0
 
   let start = 0
-  if (normalized.length > 0 && looksLikeHeader(normalized[0])) start = 1
-  if (normalized.length > start && looksLikeNotes(normalized[start])) start += 1
+  if (source.length > 0 && looksLikeHeader(source[0])) start = 1
+  if (source.length > start && looksLikeNotes(source[start])) start += 1
 
   const rows: ParsedRosterRow[] = []
   const counts = { new: 0, duplicate: 0, invalid: 0, skipped: 0 }
   const seenInFile = new Set<string>()
 
-  for (let i = start; i < normalized.length; i++) {
-    const cells = normalized[i]
+  for (let i = start; i < source.length; i++) {
+    const cells = source[i]
     const studentNo = cells[0] ?? ''
     const lastName = cells[1] ?? ''
     const firstName = cells[2] ?? ''
     const middleInitial = cells[3] ?? ''
-    const rowNumber = i + 1
+    const rowNumber = i + rowOffset + 1
 
     // Fully blank row — ignore entirely.
     if (!studentNo && !lastName && !firstName && !middleInitial) {

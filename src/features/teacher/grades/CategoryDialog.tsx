@@ -19,60 +19,89 @@ import {
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
 import { useCreateCategory, useUpdateCategory } from '@/lib/queries/grades'
-import type { ActivityCategory, GradeComponent } from '@/types/domain'
+import type { ActivityCategory, GradeComponentRecord } from '@/types/domain'
 
 interface CategoryForm {
   name: string
-  component: GradeComponent
+  grade_component_id: string
   weight: string
 }
 
 function initialState(
   category?: ActivityCategory,
-  defaultComponent: GradeComponent = 'lecture',
+  defaultComponentId = '',
 ): CategoryForm {
   return {
     name: category?.name ?? '',
-    component: category?.component ?? defaultComponent,
+    grade_component_id: category?.grade_component_id ?? defaultComponentId,
     weight: String(category?.weight ?? 1),
   }
 }
 
 export function CategoryDialog({
   classroomId,
+  courseSubjectId,
+  periodId,
+  components,
   category,
-  defaultComponent,
+  defaultComponentId,
   trigger,
 }: {
   classroomId: string
+  courseSubjectId: string
+  periodId: string
+  components: GradeComponentRecord[]
   category?: ActivityCategory
-  defaultComponent?: GradeComponent
+  defaultComponentId?: string
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState<CategoryForm>(initialState(category, defaultComponent))
+  const [form, setForm] = useState<CategoryForm>(
+    initialState(category, defaultComponentId),
+  )
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
   const { toast } = useToast()
   const isEditing = !!category
+  const isLegacyCategory = category?.grade_component_id === null
 
   useEffect(() => {
-    if (open) setForm(initialState(category, defaultComponent))
-  }, [open, category, defaultComponent])
+    if (open) setForm(initialState(category, defaultComponentId))
+  }, [open, category, defaultComponentId])
 
   const weight = Number(form.weight)
-  const valid = form.name.trim().length > 0 && Number.isFinite(weight) && weight > 0
+  const valid =
+    form.name.trim().length > 0 &&
+    (isLegacyCategory || !!form.grade_component_id) &&
+    Number.isFinite(weight) &&
+    weight > 0
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!valid) return
     try {
-      const patch = { name: form.name.trim(), component: form.component, weight }
       if (isEditing) {
+        const patch =
+          category.grade_component_id === null
+            ? { name: form.name.trim(), weight }
+            : {
+                name: form.name.trim(),
+                grade_component_id: form.grade_component_id,
+                grading_period_id: periodId,
+                weight,
+              }
         await updateCategory.mutateAsync({ id: category.id, patch })
         toast({ title: 'Category updated', tone: 'success' })
       } else {
-        await createCategory.mutateAsync({ classroom_id: classroomId, ...patch })
+        await createCategory.mutateAsync({
+          classroom_id: classroomId,
+          course_subject_id: courseSubjectId,
+          component: 'lecture',
+          name: form.name.trim(),
+          grade_component_id: form.grade_component_id,
+          grading_period_id: periodId,
+          weight,
+        })
         toast({ title: 'Category added', tone: 'success' })
       }
       setOpen(false)
@@ -109,20 +138,32 @@ export function CategoryDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="category-component">Component</Label>
-              <Select
-                value={form.component}
-                onValueChange={(value) =>
-                  setForm({ ...form, component: value as GradeComponent })
-                }
-              >
-                <SelectTrigger id="category-component">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lecture">Lecture</SelectItem>
-                  <SelectItem value="laboratory">Laboratory</SelectItem>
-                </SelectContent>
-              </Select>
+              {isLegacyCategory ? (
+                <p
+                  id="category-component"
+                  className="flex h-10 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-ink-muted)]"
+                >
+                  {category.component === 'lecture' ? 'Lecture' : 'Laboratory'}
+                </p>
+              ) : (
+                <Select
+                  value={form.grade_component_id}
+                  onValueChange={(value) =>
+                    setForm({ ...form, grade_component_id: value })
+                  }
+                >
+                  <SelectTrigger id="category-component">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {components.map((component) => (
+                      <SelectItem key={component.id} value={component.id}>
+                        {component.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="category-weight">Weight</Label>

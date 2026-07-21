@@ -19,6 +19,8 @@ interface FormState {
   last_name: string
   first_name: string
   middle_initial: string
+  student_email: string
+  guardian_email: string
 }
 
 function initialState(student?: Student): FormState {
@@ -27,6 +29,8 @@ function initialState(student?: Student): FormState {
     last_name: student?.last_name ?? '',
     first_name: student?.first_name ?? '',
     middle_initial: student?.middle_initial ?? '',
+    student_email: student?.student_email ?? '',
+    guardian_email: student?.guardian_email ?? '',
   }
 }
 
@@ -54,10 +58,22 @@ export function StudentFormDialog({
     event.preventDefault()
     try {
       if (isEditing) {
-        await updateStudent.mutateAsync({ id: student.id, patch: form })
+        await updateStudent.mutateAsync({
+          id: student.id,
+          patch: {
+            ...form,
+            student_email: form.student_email || null,
+            guardian_email: form.guardian_email || null,
+          },
+        })
         toast({ title: 'Student updated', tone: 'success' })
       } else {
-        await createStudent.mutateAsync({ ...form, classroom_id: classroomId })
+        await createStudent.mutateAsync({
+          ...form,
+          student_email: form.student_email || null,
+          guardian_email: form.guardian_email || null,
+          classroom_id: classroomId,
+        })
         toast({ title: 'Student added', tone: 'success' })
       }
       setOpen(false)
@@ -89,6 +105,42 @@ export function StudentFormDialog({
               onChange={(e) => setForm({ ...form, student_no: e.target.value })}
             />
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="student_email">
+                Student email{' '}
+                <span className="font-normal text-[var(--color-ink-faint)]">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                id="student_email"
+                type="email"
+                placeholder="student@example.com"
+                value={form.student_email}
+                onChange={(e) => setForm({ ...form, student_email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="guardian_email">
+                Guardian email{' '}
+                <span className="font-normal text-[var(--color-ink-faint)]">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                id="guardian_email"
+                type="email"
+                placeholder="guardian@example.com"
+                value={form.guardian_email}
+                onChange={(e) => setForm({ ...form, guardian_email: e.target.value })}
+              />
+            </div>
+          </div>
+          <p className="text-xs leading-5 text-[var(--color-ink-faint)]">
+            Contacts are optional and only used when you choose to compose a private grade
+            report.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="last_name">Last name</Label>

@@ -8,9 +8,14 @@ import type {
 
 // Row aliases
 export type Profile = Tables<'profiles'>
+export type AcademicPeriod = Tables<'academic_periods'>
 export type Classroom = Tables<'classrooms'>
+export type CourseSubject = Tables<'course_subjects'>
+export type SubjectMeetingSlot = Tables<'subject_meeting_slots'>
+export type CalendarEvent = Tables<'calendar_events'>
 export type Student = Tables<'students'>
 export type GradingPeriod = Tables<'grading_periods'>
+export type GradeComponentRecord = Tables<'grade_components'>
 export type ActivityCategory = Tables<'activity_categories'>
 export type Activity = Tables<'activities'>
 export type Score = Tables<'scores'>
@@ -24,9 +29,14 @@ export type ClassRosterRow = Database['public']['Views']['v_class_roster']['Row'
 
 // Insert aliases
 export type ProfileInsert = TablesInsert<'profiles'>
+export type AcademicPeriodInsert = TablesInsert<'academic_periods'>
 export type ClassroomInsert = TablesInsert<'classrooms'>
+export type CourseSubjectInsert = TablesInsert<'course_subjects'>
+export type SubjectMeetingSlotInsert = TablesInsert<'subject_meeting_slots'>
+export type CalendarEventInsert = TablesInsert<'calendar_events'>
 export type StudentInsert = TablesInsert<'students'>
 export type GradingPeriodInsert = TablesInsert<'grading_periods'>
+export type GradeComponentInsert = TablesInsert<'grade_components'>
 export type ActivityCategoryInsert = TablesInsert<'activity_categories'>
 export type ActivityInsert = TablesInsert<'activities'>
 export type ScoreInsert = TablesInsert<'scores'>
@@ -36,9 +46,14 @@ export type TeachingModuleInsert = TablesInsert<'teaching_modules'>
 
 // Update aliases
 export type ProfileUpdate = TablesUpdate<'profiles'>
+export type AcademicPeriodUpdate = TablesUpdate<'academic_periods'>
 export type ClassroomUpdate = TablesUpdate<'classrooms'>
+export type CourseSubjectUpdate = TablesUpdate<'course_subjects'>
+export type SubjectMeetingSlotUpdate = TablesUpdate<'subject_meeting_slots'>
+export type CalendarEventUpdate = TablesUpdate<'calendar_events'>
 export type StudentUpdate = TablesUpdate<'students'>
 export type GradingPeriodUpdate = TablesUpdate<'grading_periods'>
+export type GradeComponentUpdate = TablesUpdate<'grade_components'>
 export type ActivityCategoryUpdate = TablesUpdate<'activity_categories'>
 export type ActivityUpdate = TablesUpdate<'activities'>
 export type ScoreUpdate = TablesUpdate<'scores'>
@@ -48,10 +63,17 @@ export type TeachingModuleUpdate = TablesUpdate<'teaching_modules'>
 
 // Enum aliases
 export type AppRole = Enums<'app_role'>
+export type AcademicPeriodStatus = Enums<'academic_period_status'>
+export type CourseSubjectKind = Enums<'course_subject_kind'>
+export type ClassModality = Enums<'class_modality'>
+export type CalendarEventKind = Enums<'calendar_event_kind'>
+export type CalendarEventVisibility = Enums<'calendar_event_visibility'>
 export type TeachingLevel = Enums<'teaching_level'>
 export type GradeComponent = Enums<'grade_component'>
 export type AttendanceStatus = Enums<'attendance_status'>
 export type ModuleKind = Enums<'module_kind'>
+export type GradingTemplate =
+  'basic_education' | 'senior_high' | 'higher_education' | 'custom'
 
 // Convenience composites
 export type ClassroomWithCount = Classroom & { student_count: number }
