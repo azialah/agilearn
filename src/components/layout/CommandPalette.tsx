@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Search, Settings2 } from 'lucide-react'
+import { BookOpen, Search, Settings2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog'
 import { cn } from '@/lib/cn'
 import { useProfile } from '@/lib/queries/profiles'
 import { useLocale } from '@/lib/locale'
 import { NAV_ITEMS } from './navItems'
+import { useClassrooms } from '@/lib/queries/classrooms'
+import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
 
 interface PaletteItem {
   to: string
@@ -30,6 +32,8 @@ export function CommandPalette({
   const { data: profile } = useProfile()
   const { t } = useLocale()
   const isAdmin = profile?.role === 'admin'
+  const { data: classrooms = [] } = useClassrooms()
+  const { data: subjects = [] } = useAllCourseSubjects()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -38,8 +42,23 @@ export function CommandPalette({
     const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(
       (item) => ({ to: item.to, label: t(item.labelKey), icon: item.icon }),
     )
-    return [...navItems, { to: '/settings', label: t('settings'), icon: Settings2 }]
-  }, [isAdmin, t])
+    const classroomItems = classrooms.slice(0, 8).map((classroom) => ({
+      to: `/teacher/classrooms/${classroom.id}`,
+      label: classroom.cohort_name || classroom.block || classroom.course_name,
+      icon: BookOpen,
+    }))
+    const subjectItems = subjects.slice(0, 10).map((subject) => ({
+      to: `/teacher/classrooms/${subject.classroom_id}`,
+      label: `Subject · ${subject.name}`,
+      icon: BookOpen,
+    }))
+    return [
+      ...navItems,
+      { to: '/settings', label: t('settings'), icon: Settings2 },
+      ...classroomItems,
+      ...subjectItems,
+    ]
+  }, [classrooms, isAdmin, subjects, t])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

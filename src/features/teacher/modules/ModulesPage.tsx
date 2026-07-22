@@ -23,9 +23,18 @@ import { useProfile } from '@/lib/queries/profiles'
 import {
   createModuleSignedUrl,
   useDeleteModule,
+  useImportModuleToSubject,
   useModules,
   type ModuleWithRelations,
 } from '@/lib/queries/modules'
+import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import {
+  ResponsiveDrawer,
+  ResponsiveDrawerBody,
+  ResponsiveDrawerContent,
+  ResponsiveDrawerFooter,
+  ResponsiveDrawerHeader,
+} from '@/components/ui/ResponsiveDrawer'
 import type { ModuleKind } from '@/types/domain'
 import { ModuleUploadDialog } from './ModuleUploadDialog'
 import { ModuleEditDialog } from './ModuleEditDialog'
@@ -62,12 +71,14 @@ function ModuleCard({
   onDownload,
   onDelete,
   downloading,
+  onImport,
 }: {
   module: ModuleWithRelations
   canManage: boolean
   onDownload: (module: ModuleWithRelations) => void
   onDelete: (module: ModuleWithRelations) => void
   downloading: boolean
+  onImport: (module: ModuleWithRelations) => void
 }) {
   const meta = MODULE_KIND_META[module.kind]
   return (
@@ -151,6 +162,9 @@ function ModuleCard({
                 {!downloading && <DownloadIcon />}
                 Download
               </Button>
+              <Button size="sm" variant="secondary" onClick={() => onImport(module)}>
+                Import to subject
+              </Button>
             </div>
           </div>
         </CardBody>
@@ -163,6 +177,8 @@ export function ModulesPage() {
   const { data: profile } = useProfile()
   const { data: modules, isLoading } = useModules()
   const deleteModule = useDeleteModule()
+  const importModule = useImportModuleToSubject()
+  const { data: subjects } = useAllCourseSubjects()
   const { toast } = useToast()
 
   const [filters, setFilters] = useState<ModuleFilters>({
@@ -171,6 +187,8 @@ export function ModulesPage() {
     mineOnly: false,
   })
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [importingModule, setImportingModule] = useState<ModuleWithRelations | null>(null)
+  const [subjectId, setSubjectId] = useState('')
 
   const isAdmin = profile?.role === 'admin'
 
@@ -212,13 +230,29 @@ export function ModulesPage() {
     }
   }
 
+  async function handleImport() {
+    if (!importingModule || !subjectId) return
+    try {
+      await importModule.mutateAsync({ moduleId: importingModule.id, subjectId })
+      toast({ title: 'Material imported to course subject', tone: 'success' })
+      setImportingModule(null)
+      setSubjectId('')
+    } catch (error) {
+      toast({
+        title: 'Could not import material',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    }
+  }
+
   const hasModules = (modules?.length ?? 0) > 0
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Teaching modules"
-        description="A shared library of lesson plans, activity stories, and resources."
+        description="Your private repository of lesson plans, activity stories, and teaching resources."
         actions={
           profile && (
             <ModuleUploadDialog
@@ -284,7 +318,7 @@ export function ModulesPage() {
         <EmptyState
           icon={<ModuleIcon />}
           title="No modules yet"
-          description="Upload your first lesson plan, activity story, or resource to share it with the team."
+          description="Example cards will appear after your first upload. Add a resource here, then link it to the course subjects that need it."
           action={
             profile && (
               <ModuleUploadDialog
@@ -314,10 +348,48 @@ export function ModulesPage() {
               onDownload={handleDownload}
               onDelete={handleDelete}
               downloading={downloadingId === module.id}
+              onImport={(item) => setImportingModule(item)}
             />
           ))}
         </motion.div>
       )}
+      <ResponsiveDrawer
+        open={!!importingModule}
+        onOpenChange={(open) => !open && setImportingModule(null)}
+      >
+        <ResponsiveDrawerContent className="md:w-[min(34rem,calc(100%-3rem))]">
+          <ResponsiveDrawerHeader
+            title="Import material to a subject"
+            description="The private repository file stays in one place; Agilearn links it to the selected subject."
+          />
+          <ResponsiveDrawerBody>
+            <div className="space-y-2">
+              <label htmlFor="import-subject" className="text-sm font-medium">
+                Course subject
+              </label>
+              <Select value={subjectId} onValueChange={setSubjectId}>
+                <SelectTrigger id="import-subject" aria-label="Course subject">
+                  <SelectValue placeholder="Choose a course subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(subjects ?? []).map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </ResponsiveDrawerBody>
+          <ResponsiveDrawerFooter
+            primaryLabel="Import material"
+            primaryDisabled={!subjectId}
+            primaryLoading={importModule.isPending}
+            onPrimary={() => void handleImport()}
+            onSecondary={() => setImportingModule(null)}
+          />
+        </ResponsiveDrawerContent>
+      </ResponsiveDrawer>
     </div>
   )
 }

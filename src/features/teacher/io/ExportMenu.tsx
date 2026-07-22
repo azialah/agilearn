@@ -77,7 +77,7 @@ export function ExportMenu({ classroomId }: ExportMenuProps) {
       const wb = buildGradeSheetWorkbook(
         room,
         students.data ?? [],
-        structure.data ?? { periods: [], categories: [], activities: [] },
+        structure.data ?? { periods: [], components: [], categories: [], activities: [] },
         scores.data ?? {},
       )
       downloadWorkbook(wb, buildFilename(room.course_code, 'grade-sheet'))
@@ -91,7 +91,7 @@ export function ExportMenu({ classroomId }: ExportMenuProps) {
       const bytes = await buildGradeReportPdf(
         room,
         students.data ?? [],
-        structure.data ?? { periods: [], categories: [], activities: [] },
+        structure.data ?? { periods: [], components: [], categories: [], activities: [] },
         scores.data ?? {},
       )
       downloadPdf(bytes, buildFilename(room.course_code, 'grade-report'))

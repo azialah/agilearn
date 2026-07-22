@@ -34,10 +34,12 @@ function initialState(session?: ClassSession): FormState {
 
 export function SessionFormDialog({
   classroomId,
+  courseSubjectId,
   session,
   trigger,
 }: {
   classroomId: string
+  courseSubjectId: string
   session?: ClassSession
   trigger: ReactNode
 }) {
@@ -64,7 +66,11 @@ export function SessionFormDialog({
         await updateSession.mutateAsync({ id: session.id, patch })
         toast({ title: 'Session updated', tone: 'success' })
       } else {
-        await createSession.mutateAsync({ ...patch, classroom_id: classroomId })
+        await createSession.mutateAsync({
+          ...patch,
+          classroom_id: classroomId,
+          course_subject_id: courseSubjectId,
+        })
         toast({ title: 'Session created', tone: 'success' })
       }
       setOpen(false)

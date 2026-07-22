@@ -1,6 +1,5 @@
 import { motion, type Variants } from 'motion/react'
-import type { ComponentWeights } from '@/lib/grading'
-import type { Classroom, GradingPeriod } from '@/types/domain'
+import type { Classroom, GradeComponentRecord, GradingPeriod } from '@/types/domain'
 import type { SlideshowStudent } from './useSlideshowData'
 
 /** Two-decimal grade, or an em dash when the grade could not be computed. */
@@ -77,7 +76,7 @@ interface SlideProps {
   student: SlideshowStudent
   classroom: Classroom
   periods: GradingPeriod[]
-  weights: ComponentWeights
+  components: GradeComponentRecord[]
   reducedMotion: boolean
 }
 
@@ -86,6 +85,7 @@ export function GradeBreakdownSlide({
   student,
   classroom,
   periods,
+  components,
   reducedMotion,
 }: SlideProps) {
   const { container, item } = useRevealVariants(reducedMotion)
@@ -113,10 +113,7 @@ export function GradeBreakdownSlide({
           className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {periods.map((period) => {
-            const grade = gradebook.perPeriod[period.id] ?? {
-              lecture: null,
-              laboratory: null,
-            }
+            const grade = gradebook.perPeriod[period.id] ?? {}
             return (
               <div
                 key={period.id}
@@ -125,10 +122,14 @@ export function GradeBreakdownSlide({
                 <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-white/50">
                   {period.name}
                 </p>
-                <div className="flex items-stretch justify-center gap-6">
-                  <GradeStat label="Lecture" value={grade.lecture} />
-                  <span aria-hidden className="w-px self-stretch bg-white/10" />
-                  <GradeStat label="Laboratory" value={grade.laboratory} />
+                <div className="flex flex-wrap items-stretch justify-center gap-6">
+                  {components.map((component) => (
+                    <GradeStat
+                      key={component.id}
+                      label={component.name}
+                      value={grade[component.id] ?? null}
+                    />
+                  ))}
                 </div>
               </div>
             )
@@ -144,8 +145,13 @@ export function GradeBreakdownSlide({
         variants={item}
         className="flex flex-wrap items-center justify-center gap-3 text-sm"
       >
-        <ComponentPill label="Lecture overall" value={gradebook.lecture} />
-        <ComponentPill label="Laboratory overall" value={gradebook.laboratory} />
+        {components.map((component) => (
+          <ComponentPill
+            key={component.id}
+            label={`${component.name} overall`}
+            value={gradebook.components[component.id] ?? null}
+          />
+        ))}
       </motion.div>
     </motion.div>
   )
@@ -185,7 +191,12 @@ function ComponentPill({ label, value }: { label: string; value: number | null }
 }
 
 /** Slide (b): the celebratory final average. */
-export function AverageSlide({ student, classroom, weights, reducedMotion }: SlideProps) {
+export function AverageSlide({
+  student,
+  classroom,
+  components,
+  reducedMotion,
+}: SlideProps) {
   const { container, item } = useRevealVariants(reducedMotion)
   const final = student.gradebook.final
   const hasFinal = final !== null
@@ -242,11 +253,13 @@ export function AverageSlide({ student, classroom, weights, reducedMotion }: Sli
           {hasFinal ? final.toFixed(2) : 'N/A'}
         </motion.p>
         <p className="mt-4 text-xs text-white/40 sm:text-sm">
-          Lecture × {weights.lecture} + Laboratory × {weights.laboratory}
+          {components
+            .map((component) => `${component.name} ${component.weight}`)
+            .join(' + ')}
         </p>
         {!hasFinal && (
           <p className="mt-2 max-w-xs text-xs text-white/35">
-            A final average needs both a lecture and a laboratory grade recorded.
+            A final average needs all required component scores recorded.
           </p>
         )}
       </motion.div>

@@ -2,19 +2,34 @@ import { describe, it, expect } from 'vitest'
 import {
   computeCategoryPercent,
   computeComponentGrade,
+  computeConfiguredPeriodFinalGrade,
+  computeConfiguredStudentGradebook,
   computeFinalGrade,
+  isConfiguredGradeComplete,
   computePeriodComponentGrade,
   computeStudentGradebook,
   round2,
   type GradebookStructure,
   type ScoreMap,
 } from './grading'
-import type { Activity, ActivityCategory, GradingPeriod } from '@/types/domain'
+import type {
+  Activity,
+  ActivityCategory,
+  GradeComponentRecord,
+  GradingPeriod,
+} from '@/types/domain'
 
 const S = 'student-1'
 
 function period(id: string, weight = 1, position = 0): GradingPeriod {
-  return { id, classroom_id: 'c', name: id, weight, position }
+  return {
+    id,
+    classroom_id: 'c',
+    course_subject_id: 'subject-1',
+    name: id,
+    weight,
+    position,
+  }
 }
 
 function category(
@@ -22,7 +37,42 @@ function category(
   component: 'lecture' | 'laboratory',
   weight: number,
 ): ActivityCategory {
-  return { id, classroom_id: 'c', component, name: id, weight }
+  return {
+    id,
+    classroom_id: 'c',
+    course_subject_id: 'subject-1',
+    component,
+    grading_period_id: null,
+    grade_component_id: `${component}-component`,
+    position: 0,
+    name: id,
+    weight,
+  }
+}
+
+function configuredCategory(
+  id: string,
+  componentId: string,
+  periodId: string,
+  weight: number,
+): ActivityCategory {
+  return {
+    ...category(id, 'lecture', weight),
+    grading_period_id: periodId,
+    grade_component_id: componentId,
+  }
+}
+
+function component(id: string, name: string, weight: number): GradeComponentRecord {
+  return {
+    id,
+    classroom_id: 'c',
+    course_subject_id: 'subject-1',
+    name,
+    weight,
+    position: 0,
+    created_at: '2026-01-01T00:00:00Z',
+  }
 }
 
 function activity(
@@ -104,6 +154,7 @@ describe('computeCategoryPercent', () => {
 describe('computePeriodComponentGrade renormalization', () => {
   const structure: GradebookStructure = {
     periods: [period('p1')],
+    components: [],
     categories: [category('quiz', 'lecture', 0.4), category('exam', 'lecture', 0.6)],
     activities: [activity('q1', 'p1', 'quiz', 100), activity('e1', 'p1', 'exam', 100)],
   }
@@ -147,6 +198,7 @@ describe('computePeriodComponentGrade renormalization', () => {
 describe('computeComponentGrade renormalization across periods', () => {
   const structure: GradebookStructure = {
     periods: [period('p1', 0.5), period('p2', 0.5)],
+    components: [],
     categories: [category('quiz', 'lecture', 1)],
     activities: [activity('q1', 'p1', 'quiz', 100), activity('q2', 'p2', 'quiz', 100)],
   }
@@ -173,7 +225,12 @@ describe('computeComponentGrade renormalization across periods', () => {
 })
 
 describe('empty structures', () => {
-  const empty: GradebookStructure = { periods: [], categories: [], activities: [] }
+  const empty: GradebookStructure = {
+    periods: [],
+    components: [],
+    categories: [],
+    activities: [],
+  }
 
   it('returns null component grades', () => {
     expect(computeComponentGrade(empty, {}, S, 'lecture')).toBeNull()
@@ -192,6 +249,7 @@ describe('empty structures', () => {
 describe('computeStudentGradebook end to end', () => {
   const structure: GradebookStructure = {
     periods: [period('p1', 1)],
+    components: [],
     categories: [
       category('lec-quiz', 'lecture', 1),
       category('lab-quiz', 'laboratory', 1),
@@ -223,5 +281,44 @@ describe('computeStudentGradebook end to end', () => {
     expect(book.lecture).toBe(80)
     expect(book.laboratory).toBeNull()
     expect(book.final).toBeNull()
+  })
+})
+
+describe('configured grade components', () => {
+  const midterm = 'midterm'
+  const finals = 'finals'
+  const structure: GradebookStructure = {
+    periods: [period(midterm, 0.5), period(finals, 0.5)],
+    components: [component('overall', 'Overall', 1)],
+    categories: [
+      configuredCategory('mid-quiz', 'overall', midterm, 0.3),
+      configuredCategory('mid-project', 'overall', midterm, 0.5),
+      configuredCategory('mid-exam', 'overall', midterm, 0.2),
+      configuredCategory('final-quiz', 'overall', finals, 0.4),
+      configuredCategory('final-project', 'overall', finals, 0.6),
+    ],
+    activities: [
+      activity('mq', midterm, 'mid-quiz', 100),
+      activity('mp', midterm, 'mid-project', 100),
+      activity('me', midterm, 'mid-exam', 100),
+      activity('fq', finals, 'final-quiz', 100),
+      activity('fp', finals, 'final-project', 100),
+    ],
+  }
+
+  it('calculates editable midterm 30/50/20 and finals 40/60 templates', () => {
+    const map = scores({ mq: 80, mp: 90, me: 70, fq: 75, fp: 95 })
+    const book = computeConfiguredStudentGradebook(structure, map, S)
+    expect(computeConfiguredPeriodFinalGrade(structure, map, S, midterm)).toBe(83)
+    expect(computeConfiguredPeriodFinalGrade(structure, map, S, finals)).toBe(87)
+    expect(book.components.overall).toBe(85)
+    expect(book.final).toBe(85)
+    expect(isConfiguredGradeComplete(structure, map, S)).toBe(true)
+  })
+
+  it('keeps partially entered reports incomplete', () => {
+    const map = scores({ mq: 80, mp: 90, me: null, fq: 75, fp: 95 })
+    expect(isConfiguredGradeComplete(structure, map, S, midterm)).toBe(false)
+    expect(isConfiguredGradeComplete(structure, map, S)).toBe(false)
   })
 })

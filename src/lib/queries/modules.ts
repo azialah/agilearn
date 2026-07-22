@@ -61,6 +61,8 @@ export interface UploadModuleInput {
   title: string
   description: string
   classroomId: string | null
+  tags: string[]
+  folder: string
 }
 
 /**
@@ -95,6 +97,8 @@ export function useUploadModule() {
           kind: input.kind,
           title: input.title.trim(),
           description: input.description.trim(),
+          tags: input.tags,
+          folder: input.folder.trim() || 'Library',
           storage_path: storagePath,
           file_size: input.file.size,
           mime_type: mimeType,
@@ -156,6 +160,30 @@ export function useDeleteModule() {
       return module.id
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.modules.all })
+    },
+  })
+}
+
+export function useImportModuleToSubject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      moduleId,
+      subjectId,
+    }: {
+      moduleId: string
+      subjectId: string
+    }) => {
+      const { error } = await supabase
+        .from('course_subject_modules')
+        .upsert({ module_id: moduleId, course_subject_id: subjectId })
+      if (error) throw error
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: keys.modules.bySubject(variables.subjectId),
+      })
       queryClient.invalidateQueries({ queryKey: keys.modules.all })
     },
   })

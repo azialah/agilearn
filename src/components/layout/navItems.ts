@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Inbox } from 'lucide-react'
+import { BarChart3, CalendarDays, HardDrive, Inbox, UserRound } from 'lucide-react'
 import {
   ClassroomIcon,
   DashboardIcon,
@@ -21,6 +21,10 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/teacher/dashboard', labelKey: 'dashboard', icon: DashboardIcon },
   { to: '/teacher/classrooms', labelKey: 'classrooms', icon: ClassroomIcon },
   { to: '/teacher/modules', labelKey: 'modules', icon: ModuleIcon },
+  { to: '/teacher/calendar', labelKey: 'calendar', icon: CalendarDays },
+  { to: '/teacher/analytics', labelKey: 'analytics', icon: BarChart3 },
+  { to: '/teacher/usage', labelKey: 'usage', icon: HardDrive },
+  { to: '/teacher/profile', labelKey: 'profile', icon: UserRound },
   { to: '/admin/users', labelKey: 'users', icon: UsersIcon, adminOnly: true },
   {
     to: '/admin/domain-requests',

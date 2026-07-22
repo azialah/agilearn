@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
@@ -24,6 +25,7 @@ import {
 import { tallyStatuses } from './summary'
 import { SessionFormDialog } from './SessionFormDialog'
 import { AttendanceSummary } from './AttendanceSummary'
+import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 
 function formatSessionDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`)
@@ -37,7 +39,15 @@ function formatSessionDate(iso: string): string {
 }
 
 export function AttendancePage({ classroomId }: { classroomId: string }) {
-  const { data: sessions, isLoading } = useClassSessions(classroomId)
+  const { data: subjects = [] } = useCourseSubjects(classroomId)
+  const [subjectId, setSubjectId] = useState('')
+  useEffect(() => {
+    if (!subjectId && subjects[0]) setSubjectId(subjects[0].id)
+  }, [subjectId, subjects])
+  const { data: sessions, isLoading } = useClassSessions(
+    classroomId,
+    subjectId || undefined,
+  )
   const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
   const deleteSession = useDeleteSession()
   const { toast } = useToast()
@@ -58,6 +68,7 @@ export function AttendancePage({ classroomId }: { classroomId: string }) {
   const newSessionButton = (
     <SessionFormDialog
       classroomId={classroomId}
+      courseSubjectId={subjectId}
       trigger={
         <Button>
           <PlusIcon /> New session
@@ -81,6 +92,24 @@ export function AttendancePage({ classroomId }: { classroomId: string }) {
         description="Track class sessions and per-student attendance."
         actions={newSessionButton}
       />
+
+      {subjects.length > 1 && (
+        <label className="block max-w-sm text-sm font-medium">
+          Course subject
+          <select
+            aria-label="Course subject"
+            value={subjectId}
+            onChange={(event) => setSubjectId(event.target.value)}
+            className="mt-1.5 h-10 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3"
+          >
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">
@@ -152,6 +181,7 @@ function SessionCard({
         <div className="flex items-center gap-1">
           <SessionFormDialog
             classroomId={classroomId}
+            courseSubjectId={session.course_subject_id}
             session={session}
             trigger={
               <IconButton label="Edit session" size="sm">

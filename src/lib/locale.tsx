@@ -14,9 +14,12 @@ const STORAGE_KEY = 'agilearn-locale'
 
 const messages = {
   en: {
-    dashboard: 'Dashboard',
+    dashboard: 'Home',
     classrooms: 'Classrooms',
     modules: 'Modules',
+    calendar: 'Calendar',
+    analytics: 'Analytics',
+    usage: 'Usage',
     users: 'Users',
     requests: 'Requests',
     auditLog: 'Audit log',
@@ -52,9 +55,12 @@ const messages = {
       'Pick up where class left off: weighted grades, live attendance, and the teaching materials your next session needs.',
   },
   tl: {
-    dashboard: 'Dashboard',
+    dashboard: 'Home',
     classrooms: 'Mga klase',
     modules: 'Mga modyul',
+    calendar: 'Kalendaryo',
+    analytics: 'Analytics',
+    usage: 'Paggamit',
     users: 'Mga user',
     requests: 'Mga kahilingan',
     auditLog: 'Talaan ng pagbabago',

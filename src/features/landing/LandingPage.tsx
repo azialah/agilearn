@@ -390,18 +390,25 @@ function CallToAction() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.4 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-6 py-14 text-center"
+        className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-6 py-16 text-center shadow-[var(--shadow-card)] sm:py-20"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_120%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.12]" />
+        {/* Layered warm ambience: a top halo, a soft floor wash, and a 1px lit
+            top edge for a refined, elevated surface. All single-accent. */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_120%_at_50%_-10%,var(--color-accent-500),transparent_60%)] opacity-[0.14]" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[radial-gradient(60%_100%_at_50%_120%,var(--color-accent-400),transparent_70%)] opacity-[0.08]" />
+        <div className="pointer-events-none absolute inset-0 rounded-[var(--radius-xl)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
         <div className="relative">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="text-balance font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">
             Ready when your class is.
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-base text-[var(--color-ink-muted)]">
+          <p className="mx-auto mt-4 max-w-md text-pretty text-base text-[var(--color-ink-muted)] sm:text-lg">
             Sign in and pick up right where your teaching leaves off.
           </p>
-          <div className="mt-8 flex justify-center">
-            <Link to="/login">
+          <div className="relative mt-9 flex justify-center">
+            {/* Focal glow behind the primary action so the CTA reads as the
+                one place to look. */}
+            <div className="pointer-events-none absolute -inset-x-8 -inset-y-6 bg-[radial-gradient(50%_120%_at_50%_50%,var(--color-accent-400),transparent_70%)] opacity-[0.16] blur-xl" />
+            <Link to="/login" className="relative">
               <MagneticButton className="inline-block">
                 <Button size="lg">Sign in to Agilearn</Button>
               </MagneticButton>

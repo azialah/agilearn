@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/components/ui/toast'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useUploadModule } from '@/lib/queries/modules'
+import { useStorageUsage } from '@/lib/queries/calendar'
 import type { ModuleKind } from '@/types/domain'
 import { formatFileSize, MODULE_KIND_META, MODULE_KINDS } from './helpers'
 
@@ -31,6 +32,8 @@ interface FormState {
   title: string
   description: string
   classroomId: string
+  tags: string
+  folder: string
 }
 
 const initialForm: FormState = {
@@ -38,6 +41,8 @@ const initialForm: FormState = {
   title: '',
   description: '',
   classroomId: NO_CLASSROOM,
+  tags: '',
+  folder: 'Library',
 }
 
 export function ModuleUploadDialog({
@@ -53,6 +58,7 @@ export function ModuleUploadDialog({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: classrooms } = useClassrooms()
   const uploadModule = useUploadModule()
+  const storageUsage = useStorageUsage()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -80,6 +86,11 @@ export function ModuleUploadDialog({
         kind: form.kind,
         title: form.title,
         description: form.description,
+        tags: form.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        folder: form.folder,
         classroomId: form.classroomId === NO_CLASSROOM ? null : form.classroomId,
       })
       toast({ title: 'Module uploaded', tone: 'success' })
@@ -94,6 +105,10 @@ export function ModuleUploadDialog({
   }
 
   const pending = uploadModule.isPending
+  const quotaExceeded =
+    !!file &&
+    file.size + (storageUsage.data?.used_bytes ?? 0) >
+      (storageUsage.data?.quota_bytes ?? 524288000)
 
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
@@ -104,6 +119,15 @@ export function ModuleUploadDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="module-folder">Folder</Label>
+            <Input
+              id="module-folder"
+              value={form.folder}
+              placeholder="Library"
+              onChange={(e) => setForm({ ...form, folder: e.target.value })}
+            />
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="module-file">File</Label>
             <input
@@ -137,6 +161,18 @@ export function ModuleUploadDialog({
                 Browse
               </span>
             </button>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="module-tags">Tags</Label>
+            <Input
+              id="module-tags"
+              value={form.tags}
+              placeholder="e.g. midterm, programming, worksheet"
+              onChange={(e) => setForm({ ...form, tags: e.target.value })}
+            />
+            <p className="text-xs text-[var(--color-ink-faint)]">
+              Separate light, helpful tags with commas.
+            </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -227,6 +263,12 @@ export function ModuleUploadDialog({
               </motion.div>
             )}
           </AnimatePresence>
+          {quotaExceeded && (
+            <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">
+              This file would exceed your 500 MB private storage limit. Remove files from
+              Usage first.
+            </p>
+          )}
 
           <DialogFooter>
             <Button
@@ -240,7 +282,7 @@ export function ModuleUploadDialog({
             <Button
               type="submit"
               loading={pending}
-              disabled={!file || !form.title.trim()}
+              disabled={!file || !form.title.trim() || quotaExceeded}
             >
               Upload
             </Button>

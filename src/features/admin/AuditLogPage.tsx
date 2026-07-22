@@ -6,8 +6,14 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { useProfile } from '@/lib/queries/profiles'
+import { Input } from '@/components/ui/Input'
+import { useProfile, useProfiles } from '@/lib/queries/profiles'
 import { useAuditLog, type AuditLogRow } from '@/lib/queries/auditLog'
+
+const selectClassName =
+  'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] ' +
+  'px-3 text-base md:text-sm text-[var(--color-ink)] transition-colors ' +
+  'focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none'
 
 const PAGE_SIZE = 50
 
@@ -41,7 +47,12 @@ export function AuditLogPage() {
   }, [profileLoading, profile, isAdmin, navigate])
 
   const [limit, setLimit] = useState(PAGE_SIZE)
-  const { data: entries, isLoading } = useAuditLog(limit)
+  const [actorId, setActorId] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const { data: profiles } = useProfiles()
+  const { data: entries, isLoading } = useAuditLog({ limit, actorId, from, to })
+  const hasActiveFilters = !!actorId || !!from || !!to
 
   if (profileLoading || !isAdmin) {
     return (
@@ -60,14 +71,59 @@ export function AuditLogPage() {
         description="Recent role, roster, and grade changes across the workspace."
       />
 
+      <div className="flex flex-wrap items-end gap-3">
+        <select
+          className={selectClassName}
+          aria-label="Filter by teacher"
+          value={actorId}
+          onChange={(event) => {
+            setActorId(event.target.value)
+            setLimit(PAGE_SIZE)
+          }}
+        >
+          <option value="">All teachers</option>
+          {(profiles ?? []).map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.full_name || p.email}
+            </option>
+          ))}
+        </select>
+
+        <Input
+          type="date"
+          aria-label="Filter from date"
+          className="w-auto"
+          value={from}
+          onChange={(event) => {
+            setFrom(event.target.value)
+            setLimit(PAGE_SIZE)
+          }}
+        />
+
+        <Input
+          type="date"
+          aria-label="Filter to date"
+          className="w-auto"
+          value={to}
+          onChange={(event) => {
+            setTo(event.target.value)
+            setLimit(PAGE_SIZE)
+          }}
+        />
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-16">
           <Spinner />
         </div>
       ) : (entries ?? []).length === 0 ? (
         <EmptyState
-          title="No activity yet"
-          description="Role changes, classroom edits, and grade updates will show up here."
+          title={hasActiveFilters ? 'No matching activity' : 'No activity yet'}
+          description={
+            hasActiveFilters
+              ? 'No audit events match the selected teacher or date range.'
+              : 'Role changes, classroom edits, and grade updates will show up here.'
+          }
         />
       ) : (
         <>

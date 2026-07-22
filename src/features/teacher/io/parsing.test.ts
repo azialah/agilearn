@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest'
 import { buildFilename, parseRosterRows, slugifyCode } from './parsing'
 
 describe('parseRosterRows', () => {
+  it('maps an Excel class record with Student ID and last-name-first learner names', () => {
+    const result = parseRosterRows([
+      ['Class record', '', ''],
+      ['Student Name', 'Quiz 1', 'Student ID'],
+      ['Santos, Maria', 18, '2024-0001'],
+    ])
+
+    expect(result.counts.new).toBe(1)
+    expect(result.rows[0]).toMatchObject({
+      studentNo: '2024-0001',
+      lastName: 'Santos',
+      firstName: 'Maria',
+    })
+  })
+
   it('skips the header and notes rows of the legacy template', () => {
     const matrix = [
       ['Student No', 'Last Name', 'First Name', 'MI'],

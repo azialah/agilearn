@@ -10,7 +10,7 @@
 
 import * as XLSX from 'xlsx'
 import {
-  computeStudentGradebook,
+  computeConfiguredStudentGradebook,
   round2,
   type GradebookStructure,
   type ScoreMap,
@@ -24,6 +24,18 @@ const TEMPLATE_NOTES = [
   'e.g. Juan',
   'e.g. R',
 ] as const
+
+function belongsToComponent(
+  category: GradebookStructure['categories'][number],
+  componentId: string,
+) {
+  return (
+    category.grade_component_id === componentId ||
+    (category.grade_component_id === null &&
+      ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
+        (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
+  )
+}
 
 /** Roster import template: header + hint row, ready to fill in. */
 export function buildRosterTemplateWorkbook(): XLSX.WorkBook {
@@ -39,8 +51,13 @@ export function buildRosterTemplateWorkbook(): XLSX.WorkBook {
 function orderedActivityColumns(structure: GradebookStructure): Activity[] {
   const columns: Activity[] = []
   for (const period of structure.periods) {
-    for (const component of ['lecture', 'laboratory'] as const) {
-      const categories = structure.categories.filter((c) => c.component === component)
+    for (const component of structure.components) {
+      const categories = structure.categories.filter(
+        (category) =>
+          belongsToComponent(category, component.id) &&
+          (category.grading_period_id === period.id ||
+            category.grading_period_id === null),
+      )
       for (const category of categories) {
         const activities = structure.activities.filter(
           (a) => a.category_id === category.id && a.grading_period_id === period.id,
@@ -69,28 +86,27 @@ function cell(value: number | null): number | string {
  * component weights).
  */
 export function buildGradeSheetWorkbook(
-  classroom: Classroom,
+  _classroom: Classroom,
   students: Student[],
   structure: GradebookStructure,
   scores: ScoreMap,
 ): XLSX.WorkBook {
-  const weights = {
-    lecture: classroom.lecture_weight,
-    laboratory: classroom.laboratory_weight,
-  }
   const activityColumns = orderedActivityColumns(structure)
 
   const header: string[] = ['Student No', 'Last Name', 'First Name', 'MI']
   for (const activity of activityColumns) header.push(labelFor(activity, structure))
   for (const period of structure.periods) {
-    header.push(`${period.name} — Lecture`, `${period.name} — Laboratory`)
+    for (const component of structure.components) {
+      header.push(`${period.name} / ${component.name}`)
+    }
   }
-  header.push('Lecture Grade', 'Laboratory Grade', 'Final Grade')
+  for (const component of structure.components) header.push(`${component.name} grade`)
+  header.push('Final Grade')
 
   const aoa: (string | number)[][] = [header]
 
   for (const student of students) {
-    const book = computeStudentGradebook(structure, scores, student.id, weights)
+    const book = computeConfiguredStudentGradebook(structure, scores, student.id)
     const row: (string | number)[] = [
       student.student_no,
       student.last_name,
@@ -102,10 +118,13 @@ export function buildGradeSheetWorkbook(
       row.push(score === null || score === undefined ? '' : score)
     }
     for (const period of structure.periods) {
-      const p = book.perPeriod[period.id]
-      row.push(cell(p?.lecture ?? null), cell(p?.laboratory ?? null))
+      for (const component of structure.components) {
+        row.push(cell(book.perPeriod[period.id]?.[component.id] ?? null))
+      }
     }
-    row.push(cell(book.lecture), cell(book.laboratory), cell(book.final))
+    for (const component of structure.components)
+      row.push(cell(book.components[component.id]))
+    row.push(cell(book.final))
     aoa.push(row)
   }
 

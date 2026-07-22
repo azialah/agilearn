@@ -1,192 +1,339 @@
 import { Link } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
+import {
+  BookOpen,
+  CalendarCheck,
+  ChevronRight,
+  ClipboardCheck,
+  Plus,
+  Upload,
+} from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
-import { ChevronRightIcon, ClassroomIcon } from '@/components/icons'
-import { useProfile } from '@/lib/queries/profiles'
+import { Card, CardBody } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useClassrooms } from '@/lib/queries/classrooms'
-import { useLocale } from '@/lib/locale'
-import { CheckCircle2, GraduationCap, Layers3 } from 'lucide-react'
+import { useProfile } from '@/lib/queries/profiles'
+import { useAcademicPeriods } from '@/lib/queries/academicWorkspace'
+
+const rise = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }
 
 export function DashboardPage() {
   const { data: profile } = useProfile()
   const { data: classrooms, isLoading } = useClassrooms()
-  const { t } = useLocale()
-
+  const { data: periods = [] } = useAcademicPeriods()
+  const reducedMotion = useReducedMotion()
   const firstName = profile?.first_name || 'there'
-  const totalStudents = classrooms?.reduce((sum, c) => sum + c.student_count, 0) ?? 0
+  const totalStudents =
+    classrooms?.reduce((total, classroom) => total + classroom.student_count, 0) ?? 0
+  const completed =
+    classrooms?.filter((classroom) => classroom.student_count > 0).length ?? 0
+  const activePeriod = periods.find((period) => period.status === 'active')
+  const daysRemaining = activePeriod?.ends_on
+    ? Math.ceil(
+        (new Date(`${activePeriod.ends_on}T23:59:59`).getTime() - Date.now()) / 86400000,
+      )
+    : null
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('welcomeBack').replace('{name}', firstName)}
-        description={t('dashboardDescription')}
-      />
+    <motion.div
+      initial="hidden"
+      animate="show"
+      transition={{ staggerChildren: reducedMotion ? 0 : 0.06 }}
+      className="space-y-6 pb-20 lg:pb-0"
+    >
+      <motion.div variants={rise} transition={{ duration: reducedMotion ? 0 : 0.28 }}>
+        <PageHeader
+          title={`Good day, ${firstName}`}
+          description="Your teaching day, gathered in one calm place."
+        />
+      </motion.div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardBody>
-            <p className="text-sm text-[var(--color-ink-muted)]">{t('classrooms')}</p>
-            <p className="mt-1 text-3xl font-semibold">
-              {isLoading ? '—' : (classrooms?.length ?? 0)}
-            </p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody>
-            <p className="text-sm text-[var(--color-ink-muted)]">{t('students')}</p>
-            <p className="mt-1 text-3xl font-semibold">
-              {isLoading ? '—' : totalStudents}
-            </p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="flex h-full flex-col justify-between gap-3">
-            <p className="text-sm text-[var(--color-ink-muted)]">{t('quickActions')}</p>
+      <motion.section
+        variants={rise}
+        transition={{ duration: reducedMotion ? 0 : 0.34 }}
+        className="relative isolate overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-[var(--shadow-card)]"
+      >
+        <img
+          src="/images/home-teaching-ritual.png"
+          alt=""
+          className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center] opacity-80"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[var(--color-surface-1)] via-[var(--color-surface-1)]/92 to-transparent" />
+        <div className="max-w-xl p-6 sm:p-8">
+          <p className="font-[cursive] text-2xl text-[var(--color-accent-350)]">
+            A steady day of teaching.
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Start where your students need you most.
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-6 text-[var(--color-ink-muted)]">
+            Keep the roster close, grades clear, and materials ready for the next lesson.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
             <Link to="/teacher/classrooms">
-              <Button variant="secondary" size="sm" className="w-full">
-                {t('manageClassrooms')}
+              <Button>
+                <Plus className="size-4" /> Create a class
+              </Button>
+            </Link>
+            <Link to="/teacher/modules">
+              <Button variant="outline">
+                <Upload className="size-4" /> Add material
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.div
+        variants={rise}
+        transition={{ duration: reducedMotion ? 0 : 0.3 }}
+        className="grid gap-3 sm:grid-cols-3"
+      >
+        <Metric
+          label="Active classes"
+          value={isLoading ? '—' : String(classrooms?.length ?? 0)}
+          detail="Your current teaching spaces"
+        />
+        <Metric
+          label="Students"
+          value={isLoading ? '—' : String(totalStudents)}
+          detail="Across all your class rosters"
+        />
+        <Metric
+          label="Class readiness"
+          value={isLoading ? '—' : `${completed}/${classrooms?.length ?? 0}`}
+          detail="Classes with a roster started"
+        />
+      </motion.div>
+
+      <motion.div variants={rise} transition={{ duration: reducedMotion ? 0 : 0.28 }}>
+        <Card className="rounded-[1.5rem]">
+          <CardBody className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">
+                {activePeriod
+                  ? `${activePeriod.semester_name} — SY ${activePeriod.school_year}`
+                  : 'Set up your academic period'}
+              </p>
+              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+                {daysRemaining === null
+                  ? 'Add an end date to show how much teaching time remains.'
+                  : daysRemaining >= 0
+                    ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} until the semester ends.`
+                    : 'This semester end date has passed—archive it when your records are complete.'}
+              </p>
+            </div>
+            <Link to="/teacher/classrooms">
+              <Button size="sm" variant="outline">
+                Manage semesters
               </Button>
             </Link>
           </CardBody>
         </Card>
-      </div>
+      </motion.div>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-[var(--color-ink-muted)]">
-            {t('recentClassrooms')}
-          </h2>
-          <Link
-            to="/teacher/classrooms"
-            className="text-sm text-[var(--color-accent-350)] hover:underline"
-          >
-            {t('viewAll')}
-          </Link>
-        </div>
-
-        {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-          </div>
-        ) : !classrooms || classrooms.length === 0 ? (
-          <EmptyState
-            icon={<ClassroomIcon />}
-            title={t('noClassrooms')}
-            description={t('noClassroomsDescription')}
-            action={
-              <Link to="/teacher/classrooms">
-                <Button size="sm">{t('goToClassrooms')}</Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {classrooms.slice(0, 4).map((classroom) => (
-              <Link
-                key={classroom.id}
-                to="/teacher/classrooms/$classroomId"
-                params={{ classroomId: classroom.id }}
-              >
-                <Card className="transition-colors hover:border-[var(--color-border-strong)]">
-                  <CardBody className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{classroom.course_name}</p>
-                      <p className="mt-0.5 truncate text-sm text-[var(--color-ink-muted)]">
-                        {classroom.course_code} · {classroom.year} · {classroom.block}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge>{classroom.student_count} students</Badge>
-                      <ChevronRightIcon className="text-[var(--color-ink-faint)]" />
-                    </div>
-                  </CardBody>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {!isLoading && (!classrooms || classrooms.length === 0) && (
-        <section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-          <Card>
-            <CardBody className="flex h-full flex-col justify-between gap-5">
+      <motion.section
+        variants={rise}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="grid gap-4 lg:grid-cols-[1.5fr_1fr]"
+      >
+        <Card>
+          <CardBody className="space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-ink-muted)]">
-                  Your first teaching flow
-                </p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                  Build a calm home base for every class.
-                </h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--color-ink-muted)]">
-                  Start with one classroom, then add your roster and the materials you
-                  return to every week.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <SetupItem
-                  icon={<GraduationCap />}
-                  label="Create a classroom"
-                  detail="Set course and section"
-                />
-                <SetupItem
-                  icon={<CheckCircle2 />}
-                  label="Add your students"
-                  detail="Build your roster"
-                />
-                <SetupItem
-                  icon={<Layers3 />}
-                  label="Collect materials"
-                  detail="Keep modules together"
-                />
-              </div>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody className="flex h-full flex-col justify-between gap-5">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-ink-muted)]">
-                  Workspace readiness
-                </p>
-                <p className="mt-2 text-4xl font-semibold">
-                  0<span className="text-lg text-[var(--color-ink-muted)]"> / 3</span>
-                </p>
+                <p className="text-sm font-medium">Continue with a class</p>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-                  Complete the first three essentials to make Agilearn useful from day
-                  one.
+                  Your recent teaching spaces and their next step.
                 </p>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-                <div className="h-full w-0 rounded-full bg-[var(--color-accent-400)]" />
+              <Link
+                to="/teacher/classrooms"
+                className="text-sm text-[var(--color-accent-350)]"
+              >
+                All classes
+              </Link>
+            </div>
+            {isLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
               </div>
-            </CardBody>
-          </Card>
-        </section>
-      )}
-    </div>
+            ) : !classrooms?.length ? (
+              <EmptyState
+                icon={<BookOpen />}
+                title="Your first class is waiting"
+                description="Set up a course, add a roster, then build the assessments that make your grading yours."
+                action={
+                  <Link to="/teacher/classrooms">
+                    <Button size="sm">Create a class</Button>
+                  </Link>
+                }
+              />
+            ) : (
+              <div className="stagger-enter grid gap-3 sm:grid-cols-2">
+                {classrooms.slice(0, 4).map((classroom) => (
+                  <Link
+                    key={classroom.id}
+                    to="/teacher/classrooms/$classroomId"
+                    params={{ classroomId: classroom.id }}
+                    className="group rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-card)]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{classroom.course_name}</p>
+                        <p className="mt-1 truncate text-xs text-[var(--color-ink-muted)]">
+                          {classroom.course_code} · {classroom.block}
+                        </p>
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-[var(--color-ink-faint)]" />
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <Badge>{classroom.student_count} students</Badge>
+                      <span className="text-xs text-[var(--color-ink-faint)]">
+                        {classroom.term_name || 'Term not set'}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody className="space-y-4">
+            <div>
+              <p className="text-sm font-medium">Today at a glance</p>
+              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+                Small nudges to keep your teaching flow moving.
+              </p>
+            </div>
+            <AtGlance
+              icon={<ClipboardCheck />}
+              title="Assessment setup"
+              detail={
+                classrooms?.length
+                  ? 'Open a class to build or review your grade breakdown.'
+                  : 'Create a class, then choose a flexible grading template.'
+              }
+            />
+            <AtGlance
+              icon={<CalendarCheck />}
+              title="Attendance"
+              detail="Add a session whenever you are ready to take the room's pulse."
+            />
+            <AtGlance
+              icon={<Upload />}
+              title="Materials"
+              detail="Keep your syllabus, lesson plans, and resources organized together."
+            />
+          </CardBody>
+        </Card>
+      </motion.section>
+
+      <motion.section
+        variants={rise}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="grid gap-4 lg:grid-cols-[1.2fr_1fr]"
+      >
+        <Card>
+          <CardBody>
+            <p className="text-sm font-medium">Subject readiness</p>
+            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              A quick view of the cohorts most ready to teach.
+            </p>
+            <div className="mt-5 space-y-4">
+              {(classrooms ?? []).slice(0, 5).map((classroom) => {
+                const readiness = Math.min(
+                  100,
+                  classroom.student_count > 0
+                    ? 70 + Math.min(classroom.student_count, 15) * 2
+                    : 28,
+                )
+                return (
+                  <div key={classroom.id}>
+                    <div className="mb-1.5 flex justify-between gap-3 text-xs">
+                      <span className="truncate text-[var(--color-ink-muted)]">
+                        {classroom.cohort_name || classroom.block} ·{' '}
+                        {classroom.course_name}
+                      </span>
+                      <span className="tabular-nums text-[var(--color-ink-faint)]">
+                        {readiness}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-accent-400)] transition-[width] duration-500"
+                        style={{ width: `${readiness}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+              {!classrooms?.length && (
+                <p className="text-sm text-[var(--color-ink-muted)]">
+                  Create a classroom to start measuring subject readiness.
+                </p>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <p className="text-sm font-medium">Attendance rhythm</p>
+            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              Recent sessions will appear here as attendance is recorded.
+            </p>
+            <Link
+              to="/teacher/analytics"
+              className="mt-5 inline-flex text-sm text-[var(--color-accent-350)] hover:underline"
+            >
+              Open Analytics to view real attendance trends
+            </Link>
+          </CardBody>
+        </Card>
+      </motion.section>
+    </motion.div>
   )
 }
 
-function SetupItem({
-  icon,
+function Metric({
   label,
+  value,
   detail,
 }: {
-  icon: ReactNode
   label: string
+  value: string
   detail: string
 }) {
   return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3">
-      <div className="text-[var(--color-accent-350)] [&>svg]:size-4">{icon}</div>
-      <p className="mt-3 text-sm font-medium">{label}</p>
-      <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{detail}</p>
+    <Card>
+      <CardBody>
+        <p className="text-sm text-[var(--color-ink-muted)]">{label}</p>
+        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
+        <p className="mt-1 text-xs text-[var(--color-ink-faint)]">{detail}</p>
+      </CardBody>
+    </Card>
+  )
+}
+function AtGlance({
+  icon,
+  title,
+  detail,
+}: {
+  icon: React.ReactNode
+  title: string
+  detail: string
+}) {
+  return (
+    <div className="flex gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-3">
+      <span className="mt-0.5 text-[var(--color-accent-350)] [&>svg]:size-4">{icon}</span>
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-1 text-xs leading-5 text-[var(--color-ink-muted)]">{detail}</p>
+      </div>
     </div>
   )
 }
