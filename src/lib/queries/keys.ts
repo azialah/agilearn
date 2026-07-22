@@ -73,6 +73,7 @@ export const keys = {
   },
 
   auditLog: {
-    all: (limit: number) => ['audit-log', limit] as const,
+    list: (filters: { limit: number; actorId?: string; from?: string; to?: string }) =>
+      ['audit-log', filters] as const,
   },
 } as const

@@ -3,7 +3,9 @@ import { MonitorIcon, MoonIcon, SunIcon } from '@/components/icons'
 import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
-const CalmWhiteIcon = () => <Sparkles />
+// Match the sibling 1em custom glyphs (size + 1.8 stroke) instead of lucide's
+// fixed 24px / stroke-2 defaults, which render oversized in this text-sized slot.
+const CalmWhiteIcon = () => <Sparkles size="1em" strokeWidth={1.8} />
 const OPTIONS: { value: Theme; label: string; Icon: typeof SunIcon }[] = [
   { value: 'light', label: 'Light', Icon: SunIcon },
   { value: 'white', label: 'Calm White', Icon: CalmWhiteIcon },

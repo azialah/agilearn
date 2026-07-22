@@ -7,7 +7,7 @@ work described below. Do not reset, checkout, or discard unrelated changes.
 ## Delivered
 
 - Reorganized the teacher workspace around `School Year/Semester → Classroom
-  / Cohort → Course Subject`. Lecture and laboratory are now separate course
+/ Cohort → Course Subject`. Lecture and laboratory are now separate course
   subjects with independent gradebooks rather than fixed weighted columns.
 - Added a two-step, responsive create-workspace flow and a shared responsive
   drawer/modal primitive for mobile and desktop creation and editing flows.

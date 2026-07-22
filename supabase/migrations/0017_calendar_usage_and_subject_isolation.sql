@@ -65,10 +65,16 @@ from public.classrooms c
 join public.course_subjects s on s.classroom_id = c.id and s.name = c.course_name
 where c.id = gc.classroom_id and gc.course_subject_id is null;
 
+-- Postgres forbids referencing the UPDATE target (ac) inside a join in the
+-- FROM clause, so the grade_components fallback is a correlated subquery
+-- instead of a join. Semantics are unchanged: prefer the grading period's
+-- subject, fall back to the linked grade component's.
 update public.activity_categories ac
-set course_subject_id = coalesce(gp.course_subject_id, gc.course_subject_id)
+set course_subject_id = coalesce(
+  gp.course_subject_id,
+  (select gc.course_subject_id from public.grade_components gc where gc.id = ac.grade_component_id)
+)
 from public.grading_periods gp
-left join public.grade_components gc on gc.id = ac.grade_component_id
 where gp.id = ac.grading_period_id
   and ac.course_subject_id is null;
 

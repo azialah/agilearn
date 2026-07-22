@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_periods: {
+        Row: {
+          created_at: string
+          ends_on: string | null
+          id: string
+          owner_id: string
+          school_year: string
+          semester_name: string
+          starts_on: string | null
+          status: Database["public"]["Enums"]["academic_period_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          owner_id: string
+          school_year: string
+          semester_name: string
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["academic_period_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          owner_id?: string
+          school_year?: string
+          semester_name?: string
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["academic_period_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_periods_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           category_id: string
@@ -63,22 +107,34 @@ export type Database = {
         Row: {
           classroom_id: string
           component: Database["public"]["Enums"]["grade_component"]
+          course_subject_id: string
+          grade_component_id: string | null
+          grading_period_id: string | null
           id: string
           name: string
+          position: number
           weight: number
         }
         Insert: {
           classroom_id: string
           component: Database["public"]["Enums"]["grade_component"]
+          course_subject_id: string
+          grade_component_id?: string | null
+          grading_period_id?: string | null
           id?: string
           name: string
+          position?: number
           weight: number
         }
         Update: {
           classroom_id?: string
           component?: Database["public"]["Enums"]["grade_component"]
+          course_subject_id?: string
+          grade_component_id?: string | null
+          grading_period_id?: string | null
           id?: string
           name?: string
+          position?: number
           weight?: number
         }
         Relationships: [
@@ -95,6 +151,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_class_roster"
             referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "activity_categories_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_categories_grade_component_id_fkey"
+            columns: ["grade_component_id"]
+            isOneToOne: false
+            referencedRelation: "grade_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_categories_grading_period_id_fkey"
+            columns: ["grading_period_id"]
+            isOneToOne: false
+            referencedRelation: "grading_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_categories_subject_classroom_fkey"
+            columns: ["course_subject_id", "classroom_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id", "classroom_id"]
           },
         ]
       }
@@ -197,9 +281,97 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          academic_period_id: string | null
+          all_day: boolean
+          classroom_id: string | null
+          course_subject_id: string | null
+          created_at: string
+          ends_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["calendar_event_kind"]
+          notes: string
+          owner_id: string
+          starts_at: string
+          title: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["calendar_event_visibility"]
+        }
+        Insert: {
+          academic_period_id?: string | null
+          all_day?: boolean
+          classroom_id?: string | null
+          course_subject_id?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["calendar_event_kind"]
+          notes?: string
+          owner_id: string
+          starts_at: string
+          title: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["calendar_event_visibility"]
+        }
+        Update: {
+          academic_period_id?: string | null
+          all_day?: boolean
+          classroom_id?: string | null
+          course_subject_id?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["calendar_event_kind"]
+          notes?: string
+          owner_id?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["calendar_event_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_academic_period_id_fkey"
+            columns: ["academic_period_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_roster"
+            referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "calendar_events_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_sessions: {
         Row: {
           classroom_id: string
+          course_subject_id: string
           created_at: string
           id: string
           notes: string
@@ -208,6 +380,7 @@ export type Database = {
         }
         Insert: {
           classroom_id: string
+          course_subject_id: string
           created_at?: string
           id?: string
           notes?: string
@@ -216,6 +389,7 @@ export type Database = {
         }
         Update: {
           classroom_id?: string
+          course_subject_id?: string
           created_at?: string
           id?: string
           notes?: string
@@ -237,52 +411,193 @@ export type Database = {
             referencedRelation: "v_class_roster"
             referencedColumns: ["classroom_id"]
           },
+          {
+            foreignKeyName: "class_sessions_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_sessions_subject_classroom_fkey"
+            columns: ["course_subject_id", "classroom_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id", "classroom_id"]
+          },
         ]
       }
       classrooms: {
         Row: {
+          academic_period_id: string | null
+          academic_year: string
           block: string
+          cohort_name: string
           course_code: string
           course_name: string
           created_at: string
+          description: string
+          grading_template: string
           id: string
-          laboratory_weight: number
-          lecture_weight: number
           owner_id: string
+          room: string
+          schedule: string
+          school_level: Database["public"]["Enums"]["teaching_level"] | null
+          subject_code: string
+          term_name: string
           updated_at: string
           year: string
         }
         Insert: {
+          academic_period_id?: string | null
+          academic_year?: string
           block?: string
+          cohort_name?: string
           course_code: string
           course_name: string
           created_at?: string
+          description?: string
+          grading_template?: string
           id?: string
-          laboratory_weight?: number
-          lecture_weight?: number
           owner_id: string
+          room?: string
+          schedule?: string
+          school_level?: Database["public"]["Enums"]["teaching_level"] | null
+          subject_code?: string
+          term_name?: string
           updated_at?: string
           year?: string
         }
         Update: {
+          academic_period_id?: string | null
+          academic_year?: string
           block?: string
+          cohort_name?: string
           course_code?: string
           course_name?: string
           created_at?: string
+          description?: string
+          grading_template?: string
           id?: string
-          laboratory_weight?: number
-          lecture_weight?: number
           owner_id?: string
+          room?: string
+          schedule?: string
+          school_level?: Database["public"]["Enums"]["teaching_level"] | null
+          subject_code?: string
+          term_name?: string
           updated_at?: string
           year?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "classrooms_academic_period_id_fkey"
+            columns: ["academic_period_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "classrooms_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_subject_modules: {
+        Row: {
+          course_subject_id: string
+          imported_at: string
+          module_id: string
+        }
+        Insert: {
+          course_subject_id: string
+          imported_at?: string
+          module_id: string
+        }
+        Update: {
+          course_subject_id?: string
+          imported_at?: string
+          module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_subject_modules_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_subject_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_subjects: {
+        Row: {
+          classroom_id: string
+          course_code: string
+          created_at: string
+          description: string
+          grading_template: string
+          id: string
+          kind: Database["public"]["Enums"]["course_subject_kind"]
+          name: string
+          position: number
+          room: string
+          schedule: string
+          subject_code: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          course_code?: string
+          created_at?: string
+          description?: string
+          grading_template?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["course_subject_kind"]
+          name: string
+          position?: number
+          room?: string
+          schedule?: string
+          subject_code?: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          course_code?: string
+          created_at?: string
+          description?: string
+          grading_template?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["course_subject_kind"]
+          name?: string
+          position?: number
+          room?: string
+          schedule?: string
+          subject_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_subjects_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_subjects_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_roster"
+            referencedColumns: ["classroom_id"]
           },
         ]
       }
@@ -316,9 +631,11 @@ export type Database = {
         }
         Relationships: []
       }
-      grading_periods: {
+      grade_components: {
         Row: {
           classroom_id: string
+          course_subject_id: string
+          created_at: string
           id: string
           name: string
           position: number
@@ -326,6 +643,65 @@ export type Database = {
         }
         Insert: {
           classroom_id: string
+          course_subject_id: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          weight: number
+        }
+        Update: {
+          classroom_id?: string
+          course_subject_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_components_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_components_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_roster"
+            referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "grade_components_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_components_subject_classroom_fkey"
+            columns: ["course_subject_id", "classroom_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id", "classroom_id"]
+          },
+        ]
+      }
+      grading_periods: {
+        Row: {
+          classroom_id: string
+          course_subject_id: string
+          id: string
+          name: string
+          position: number
+          weight: number
+        }
+        Insert: {
+          classroom_id: string
+          course_subject_id: string
           id?: string
           name: string
           position?: number
@@ -333,6 +709,7 @@ export type Database = {
         }
         Update: {
           classroom_id?: string
+          course_subject_id?: string
           id?: string
           name?: string
           position?: number
@@ -352,6 +729,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_class_roster"
             referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "grading_periods_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grading_periods_subject_classroom_fkey"
+            columns: ["course_subject_id", "classroom_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id", "classroom_id"]
           },
         ]
       }
@@ -463,27 +854,33 @@ export type Database = {
           classroom_id: string
           created_at: string
           first_name: string
+          guardian_email: string | null
           id: string
           last_name: string
           middle_initial: string
+          student_email: string | null
           student_no: string
         }
         Insert: {
           classroom_id: string
           created_at?: string
           first_name: string
+          guardian_email?: string | null
           id?: string
           last_name: string
           middle_initial?: string
+          student_email?: string | null
           student_no: string
         }
         Update: {
           classroom_id?: string
           created_at?: string
           first_name?: string
+          guardian_email?: string | null
           id?: string
           last_name?: string
           middle_initial?: string
+          student_email?: string | null
           student_no?: string
         }
         Relationships: [
@@ -503,17 +900,61 @@ export type Database = {
           },
         ]
       }
+      subject_meeting_slots: {
+        Row: {
+          course_subject_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          location_label: string
+          modality: Database["public"]["Enums"]["class_modality"]
+          starts_at: string
+          weekday: number
+        }
+        Insert: {
+          course_subject_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          location_label?: string
+          modality?: Database["public"]["Enums"]["class_modality"]
+          starts_at: string
+          weekday: number
+        }
+        Update: {
+          course_subject_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          location_label?: string
+          modality?: Database["public"]["Enums"]["class_modality"]
+          starts_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_meeting_slots_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teaching_modules: {
         Row: {
           classroom_id: string | null
           created_at: string
           description: string
           file_size: number
+          folder: string
+          grading_period_id: string | null
           id: string
           kind: Database["public"]["Enums"]["module_kind"]
           mime_type: string
           owner_id: string
           storage_path: string
+          tags: string[]
           title: string
         }
         Insert: {
@@ -521,11 +962,14 @@ export type Database = {
           created_at?: string
           description?: string
           file_size: number
+          folder?: string
+          grading_period_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["module_kind"]
           mime_type: string
           owner_id: string
           storage_path: string
+          tags?: string[]
           title: string
         }
         Update: {
@@ -533,11 +977,14 @@ export type Database = {
           created_at?: string
           description?: string
           file_size?: number
+          folder?: string
+          grading_period_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["module_kind"]
           mime_type?: string
           owner_id?: string
           storage_path?: string
+          tags?: string[]
           title?: string
         }
         Relationships: [
@@ -554,6 +1001,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_class_roster"
             referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "teaching_modules_grading_period_id_fkey"
+            columns: ["grading_period_id"]
+            isOneToOne: false
+            referencedRelation: "grading_periods"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "teaching_modules_owner_id_fkey"
@@ -590,7 +1044,22 @@ export type Database = {
       }
     }
     Functions: {
+      adopt_legacy_classroom: {
+        Args: { p_classroom_id: string }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
+      module_storage_quota_allows: {
+        Args: { p_existing_name?: string; p_metadata: Json; p_name: string }
+        Returns: boolean
+      }
+      module_storage_usage: {
+        Args: never
+        Returns: {
+          quota_bytes: number
+          used_bytes: number
+        }[]
+      }
       owns_classroom: { Args: { cid: string }; Returns: boolean }
       submit_domain_request: {
         Args: {
@@ -603,10 +1072,20 @@ export type Database = {
       }
     }
     Enums: {
+      academic_period_status: "active" | "archived"
       app_role: "admin" | "teacher"
       attendance_status: "present" | "absent" | "late" | "excused"
+      calendar_event_kind: "event" | "holiday" | "note"
+      calendar_event_visibility: "private" | "organization"
+      class_modality: "face_to_face" | "online" | "hybrid"
+      course_subject_kind: "lecture" | "laboratory" | "other"
       grade_component: "lecture" | "laboratory"
-      module_kind: "lesson_plan" | "activity_story" | "resource"
+      module_kind:
+        | "lesson_plan"
+        | "activity_story"
+        | "resource"
+        | "syllabus"
+        | "teaching_material"
       teaching_level: "preschool" | "elementary" | "high_school" | "college"
     }
     CompositeTypes: {
@@ -735,10 +1214,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      academic_period_status: ["active", "archived"],
       app_role: ["admin", "teacher"],
       attendance_status: ["present", "absent", "late", "excused"],
+      calendar_event_kind: ["event", "holiday", "note"],
+      calendar_event_visibility: ["private", "organization"],
+      class_modality: ["face_to_face", "online", "hybrid"],
+      course_subject_kind: ["lecture", "laboratory", "other"],
       grade_component: ["lecture", "laboratory"],
-      module_kind: ["lesson_plan", "activity_story", "resource"],
+      module_kind: [
+        "lesson_plan",
+        "activity_story",
+        "resource",
+        "syllabus",
+        "teaching_material",
+      ],
       teaching_level: ["preschool", "elementary", "high_school", "college"],
     },
   },
