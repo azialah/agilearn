@@ -25,6 +25,7 @@ export type TeachingModule = Tables<'teaching_modules'>
 export type AllowedDomain = Tables<'allowed_email_domains'>
 export type DomainRequest = Tables<'domain_requests'>
 export type AuditLog = Tables<'audit_log'>
+export type AppNotification = Tables<'notifications'>
 export type ClassRosterRow = Database['public']['Views']['v_class_roster']['Row']
 
 // Insert aliases

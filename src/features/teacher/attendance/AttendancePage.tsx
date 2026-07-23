@@ -26,6 +26,9 @@ import { tallyStatuses } from './summary'
 import { SessionFormDialog } from './SessionFormDialog'
 import { AttendanceSummary } from './AttendanceSummary'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { reconcileNotificationIncident } from '@/lib/queries/notifications'
+import { studentFullName } from '@/types/domain'
+import { consecutiveUnexcusedAbsences } from '@/features/teacher/notifications/evaluators'
 
 function formatSessionDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`)
@@ -38,7 +41,13 @@ function formatSessionDate(iso: string): string {
   })
 }
 
-export function AttendancePage({ classroomId }: { classroomId: string }) {
+export function AttendancePage({
+  classroomId,
+  focusStudentId,
+}: {
+  classroomId: string
+  focusStudentId?: string
+}) {
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const [subjectId, setSubjectId] = useState('')
   useEffect(() => {
@@ -48,9 +57,46 @@ export function AttendancePage({ classroomId }: { classroomId: string }) {
     classroomId,
     subjectId || undefined,
   )
+  const allSessionsQuery = useClassSessions(classroomId)
   const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
   const deleteSession = useDeleteSession()
   const { toast } = useToast()
+
+  useEffect(() => {
+    const allSessions = allSessionsQuery.data
+    if (!allSessions || !students?.length) return
+    let cancelled = false
+    const evaluations = students.map((student) => {
+      const streak = consecutiveUnexcusedAbsences(
+        allSessions.map((session) => ({
+          status:
+            session.attendance_records.find((record) => record.student_id === student.id)
+              ?.status ?? null,
+          sessionDate: session.session_date,
+          createdAt: session.created_at,
+        })),
+      )
+      return reconcileNotificationIncident({
+        type: 'absence_streak',
+        classroomId,
+        studentId: student.id,
+        active: streak >= 3,
+        payload: { studentName: studentFullName(student), value: streak },
+      })
+    })
+    void Promise.all(evaluations).catch((error: unknown) => {
+      if (!cancelled) {
+        toast({
+          title: 'Could not refresh attendance alerts',
+          description: error instanceof Error ? error.message : undefined,
+          tone: 'error',
+        })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [allSessionsQuery.data, classroomId, students, toast])
 
   async function handleDelete(id: string) {
     try {
@@ -137,7 +183,13 @@ export function AttendancePage({ classroomId }: { classroomId: string }) {
         </div>
       )}
 
-      {showSummary && <AttendanceSummary students={students} sessions={sessions} />}
+      {showSummary && (
+        <AttendanceSummary
+          students={students}
+          sessions={sessions}
+          focusStudentId={focusStudentId}
+        />
+      )}
     </div>
   )
 }

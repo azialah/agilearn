@@ -89,8 +89,8 @@ export function WorkspaceSection() {
             <Bell className="size-4 text-(--color-accent-350)" /> Notifications
           </CardTitle>
           <p className="text-sm text-(--color-ink-muted)">
-            Get a system notification for account milestones, like finishing onboarding,
-            even when Agilearn isn&apos;t the active tab.
+            Turn on optional browser alerts while Agilearn is open. Your reliable
+            low-grade and attendance alerts always stay in the in-app notification bell.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

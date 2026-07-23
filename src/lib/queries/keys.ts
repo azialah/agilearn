@@ -44,6 +44,10 @@ export const keys = {
 
   usage: ['usage', 'storage'] as const,
 
+  notifications: {
+    unread: ['notifications', 'unread'] as const,
+  },
+
   students: {
     byClassroom: (classroomId: string) =>
       ['students', 'byClassroom', classroomId] as const,

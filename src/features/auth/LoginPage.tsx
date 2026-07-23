@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { supabase, REMEMBER_KEY } from '@/lib/supabase'
 import { Route } from '@/routes/login'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
+import { SquigglyText } from '@/components/ui/squiggly-text'
 import { AuthShell, StaggerGroup, StaggerItem } from './wizard-ui'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
@@ -20,6 +22,10 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [showSignIn, setShowSignIn] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return !window.matchMedia('(max-width: 767px)').matches
+  })
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -46,83 +52,196 @@ export function LoginPage() {
   return (
     <AuthShell
       rail={{ eyebrow: t('authEyebrow'), title: t('authTitle'), body: t('authBody') }}
+      mobileBrandCentered
+      mobileViewportLocked={!showSignIn}
+      mobileFormTypography={showSignIn}
+      mobileFormCentered={showSignIn}
+      mobileHeaderActionPosition="start"
+      mobileHeaderAction={
+        showSignIn ? (
+          <button
+            type="button"
+            onClick={() => setShowSignIn(false)}
+            className="inline-flex items-center gap-1.5 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            {t('backToWelcome')}
+          </button>
+        ) : undefined
+      }
     >
-      <StaggerGroup>
-        <StaggerItem>
-          <h1 className="text-lg font-semibold">{t('signIn')}</h1>
-        </StaggerItem>
-        <StaggerItem>
-          <p className="mt-1 text-sm text-(--color-ink-muted)">
-            {t('signInDescription')}
-          </p>
-        </StaggerItem>
+      {showSignIn ? (
+        <StaggerGroup>
+          <StaggerItem>
+            <h1 className="text-lg font-semibold">{t('signIn')}</h1>
+          </StaggerItem>
+          <StaggerItem>
+            <p className="mt-1 text-sm text-(--color-ink-muted)">
+              {t('signInDescription')}
+            </p>
+          </StaggerItem>
 
-        <StaggerItem>
-          <form id="login-form" onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{t('email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@school.edu"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t('password')}</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
-                >
-                  {t('forgotPassword')}
-                </Link>
+          <StaggerItem>
+            <form
+              id="login-form"
+              onSubmit={handleSubmit}
+              className="mt-5 space-y-4 text-left"
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor="email">{t('email')}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@school.edu"
+                />
               </div>
-              <PasswordInput
-                id="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t('password')}</Label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
+                  >
+                    {t('forgotPassword')}
+                  </Link>
+                </div>
+                <PasswordInput
+                  id="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <label className="flex select-none items-center gap-2 text-sm text-(--color-ink-muted)">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
+                />
+                {t('rememberMe')}
+              </label>
+            </form>
+          </StaggerItem>
+
+          <StaggerItem>
+            <div className="fixed inset-x-0 bottom-0 z-20 space-y-3 bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:px-0 md:pt-2 md:pb-0">
+              <Button
+                type="submit"
+                form="login-form"
+                size="lg"
+                loading={submitting}
+                className="w-full !rounded-full"
+              >
+                {t('signIn')}
+              </Button>
             </div>
-
-            <label className="flex items-center gap-2 text-sm text-(--color-ink-muted) select-none">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
-              />
-              {t('rememberMe')}
-            </label>
-          </form>
-        </StaggerItem>
-
-        <StaggerItem>
-          <div className="fixed inset-x-0 bottom-0 z-20 space-y-3 border-t border-(--color-border) bg-(--color-surface-1) px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:border-0 md:bg-transparent md:px-0 md:pt-2 md:pb-0">
-            <Button
-              type="submit"
-              form="login-form"
-              size="lg"
-              loading={submitting}
-              className="w-full !rounded-full"
-            >
-              {t('signIn')}
-            </Button>
-            <Link
-              to="/teacher/signup"
-              className="flex h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) px-6 text-base font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3)"
-            >
-              {t('createAccount')}
-            </Link>
-          </div>
-        </StaggerItem>
-      </StaggerGroup>
+          </StaggerItem>
+        </StaggerGroup>
+      ) : (
+        <MobileWelcome
+          title={t('authWelcomeTitle')}
+          signIn={t('signIn')}
+          createAccount={t('createAccount')}
+          consentPrefix={t('authConsentPrefix')}
+          termsConditions={t('termsConditions')}
+          consentConjunction={t('authConsentConjunction')}
+          privacyPolicy={t('privacyPolicy')}
+          onSignIn={() => setShowSignIn(true)}
+        />
+      )}
     </AuthShell>
+  )
+}
+
+function MobileWelcome({
+  title,
+  signIn,
+  createAccount,
+  consentPrefix,
+  termsConditions,
+  consentConjunction,
+  privacyPolicy,
+  onSignIn,
+}: {
+  title: string
+  signIn: string
+  createAccount: string
+  consentPrefix: string
+  termsConditions: string
+  consentConjunction: string
+  privacyPolicy: string
+  onSignIn: () => void
+}) {
+  return (
+    <div className="flex h-[calc(100dvh-9rem-env(safe-area-inset-bottom))] min-h-0 flex-col overflow-hidden overscroll-none text-center">
+      <div className="pt-[clamp(5rem,18dvh,10rem)]">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-(--color-accent-350)">
+          Agilearn for educators
+        </p>
+        <h1 className="mt-4 text-balance font-display text-4xl font-semibold leading-[1.06] tracking-tight text-(--color-ink)">
+          <WelcomeTitle title={title} />
+        </h1>
+      </div>
+
+      <div className="fixed inset-x-6 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 space-y-3">
+        <Link
+          to="/teacher/signup"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-(--color-accent-400) px-6 text-base font-semibold text-(--color-accent-fg) shadow-(--shadow-card) transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) focus-visible:ring-offset-2"
+        >
+          {createAccount}
+        </Link>
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={onSignIn}
+          className="w-full !rounded-full !font-semibold"
+        >
+          {signIn}
+        </Button>
+        <p className="px-3 pt-2 text-xs leading-relaxed text-(--color-ink-faint)">
+          {consentPrefix}
+          <span className="font-semibold underline decoration-(--color-ink-muted) underline-offset-2">
+            {termsConditions}
+          </span>
+          {consentConjunction}
+          <span className="font-semibold underline decoration-(--color-ink-muted) underline-offset-2">
+            {privacyPolicy}
+          </span>
+          .
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function WelcomeTitle({ title }: { title: string }) {
+  const phrase = 'teaching workspace'
+  const [before, after] = title.split(phrase)
+
+  if (after === undefined) return title
+
+  return (
+    <>
+      {before}
+      <SquigglyText
+        stepDuration={150}
+        scale={[1.5, 2.5]}
+        baseFrequency={0.012}
+        numOctaves={1}
+        className="font-calligraphy text-[1.12em] font-semibold leading-[0.8] tracking-normal text-(--color-accent-350)"
+      >
+        {phrase}
+      </SquigglyText>
+      {after}
+    </>
   )
 }

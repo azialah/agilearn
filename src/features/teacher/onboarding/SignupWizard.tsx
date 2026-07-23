@@ -98,6 +98,15 @@ const ONBOARDING_MILESTONES = [
   'Ready to teach',
 ] as const
 
+const ONBOARDING_STEPS: readonly OnboardingStep[] = [
+  'credentials',
+  'verify',
+  'name',
+  'school',
+  'level',
+  'welcome',
+]
+
 const STEP_PATHS: Record<OnboardingStep, string> = {
   credentials: '/teacher/signup/step-1/create-your-account',
   verify: '/teacher/signup/step-2/verify-your-email',
@@ -144,6 +153,7 @@ export function SignupWizard({ step }: SignupWizardProps) {
   }, [session, sessionPending, profile, step, setStep, navigate, verifyEmail])
 
   const currentIndex = STEP_INDEX[step]
+  const previousStep = currentIndex > 0 ? ONBOARDING_STEPS[currentIndex - 1] : null
   const rail: AuthRailContent = {
     ...ONBOARDING_RAIL[step],
     milestones: ONBOARDING_MILESTONES.map((label, index) => ({
@@ -158,8 +168,35 @@ export function SignupWizard({ step }: SignupWizardProps) {
   }
 
   return (
-    <AuthShell rail={rail}>
-      <Stepper current={STEP_INDEX[step]} total={STEP_COUNT} />
+    <AuthShell
+      rail={rail}
+      mobileFormTypography
+      mobileFormCentered
+      mobileHeaderActionPosition="start"
+      mobileHeaderSupplement={
+        <Stepper current={STEP_INDEX[step]} total={STEP_COUNT} className="mt-3" />
+      }
+      mobileHeaderAction={
+        step === 'credentials' ? (
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            Back
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => previousStep && goToStep(previousStep)}
+            className="inline-flex items-center gap-1.5 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            Back
+          </button>
+        )
+      }
+    >
       {/* opacity + margin-top (not x/scale/transform): a transform on this
           wrapper would give the StickyCta's `position: fixed` (used on
           mobile, inside each step) a new containing block, unpinning it
@@ -276,13 +313,6 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
 
   return (
     <>
-      <Link
-        to="/login"
-        aria-label="Back to sign in"
-        className="-ml-2 mb-3 inline-flex size-9 items-center justify-center rounded-full text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) lg:hidden"
-      >
-        <ChevronLeft className="size-5" />
-      </Link>
       <StaggerGroup>
         <StaggerItem>
           <h1 className="text-lg font-semibold">Create your teacher account</h1>

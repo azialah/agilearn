@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { PageLoader } from './components/ui/PageLoader'
+import { ErrorBoundary } from './lib/bugsnag'
 import './styles/app.css'
 
 const router = createRouter({
@@ -21,6 +22,8 @@ declare module '@tanstack/react-router' {
 const rootElement = document.getElementById('root')!
 createRoot(rootElement).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
   </StrictMode>,
 )

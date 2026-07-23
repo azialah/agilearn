@@ -9,7 +9,15 @@ import { GradeIcon, PlusIcon } from '@/components/icons'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { useStudents } from '@/lib/queries/students'
 import { useGradebookStructure, useScores } from '@/lib/queries/grades'
+import { reconcileNotificationIncident } from '@/lib/queries/notifications'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { computeConfiguredStudentGradebook } from '@/lib/grading'
+import { studentFullName } from '@/types/domain'
+import {
+  LOW_AVERAGE_THRESHOLD,
+  shouldNotifyLowAverage,
+} from '@/features/teacher/notifications/evaluators'
+import { useToast } from '@/components/ui/toast'
 import { ExportMenu } from '@/features/teacher/io/ExportMenu'
 import { StructurePanel } from './StructurePanel'
 import { PeriodDialog } from './PeriodDialog'
@@ -19,10 +27,18 @@ import { GradeReportDialog } from './GradeReportDialog'
 
 type View = { kind: 'period'; periodId: string } | { kind: 'summary' }
 
-export function GradesPage({ classroomId }: { classroomId: string }) {
+export function GradesPage({
+  classroomId,
+  focusStudentId,
+  initialSubjectId,
+}: {
+  classroomId: string
+  focusStudentId?: string
+  initialSubjectId?: string
+}) {
   const classroomQuery = useClassroom(classroomId)
   const subjectsQuery = useCourseSubjects(classroomId)
-  const [subjectId, setSubjectId] = useState('')
+  const [subjectId, setSubjectId] = useState(initialSubjectId ?? '')
   const activeSubjectId = subjectId || subjectsQuery.data?.[0]?.id
   const structureQuery = useGradebookStructure(classroomId, activeSubjectId)
   const studentsQuery = useStudents(classroomId)
@@ -38,9 +54,26 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
   const periods = structure?.periods ?? []
   const [view, setView] = useState<View>({ kind: 'summary' })
   const [reportOpen, setReportOpen] = useState(false)
+  const { toast } = useToast()
   const activeSubject = subjectsQuery.data?.find(
     (subject) => subject.id === activeSubjectId,
   )
+
+  useEffect(() => {
+    if (initialSubjectId) {
+      setSubjectId(initialSubjectId)
+    }
+  }, [initialSubjectId])
+
+  useEffect(() => {
+    if (focusStudentId && periods[0]) {
+      setView((current) =>
+        current.kind === 'summary'
+          ? { kind: 'period', periodId: periods[0].id }
+          : current,
+      )
+    }
+  }, [focusStudentId, periods])
 
   // Keep the selected period valid if periods change underneath us.
   useEffect(() => {
@@ -60,6 +93,42 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
 
   const students = studentsQuery.data ?? []
   const nextPeriodPosition = Math.max(-1, ...periods.map((p) => p.position)) + 1
+
+  useEffect(() => {
+    if (!structure || !activeSubjectId || !activeSubject || students.length === 0) return
+    let cancelled = false
+    const evaluations = students.map((student) => {
+      const finalGrade = computeConfiguredStudentGradebook(
+        structure,
+        scores,
+        student.id,
+      ).final
+      return reconcileNotificationIncident({
+        type: 'low_average',
+        classroomId,
+        studentId: student.id,
+        courseSubjectId: activeSubjectId,
+        active: shouldNotifyLowAverage(finalGrade),
+        payload: {
+          studentName: studentFullName(student),
+          value: finalGrade ?? LOW_AVERAGE_THRESHOLD,
+          courseSubjectName: activeSubject.name,
+        },
+      })
+    })
+    void Promise.all(evaluations).catch((error: unknown) => {
+      if (!cancelled) {
+        toast({
+          title: 'Could not refresh student alerts',
+          description: error instanceof Error ? error.message : undefined,
+          tone: 'error',
+        })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [activeSubject, activeSubjectId, classroomId, scores, structure, students, toast])
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
@@ -181,6 +250,7 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
                   scores={scores}
                   students={students}
                   periodId={view.periodId}
+                  focusStudentId={focusStudentId}
                 />
               )}
             </motion.div>

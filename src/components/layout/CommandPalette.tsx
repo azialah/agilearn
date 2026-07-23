@@ -8,6 +8,7 @@ import { useLocale } from '@/lib/locale'
 import { NAV_ITEMS } from './navItems'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 interface PaletteItem {
   to: string
@@ -35,6 +36,7 @@ export function CommandPalette({
   const { data: classrooms = [] } = useClassrooms()
   const { data: subjects = [] } = useAllCourseSubjects()
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query, 250)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -61,10 +63,10 @@ export function CommandPalette({
   }, [classrooms, isAdmin, subjects, t])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     if (!q) return items
     return items.filter((item) => item.label.toLowerCase().includes(q))
-  }, [items, query])
+  }, [debouncedQuery, items])
 
   // Global shortcut — works from anywhere in the authenticated app.
   useEffect(() => {
@@ -88,7 +90,7 @@ export function CommandPalette({
 
   useEffect(() => {
     setActiveIndex(0)
-  }, [query])
+  }, [debouncedQuery])
 
   function go(item: PaletteItem) {
     onOpenChange(false)

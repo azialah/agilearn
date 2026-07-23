@@ -27,7 +27,7 @@ import { MagneticButton } from './MagneticButton'
 import { ProductMock } from './ProductMock'
 import { AgilaStory } from './AgilaStory'
 import { MultiplierDemo } from './MultiplierDemo'
-import { Reveal } from './Reveal'
+import { Reveal, RevealWords } from './Reveal'
 import { MoreFeatures } from './MoreFeatures'
 import { Faq } from './Faq'
 import { RequestAccess } from './RequestAccess'
@@ -393,6 +393,14 @@ function CallToAction() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_120%_at_50%_-10%,var(--color-accent-500),transparent_60%)] opacity-[0.14]" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[radial-gradient(60%_100%_at_50%_120%,var(--color-accent-400),transparent_70%)] opacity-[0.08]" />
         <div className="pointer-events-none absolute inset-0 rounded-(--radius-xl) shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
+        {/* Oversized brand mark bleeding off the corner — a quiet watermark,
+            not a decoration competing with the copy. */}
+        <img
+          src="/icon-192.png"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-16 -right-14 size-64 rotate-12 opacity-[0.05] sm:size-80"
+        />
         <div className="relative">
           <h2 className="text-balance font-display text-4xl font-semibold tracking-tight sm:text-5xl">
             Ready when your class is.
@@ -400,7 +408,21 @@ function CallToAction() {
           <p className="mx-auto mt-4 max-w-md text-pretty text-base text-(--color-ink-muted) sm:text-lg">
             Sign in and pick up right where your teaching leaves off.
           </p>
-          <div className="relative mt-9 flex justify-center">
+          <div className="mx-auto mt-7 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-(--color-ink-muted)">
+            <span className="flex items-center gap-1.5">
+              <GradeIcon className="size-4 text-(--color-accent-350)" />
+              Weighted grades
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CalendarIcon className="size-4 text-(--color-accent-350)" />
+              Live attendance
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ModuleIcon className="size-4 text-(--color-accent-350)" />
+              Shared modules
+            </span>
+          </div>
+          <div className="relative mt-8 flex justify-center">
             {/* Focal glow behind the primary action so the CTA reads as the
                 one place to look. */}
             <div className="pointer-events-none absolute -inset-x-8 -inset-y-6 bg-[radial-gradient(50%_120%_at_50%_50%,var(--color-accent-400),transparent_70%)] opacity-[0.16] blur-xl" />
@@ -430,21 +452,22 @@ function CallToAction() {
 function Testimonial() {
   return (
     <section className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-      <Reveal className="text-center">
+      <div className="text-center">
         <blockquote className="text-balance font-display text-2xl font-medium leading-snug tracking-tight text-(--color-ink) sm:text-3xl">
-          “Grade season used to eat my weekends. I set the weights once, and every final
-          was ready before the deadline.”
+          <RevealWords text="“Grade season used to eat my weekends. I set the weights once, and every final was ready before the deadline.”" />
         </blockquote>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-(--color-accent-500)/20 text-sm font-semibold text-(--color-accent-300)">
-            MS
-          </span>
-          <div className="text-left text-sm">
-            <p className="font-medium text-(--color-ink)">Maribeth Suarez</p>
-            <p className="text-(--color-ink-faint)">Senior high math teacher</p>
+        <Reveal delay={1} y={12}>
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-full bg-(--color-accent-500)/20 text-sm font-semibold text-(--color-accent-300)">
+              MS
+            </span>
+            <div className="text-left text-sm">
+              <p className="font-medium text-(--color-ink)">Maribeth Suarez</p>
+              <p className="text-(--color-ink-faint)">Senior high math teacher</p>
+            </div>
           </div>
-        </div>
-      </Reveal>
+        </Reveal>
+      </div>
     </section>
   )
 }
@@ -520,13 +543,20 @@ function Footer() {
                   <span className="truncate">Email</span>
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-sm text-(--color-ink-muted)">
-                <MessageCircle className="size-4 shrink-0" aria-hidden />
-                <span className="truncate">WhatsApp: johnneo.ml</span>
+              <li>
+                <a
+                  href="https://wa.me/639474217919"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(footerLinkClass, 'flex items-center gap-2')}
+                >
+                  <MessageCircle className="size-4 shrink-0" aria-hidden />
+                  <span className="truncate">WhatsApp</span>
+                </a>
               </li>
               <li>
                 <a
-                  href="https://www.linkedin.com/in/johnneomlpz"
+                  href="https://www.linkedin.com/in/johnneomlpz/"
                   target="_blank"
                   rel="noreferrer"
                   className={cn(footerLinkClass, 'flex items-center gap-2')}

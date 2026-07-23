@@ -70,9 +70,11 @@ function TrendStrip({ sessions }: { sessions: ClassSessionWithRecords[] }) {
 export function AttendanceSummary({
   students,
   sessions,
+  focusStudentId,
 }: {
   students: Student[]
   sessions: ClassSessionWithRecords[]
+  focusStudentId?: string
 }) {
   const [sort, setSort] = useState<SummarySort>('name')
 
@@ -163,6 +165,7 @@ export function AttendanceSummary({
                   key={row.studentId}
                   name={nameById.get(row.studentId) ?? 'Unknown student'}
                   summary={row}
+                  focused={row.studentId === focusStudentId}
                 />
               ))}
             </TBody>
@@ -208,12 +211,20 @@ function CountCell({ value, muted }: { value: number; muted: boolean }) {
 function SummaryRow({
   name,
   summary,
+  focused,
 }: {
   name: string
   summary: StudentAttendanceSummary
+  focused: boolean
 }) {
   return (
-    <TR>
+    <TR
+      className={
+        focused
+          ? 'bg-(--color-accent-500)/15 outline outline-2 outline-(--color-accent-400)/55 outline-offset-[-2px]'
+          : undefined
+      }
+    >
       <TD className="font-medium">
         <div className="flex items-center gap-2">
           <span className="truncate">{name}</span>

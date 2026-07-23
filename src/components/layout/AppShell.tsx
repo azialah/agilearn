@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { motion, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/cn'
 import { TopBar } from './TopBar'
 import { CommandPalette } from './CommandPalette'
@@ -8,6 +16,7 @@ import { Logo } from '@/components/ui/Logo'
 import { CloseIcon } from '@/components/icons'
 import {
   BookOpen,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -45,11 +54,11 @@ function NavLinks({
             aria-label={compact ? t(item.labelKey) : undefined}
             title={compact ? t(item.labelKey) : undefined}
             className={cn(
-              'group flex items-center rounded-md py-2 text-sm transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)',
+              'group flex items-center rounded-md py-2 text-sm transition-colors hover:bg-(--color-accent-500)/10 hover:text-(--color-ink)',
               compact ? 'justify-center px-0' : 'gap-3 px-3',
             )}
             activeProps={{
-              className: 'bg-(--color-surface-2) text-(--color-ink) font-medium',
+              className: 'bg-(--color-accent-500)/12 text-(--color-ink) font-medium',
             }}
             inactiveProps={{ className: 'text-(--color-ink-muted)' }}
             activeOptions={{ exact: false }}
@@ -65,11 +74,12 @@ function NavLinks({
 
 // On the settings route the desktop sidebar swaps the app nav for the
 // settings sections, with a link back to the workspace.
-function SettingsSidebarNav() {
+function SettingsSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1">
       <Link
         to="/teacher/dashboard"
+        onClick={onNavigate}
         className="mb-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)"
       >
         <ChevronLeft className="size-4" /> Back to workspace
@@ -81,6 +91,7 @@ function SettingsSidebarNav() {
         <Link
           key={section.to}
           to={section.to}
+          onClick={onNavigate}
           className="rounded-md px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)"
           activeProps={{
             className: 'bg-(--color-surface-2) text-(--color-ink) font-medium',
@@ -109,10 +120,22 @@ function Brand({ compact = false }: { compact?: boolean }) {
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [sidebarCompact, setSidebarCompact] = useState(false)
+  const [sidebarCompact, setSidebarCompact] = useState<boolean | null>(() => {
+    const saved = localStorage.getItem('agilearn-sidebar-compact')
+    return saved === null ? null : saved === 'true'
+  })
   const [autoCompact, setAutoCompact] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarHovered, setSidebarHovered] = useState(false)
+  const [mobileNavPreview, setMobileNavPreview] = useState<MobileNavTarget | null>(null)
+  const mobileNavDrag = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    isSwipe: boolean
+  } | null>(null)
+  const suppressMobileNavClick = useRef(false)
+  const navigate = useNavigate()
   const { data: profile } = useProfile()
   const { data: classrooms } = useClassrooms()
   const { data: subjects } = useAllCourseSubjects()
@@ -122,12 +145,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Collapse to the rail when the user pins it OR when the window is narrow
   // (roughly a shrunk desktop window); hovering the rail expands it back.
   // Settings mode always shows the expanded sidebar (it hosts section links).
-  const railCollapsed = sidebarCompact || autoCompact
+  const railCollapsed = sidebarCompact ?? autoCompact
   const effectiveCompact = !settingsMode && railCollapsed && !sidebarHovered
-
-  useEffect(() => {
-    setSidebarCompact(localStorage.getItem('agilearn-sidebar-compact') === 'true')
-  }, [])
 
   // Auto-collapse on narrower desktop widths (below xl, still a grid layout).
   useEffect(() => {
@@ -138,10 +157,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => media.removeEventListener('change', sync)
   }, [])
 
-  // Below lg the app has no sidebar; the settings routes use a dedicated mobile
-  // chrome (no app top bar / bottom nav — a bottom search bar instead).
+  // Phones use a dedicated settings chrome with a bottom search bar. Tablets
+  // keep the top bar and open their navigation in a drawer.
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 1023px)')
+    const media = window.matchMedia('(max-width: 767px)')
     const sync = () => setIsMobile(media.matches)
     sync()
     media.addEventListener('change', sync)
@@ -151,18 +170,84 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settingsOnMobile = settingsMode && isMobile
 
   function toggleSidebar() {
-    setSidebarCompact((current) => {
-      const next = !current
+    setSidebarCompact(() => {
+      const next = !railCollapsed
       localStorage.setItem('agilearn-sidebar-compact', String(next))
       return next
     })
+  }
+
+  function mobileNavTargetAt(x: number, y: number): MobileNavTarget | null {
+    const element = document.elementFromPoint(x, y)
+    const target = element?.closest<HTMLElement>('[data-mobile-nav-target]')?.dataset
+      .mobileNavTarget
+    return isMobileNavTarget(target) ? target : null
+  }
+
+  function handleMobileNavPointerDown(event: PointerEvent<HTMLElement>) {
+    if (event.pointerType !== 'touch') return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    mobileNavDrag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      isSwipe: false,
+    }
+  }
+
+  function handleMobileNavPointerMove(event: PointerEvent<HTMLElement>) {
+    const drag = mobileNavDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const horizontalDistance = Math.abs(event.clientX - drag.startX)
+    const verticalDistance = Math.abs(event.clientY - drag.startY)
+    if (
+      !drag.isSwipe &&
+      (horizontalDistance < 12 || horizontalDistance < verticalDistance)
+    )
+      return
+
+    drag.isSwipe = true
+    setMobileNavPreview(mobileNavTargetAt(event.clientX, event.clientY))
+  }
+
+  function handleMobileNavPointerEnd(event: PointerEvent<HTMLElement>) {
+    const drag = mobileNavDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const target = drag.isSwipe ? mobileNavTargetAt(event.clientX, event.clientY) : null
+    mobileNavDrag.current = null
+    setMobileNavPreview(null)
+    if (!target) return
+
+    suppressMobileNavClick.current = true
+    window.setTimeout(() => {
+      suppressMobileNavClick.current = false
+    }, 0)
+    if (target === 'more') {
+      setDrawerOpen(true)
+      return
+    }
+    navigate({ to: target })
+  }
+
+  function handleMobileNavPointerCancel() {
+    mobileNavDrag.current = null
+    setMobileNavPreview(null)
+  }
+
+  function handleMobileNavClickCapture(event: MouseEvent<HTMLElement>) {
+    if (!suppressMobileNavClick.current) return
+    event.preventDefault()
+    event.stopPropagation()
+    suppressMobileNavClick.current = false
   }
 
   // Hover-intent: wait a beat before expanding the rail so a quick graze past
   // the sidebar doesn't pop it open. Collapsing on leave stays immediate.
   const hoverTimer = useRef<number | null>(null)
   function handleRailEnter() {
-    if (!railCollapsed) return
+    if (!railCollapsed || sidebarCompact !== null) return
     if (hoverTimer.current) window.clearTimeout(hoverTimer.current)
     hoverTimer.current = window.setTimeout(() => setSidebarHovered(true), 180)
   }
@@ -200,7 +285,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!effectiveCompact && <Brand />}
           {!settingsMode && (
             <IconButton
-              label={effectiveCompact ? 'Keep sidebar open' : 'Collapse sidebar'}
+              label={effectiveCompact ? 'Expand sidebar' : 'Collapse sidebar'}
               onClick={toggleSidebar}
               className="hidden lg:inline-flex"
             >
@@ -260,21 +345,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </aside>
 
-      {/* Mobile drawer: account and the less-frequent destinations. */}
+      {/* Phone bottom sheet / tablet side drawer for navigation. */}
       {drawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/48 backdrop-blur-md"
             onClick={() => setDrawerOpen(false)}
           />
-          <aside className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] flex max-h-[78dvh] flex-col gap-5 rounded-4xl border border-(--color-border) bg-(--color-surface-1) p-4 shadow-(--shadow-pop)">
+          <aside className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] flex max-h-[78dvh] flex-col gap-5 rounded-4xl border border-white/35 bg-[color-mix(in_srgb,var(--color-surface-1)_70%,transparent)] p-4 shadow-(--shadow-pop) ring-1 ring-inset ring-white/20 backdrop-blur-2xl backdrop-saturate-150 md:inset-y-3 md:bottom-auto md:left-3 md:right-auto md:max-h-none md:w-80">
             <div className="flex items-center justify-between">
               <Brand />
               <IconButton label="Close navigation" onClick={() => setDrawerOpen(false)}>
                 <CloseIcon />
               </IconButton>
             </div>
-            <NavLinks isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
+            {settingsMode ? (
+              <SettingsSidebarNav onNavigate={() => setDrawerOpen(false)} />
+            ) : (
+              <NavLinks isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
+            )}
           </aside>
         </div>
       )}
@@ -282,11 +371,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-col">
         {/* Mobile settings screens carry their own header/back, so the app top
             bar is hidden there (an iOS-style bottom search bar replaces it). */}
-        {!settingsOnMobile && <TopBar onOpenSearch={() => setSearchOpen(true)} />}
+        {!settingsOnMobile && (
+          <TopBar
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenNavigation={() => setDrawerOpen(true)}
+          />
+        )}
         <TeacherBreadcrumbs />
         <main
           className={cn(
-            'page-enter mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 lg:pb-6',
+            'page-enter mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
           )}
         >
           {children}
@@ -297,16 +391,43 @@ export function AppShell({ children }: { children: ReactNode }) {
       {!settingsMode && (
         <nav
           aria-label="Primary navigation"
-          className="bottom-nav-enter fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-md items-center justify-around rounded-[1.6rem] border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_55%,transparent)] px-2 py-2 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
+          onPointerDown={handleMobileNavPointerDown}
+          onPointerMove={handleMobileNavPointerMove}
+          onPointerUp={handleMobileNavPointerEnd}
+          onPointerCancel={handleMobileNavPointerCancel}
+          onClickCapture={handleMobileNavClickCapture}
+          className="bottom-nav-enter fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-md touch-pan-y items-center justify-around rounded-[1.6rem] border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_55%,transparent)] px-2 py-2 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150 md:hidden"
         >
-          <MobileNavLink to="/teacher/dashboard" label="Home" icon={<Home />} />
-          <MobileNavLink to="/teacher/classrooms" label="Classes" icon={<BookOpen />} />
-          <MobileNavLink to="/teacher/modules" label="Materials" icon={<Layers3 />} />
+          <MobileNavLink
+            to="/teacher/dashboard"
+            label="Home"
+            icon={<Home />}
+            preview={mobileNavPreview}
+          />
+          <MobileNavLink
+            to="/teacher/classrooms"
+            label="Classes"
+            icon={<BookOpen />}
+            preview={mobileNavPreview}
+          />
+          <MobileNavLink
+            to="/teacher/calendar"
+            label="Calendar"
+            icon={<CalendarDays />}
+            preview={mobileNavPreview}
+          />
+          <MobileNavLink
+            to="/teacher/modules"
+            label="Materials"
+            icon={<Layers3 />}
+            preview={mobileNavPreview}
+          />
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open more navigation"
-            className="flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-xs text-(--color-ink-muted)"
+            data-mobile-nav-target="more"
+            className="flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-[11px] leading-none text-(--color-ink-muted) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
           >
             <MoreHorizontal className="size-5" />
             <span>More</span>
@@ -324,28 +445,71 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 }
 
+type MobileNavDestination =
+  '/teacher/dashboard' | '/teacher/classrooms' | '/teacher/calendar' | '/teacher/modules'
+type MobileNavTarget = MobileNavDestination | 'more'
+
+function isMobileNavTarget(value: string | undefined): value is MobileNavTarget {
+  return (
+    value === '/teacher/dashboard' ||
+    value === '/teacher/classrooms' ||
+    value === '/teacher/calendar' ||
+    value === '/teacher/modules' ||
+    value === 'more'
+  )
+}
+
 function MobileNavLink({
   to,
   label,
   icon,
+  preview,
 }: {
-  to: '/teacher/dashboard' | '/teacher/classrooms' | '/teacher/modules'
+  to: MobileNavDestination
   label: string
   icon: ReactNode
+  preview: MobileNavTarget | null
 }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const reduceMotion = useReducedMotion()
+  const isCurrentRoute =
+    to === '/teacher/dashboard'
+      ? pathname === to
+      : pathname === to || pathname.startsWith(`${to}/`)
+  const isActive = preview ? preview === to : isCurrentRoute
+
   return (
     <Link
       to={to}
+      data-mobile-nav-target={to}
       activeOptions={{ exact: to === '/teacher/dashboard' }}
-      className="flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-xs"
-      activeProps={{
-        className:
-          'bg-(--color-accent-400)/90 font-medium text-(--color-accent-fg) shadow-sm ring-1 ring-inset ring-white/30',
-      }}
-      inactiveProps={{ className: 'text-(--color-ink-muted)' }}
+      className={cn(
+        'relative isolate flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-[11px] leading-none transition-colors',
+        isActive ? 'font-medium text-(--color-accent-fg)' : 'text-(--color-ink-muted)',
+      )}
     >
-      <span className="[&>svg]:size-4">{icon}</span>
-      <span>{label}</span>
+      {isActive && (
+        <motion.span
+          layoutId="mobile-nav-active-indicator"
+          initial={false}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { type: 'spring', stiffness: 430, damping: 30, mass: 0.7 }
+          }
+          className="absolute inset-0 z-0 rounded-full border border-white/45 bg-[color-mix(in_srgb,var(--color-accent-400)_82%,white)] shadow-[0_5px_15px_color-mix(in_srgb,var(--color-accent-400)_24%,transparent)] before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/45 before:blur-[2px] before:content-['']"
+        />
+      )}
+      <motion.span
+        animate={{ scale: isActive && !reduceMotion ? 1.08 : 1 }}
+        transition={
+          reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 24 }
+        }
+        className="relative z-10 [&>svg]:size-5"
+      >
+        {icon}
+      </motion.span>
+      <span className="relative z-10">{label}</span>
     </Link>
   )
 }

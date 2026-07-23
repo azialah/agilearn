@@ -2,8 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <meta
+      id="viewport-meta"
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
@@ -23,6 +30,17 @@
     <script>
       ;(function () {
         try {
+          var isStandalone =
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true
+          if (isStandalone) {
+            document
+              .getElementById('viewport-meta')
+              .setAttribute(
+                'content',
+                'width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover',
+              )
+          }
           var t = localStorage.getItem('agilearn-theme') || 'system'
           var dark =
             t === 'dark' ||
