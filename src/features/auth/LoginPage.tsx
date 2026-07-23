@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
-import { AuthShell } from './wizard-ui'
+import { AuthShell, StaggerGroup, StaggerItem } from './wizard-ui'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
 
@@ -47,73 +47,82 @@ export function LoginPage() {
     <AuthShell
       rail={{ eyebrow: t('authEyebrow'), title: t('authTitle'), body: t('authBody') }}
     >
-      <h1 className="text-lg font-semibold">{t('signIn')}</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">
-        {t('signInDescription')}
-      </p>
+      <StaggerGroup>
+        <StaggerItem>
+          <h1 className="text-lg font-semibold">{t('signIn')}</h1>
+        </StaggerItem>
+        <StaggerItem>
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
+            {t('signInDescription')}
+          </p>
+        </StaggerItem>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="email">{t('email')}</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@school.edu"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">{t('password')}</Label>
-            <Link
-              to="/forgot-password"
-              className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
+        <StaggerItem>
+          <form id="login-form" onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">{t('email')}</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.edu"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">{t('password')}</Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
+                >
+                  {t('forgotPassword')}
+                </Link>
+              </div>
+              <PasswordInput
+                id="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-(--color-ink-muted) select-none">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
+              />
+              {t('rememberMe')}
+            </label>
+          </form>
+        </StaggerItem>
+
+        <StaggerItem>
+          <div className="fixed inset-x-0 bottom-0 z-20 space-y-3 border-t border-(--color-border) bg-(--color-surface-1) px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:border-0 md:bg-transparent md:px-0 md:pt-2 md:pb-0">
+            <Button
+              type="submit"
+              form="login-form"
+              size="lg"
+              loading={submitting}
+              className="w-full !rounded-full"
             >
-              {t('forgotPassword')}
+              {t('signIn')}
+            </Button>
+            <Link
+              to="/teacher/signup"
+              className="flex h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) px-6 text-base font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3)"
+            >
+              {t('createAccount')}
             </Link>
           </div>
-          <PasswordInput
-            id="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-(--color-ink-muted) select-none">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-            className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
-          />
-          {t('rememberMe')}
-        </label>
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full rounded-full"
-          loading={submitting}
-        >
-          {t('signIn')}
-        </Button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-(--color-ink-muted)">
-        {t('newTeacher')}{' '}
-        <Link
-          to="/teacher/signup"
-          className="font-medium text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
-        >
-          {t('createAccount')}
-        </Link>
-      </p>
+        </StaggerItem>
+      </StaggerGroup>
     </AuthShell>
   )
 }

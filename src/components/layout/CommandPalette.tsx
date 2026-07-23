@@ -125,10 +125,7 @@ export function CommandPalette({
         <DialogTitle className="sr-only">Jump to a page</DialogTitle>
         <div className="flex h-full flex-col lg:h-auto">
           <div className="flex items-center gap-3 border-b border-(--color-border) px-4 py-3.5">
-            <Search
-              className="size-5 shrink-0 text-(--color-accent-350)"
-              aria-hidden
-            />
+            <Search className="size-5 shrink-0 text-(--color-accent-350)" aria-hidden />
             <input
               ref={inputRef}
               role="combobox"
@@ -189,8 +186,8 @@ export function CommandPalette({
             <kbd className="rounded border border-(--color-border) px-1">↑</kbd>{' '}
             <kbd className="rounded border border-(--color-border) px-1">↓</kbd> to
             navigate ·{' '}
-            <kbd className="rounded border border-(--color-border) px-1">Enter</kbd>{' '}
-            to select
+            <kbd className="rounded border border-(--color-border) px-1">Enter</kbd> to
+            select
           </div>
         </div>
       </DialogContent>

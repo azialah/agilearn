@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PinInput } from '@/components/ui/PinInput'
 import { PasswordStrengthMeter } from './PasswordStrengthMeter'
-import { Check } from 'lucide-react'
+import { Check, ChevronLeft } from 'lucide-react'
 import { ClassroomIcon, GradeIcon, ModuleIcon } from '@/components/icons'
 import { useToast } from '@/components/ui/toast'
 import {
@@ -29,6 +29,8 @@ import {
   Field,
   FormError,
   Hint,
+  StaggerGroup,
+  StaggerItem,
   StickyCta,
   type AuthRailContent,
 } from '@/features/auth/wizard-ui'
@@ -274,71 +276,94 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
 
   return (
     <>
-      <h1 className="text-lg font-semibold">Create your teacher account</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">
-        Use your school email to get started.
-      </p>
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <Field label="Email" htmlFor="email" error={errors.email}>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@school.edu"
-            aria-describedby="email-domain-hint"
-          />
-          <p
-            id="email-domain-hint"
-            aria-live="polite"
-            className={cn(
-              'mt-1.5 rounded-md px-3 py-2 text-xs',
-              domainStatus === 'approved' &&
-                'bg-(--color-success)/10 text-(--color-success)',
-              domainStatus === 'unapproved' &&
-                'bg-(--color-warning)/10 text-(--color-warning)',
-              domainStatus === 'unavailable' &&
-                'bg-(--color-danger)/10 text-(--color-danger)',
-              (domainStatus === 'idle' || domainStatus === 'checking') &&
-                'bg-(--color-surface-2) text-(--color-ink-muted)',
-            )}
-          >
-            {domainHint}
+      <Link
+        to="/login"
+        aria-label="Back to sign in"
+        className="-ml-2 mb-3 inline-flex size-9 items-center justify-center rounded-full text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) lg:hidden"
+      >
+        <ChevronLeft className="size-5" />
+      </Link>
+      <StaggerGroup>
+        <StaggerItem>
+          <h1 className="text-lg font-semibold">Create your teacher account</h1>
+        </StaggerItem>
+        <StaggerItem>
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
+            Use your school email to get started.
           </p>
-        </Field>
-        <Field label="Password" htmlFor="password" error={errors.password}>
-          <PasswordInput
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
-          />
-          <div className="pt-1.5">
-            <PasswordStrengthMeter password={password} />
-          </div>
-        </Field>
-        <Field
-          label="Confirm password"
-          htmlFor="confirm-password"
-          error={errors.confirmPassword}
-        >
-          <PasswordInput
-            id="confirm-password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter your password"
-          />
-        </Field>
-        {formError && <FormError message={formError} />}
-        <StickyCta
-          label="Continue"
-          loading={submitting}
-          disabled={domainStatus === 'checking' || domainStatus === 'unapproved'}
-        />
-      </form>
+        </StaggerItem>
+        <StaggerItem>
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <Field label="Email" htmlFor="email" error={errors.email}>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.edu"
+                aria-describedby="email-domain-hint"
+              />
+              <p
+                id="email-domain-hint"
+                aria-live="polite"
+                className={cn(
+                  'mt-1.5 rounded-md px-3 py-2 text-xs',
+                  domainStatus === 'approved' &&
+                    'bg-(--color-success)/10 text-(--color-success)',
+                  domainStatus === 'unapproved' &&
+                    'bg-(--color-warning)/10 text-(--color-warning)',
+                  domainStatus === 'unavailable' &&
+                    'bg-(--color-danger)/10 text-(--color-danger)',
+                  (domainStatus === 'idle' || domainStatus === 'checking') &&
+                    'bg-(--color-surface-2) text-(--color-ink-muted)',
+                )}
+              >
+                {domainHint}
+              </p>
+            </Field>
+            <Field label="Password" htmlFor="password" error={errors.password}>
+              <PasswordInput
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+              />
+              <div className="pt-1.5">
+                <PasswordStrengthMeter password={password} />
+              </div>
+            </Field>
+            <Field
+              label="Confirm password"
+              htmlFor="confirm-password"
+              error={errors.confirmPassword}
+            >
+              <PasswordInput
+                id="confirm-password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+              />
+            </Field>
+            {formError && <FormError message={formError} />}
+            <StickyCta
+              label="Continue"
+              loading={submitting}
+              disabled={domainStatus === 'checking' || domainStatus === 'unapproved'}
+            />
+          </form>
+        </StaggerItem>
+        <StaggerItem>
+          <Link
+            to="/login"
+            className="mt-4 hidden h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) text-sm font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3) lg:flex"
+          >
+            Back to sign in
+          </Link>
+        </StaggerItem>
+      </StaggerGroup>
     </>
   )
 }
@@ -397,49 +422,55 @@ function VerifyStep({
   }
 
   return (
-    <>
-      <h1 className="text-lg font-semibold">Verify your email</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">
-        {notice ?? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`}
-      </p>
-      <div className="mt-5 space-y-4">
-        <Field label="Verification code" htmlFor="otp-code" error={error ?? undefined}>
-          <PinInput
-            label="Verification code"
-            value={code}
-            onChange={setCode}
-            length={CODE_LENGTH}
-            autoFocus
-            disabled={submitting}
-            onComplete={verify}
+    <StaggerGroup>
+      <StaggerItem>
+        <h1 className="text-lg font-semibold">Verify your email</h1>
+      </StaggerItem>
+      <StaggerItem>
+        <p className="mt-1 text-sm text-(--color-ink-muted)">
+          {notice ?? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`}
+        </p>
+      </StaggerItem>
+      <StaggerItem>
+        <div className="mt-5 space-y-4">
+          <Field label="Verification code" htmlFor="otp-code" error={error ?? undefined}>
+            <PinInput
+              label="Verification code"
+              value={code}
+              onChange={setCode}
+              length={CODE_LENGTH}
+              autoFocus
+              disabled={submitting}
+              onComplete={verify}
+            />
+          </Field>
+          <div className="flex items-center justify-between text-sm">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
+            >
+              Use a different email
+            </button>
+            <button
+              type="button"
+              onClick={resend}
+              disabled={submitting}
+              className="text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:opacity-50"
+            >
+              Resend code
+            </button>
+          </div>
+          <StickyCta
+            label="Verify and continue"
+            type="button"
+            loading={submitting}
+            disabled={code.length !== CODE_LENGTH}
+            onClick={() => verify(code)}
           />
-        </Field>
-        <div className="flex items-center justify-between text-sm">
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
-          >
-            Use a different email
-          </button>
-          <button
-            type="button"
-            onClick={resend}
-            disabled={submitting}
-            className="text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:opacity-50"
-          >
-            Resend code
-          </button>
         </div>
-        <StickyCta
-          label="Verify and continue"
-          type="button"
-          loading={submitting}
-          disabled={code.length !== CODE_LENGTH}
-          onClick={() => verify(code)}
-        />
-      </div>
-    </>
+      </StaggerItem>
+    </StaggerGroup>
   )
 }
 
@@ -476,58 +507,64 @@ function NameStep({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <>
-      <h1 className="text-lg font-semibold">What's your name?</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">
-        This is how you'll appear across Agilearn.
-      </p>
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <Field label="Last name" htmlFor="last-name" error={errors.lastName}>
-          <Input
-            id="last-name"
-            autoComplete="family-name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder={lastNamePlaceholder}
-          />
-        </Field>
-        <Field label="First name" htmlFor="first-name" error={errors.firstName}>
-          <Input
-            id="first-name"
-            autoComplete="given-name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder={firstNamePlaceholder}
-          />
-        </Field>
-        <Field label="Middle name" htmlFor="middle-name" optional>
-          <Input
-            id="middle-name"
-            autoComplete="additional-name"
-            value={middleName}
-            onChange={(e) => setMiddleName(e.target.value)}
-            placeholder={middleNamePlaceholder}
-          />
-        </Field>
-        <Field label="Suffix" htmlFor="suffix" optional>
-          <select
-            id="suffix"
-            value={suffix}
-            onChange={(e) => setSuffix(e.target.value)}
-            className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base text-(--color-ink) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none md:text-sm"
-          >
-            <option value="">Select a suffix</option>
-            {SUFFIXES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </Field>
-        {formError && <FormError message={formError} />}
-        <StickyCta label="Continue" loading={completeProfile.isPending} />
-      </form>
-    </>
+    <StaggerGroup>
+      <StaggerItem>
+        <h1 className="text-lg font-semibold">What's your name?</h1>
+      </StaggerItem>
+      <StaggerItem>
+        <p className="mt-1 text-sm text-(--color-ink-muted)">
+          This is how you'll appear across Agilearn.
+        </p>
+      </StaggerItem>
+      <StaggerItem>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <Field label="Last name" htmlFor="last-name" error={errors.lastName}>
+            <Input
+              id="last-name"
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder={lastNamePlaceholder}
+            />
+          </Field>
+          <Field label="First name" htmlFor="first-name" error={errors.firstName}>
+            <Input
+              id="first-name"
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder={firstNamePlaceholder}
+            />
+          </Field>
+          <Field label="Middle name" htmlFor="middle-name" optional>
+            <Input
+              id="middle-name"
+              autoComplete="additional-name"
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+              placeholder={middleNamePlaceholder}
+            />
+          </Field>
+          <Field label="Suffix" htmlFor="suffix" optional>
+            <select
+              id="suffix"
+              value={suffix}
+              onChange={(e) => setSuffix(e.target.value)}
+              className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base text-(--color-ink) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none md:text-sm"
+            >
+              <option value="">Select a suffix</option>
+              {SUFFIXES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {formError && <FormError message={formError} />}
+          <StickyCta label="Continue" loading={completeProfile.isPending} />
+        </form>
+      </StaggerItem>
+    </StaggerGroup>
   )
 }
 
@@ -593,36 +630,42 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <>
-      <h1 className="text-lg font-semibold">What school are you in?</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">
-        Tell us where you teach.
-      </p>
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <Field label="School" htmlFor="school" error={errors.school}>
-          <Input
-            id="school"
-            autoComplete="organization"
-            value={school}
-            onChange={(e) => setSchool(e.target.value)}
-            placeholder="Gordon College"
-          />
-        </Field>
-        <Field label="Location" htmlFor="location" optional>
-          <Input
-            id="location"
-            autoComplete="address-level2"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="City, Province"
-          />
-        </Field>
-        <Hint>Helps us tailor Agilearn to your school.</Hint>
-        {formError && <FormError message={formError} />}
-        <StickyCta label="Continue" loading={saveDetails.isPending} />
-      </form>
-      <SkipButton onClick={onDone} />
-    </>
+    <StaggerGroup>
+      <StaggerItem>
+        <h1 className="text-lg font-semibold">What school are you in?</h1>
+      </StaggerItem>
+      <StaggerItem>
+        <p className="mt-1 text-sm text-(--color-ink-muted)">Tell us where you teach.</p>
+      </StaggerItem>
+      <StaggerItem>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <Field label="School" htmlFor="school" error={errors.school}>
+            <Input
+              id="school"
+              autoComplete="organization"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              placeholder="Gordon College"
+            />
+          </Field>
+          <Field label="Location" htmlFor="location" optional>
+            <Input
+              id="location"
+              autoComplete="address-level2"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="City, Province"
+            />
+          </Field>
+          <Hint>Helps us tailor Agilearn to your school.</Hint>
+          {formError && <FormError message={formError} />}
+          <StickyCta label="Continue" loading={saveDetails.isPending} />
+        </form>
+      </StaggerItem>
+      <StaggerItem>
+        <SkipButton onClick={onDone} />
+      </StaggerItem>
+    </StaggerGroup>
   )
 }
 
@@ -659,42 +702,54 @@ function LevelStep({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <>
-      <h1 className="text-lg font-semibold">What level are you teaching?</h1>
-      <p className="mt-1 text-sm text-(--color-ink-muted)">Choose all that apply.</p>
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Teaching level">
-          {LEVELS.map((level) => {
-            const active = selected.includes(level.value)
-            return (
-              <button
-                key={level.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => toggle(level.value)}
-                className={cn(
-                  'flex items-center justify-between rounded-md border px-3 py-3 text-sm transition-colors',
-                  active
-                    ? 'border-(--color-accent-400) bg-(--color-accent-50) text-(--color-ink)'
-                    : 'border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) hover:border-(--color-border-strong)',
-                )}
-              >
-                {level.label}
-                {active && <Check className="size-4 text-(--color-accent-400)" />}
-              </button>
-            )
-          })}
-        </div>
-        <Hint>Helps us build the right tools for your grade levels.</Hint>
-        {formError && <FormError message={formError} />}
-        <StickyCta
-          label="Continue"
-          loading={saveDetails.isPending}
-          disabled={selected.length === 0}
-        />
-      </form>
-      <SkipButton onClick={onDone} />
-    </>
+    <StaggerGroup>
+      <StaggerItem>
+        <h1 className="text-lg font-semibold">What level are you teaching?</h1>
+      </StaggerItem>
+      <StaggerItem>
+        <p className="mt-1 text-sm text-(--color-ink-muted)">Choose all that apply.</p>
+      </StaggerItem>
+      <StaggerItem>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <div
+            className="grid grid-cols-2 gap-2"
+            role="group"
+            aria-label="Teaching level"
+          >
+            {LEVELS.map((level) => {
+              const active = selected.includes(level.value)
+              return (
+                <button
+                  key={level.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggle(level.value)}
+                  className={cn(
+                    'flex items-center justify-between rounded-md border px-3 py-3 text-sm transition-colors',
+                    active
+                      ? 'border-(--color-accent-400) bg-(--color-accent-50) text-(--color-ink)'
+                      : 'border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) hover:border-(--color-border-strong)',
+                  )}
+                >
+                  {level.label}
+                  {active && <Check className="size-4 text-(--color-accent-400)" />}
+                </button>
+              )
+            })}
+          </div>
+          <Hint>Helps us build the right tools for your grade levels.</Hint>
+          {formError && <FormError message={formError} />}
+          <StickyCta
+            label="Continue"
+            loading={saveDetails.isPending}
+            disabled={selected.length === 0}
+          />
+        </form>
+      </StaggerItem>
+      <StaggerItem>
+        <SkipButton onClick={onDone} />
+      </StaggerItem>
+    </StaggerGroup>
   )
 }
 

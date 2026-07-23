@@ -109,16 +109,12 @@ export function AnalyticsPage() {
             ) / 10}
             h
           </p>
-          <p className="mt-1 text-sm text-(--color-ink-muted)">
-            scheduled this week
-          </p>
+          <p className="mt-1 text-sm text-(--color-ink-muted)">scheduled this week</p>
         </Card>
         <Card className="rounded-[1.75rem] p-5">
           <TrendingUp className="size-5 text-(--color-accent-350)" />
           <p className="mt-4 text-3xl font-semibold">{subjects.length}</p>
-          <p className="mt-1 text-sm text-(--color-ink-muted)">
-            active course subjects
-          </p>
+          <p className="mt-1 text-sm text-(--color-ink-muted)">active course subjects</p>
         </Card>
         <Card className="rounded-[1.75rem] p-5">
           <p className="font-(family-name:--font-calligraphy) text-2xl text-(--color-accent-350)">
@@ -212,9 +208,7 @@ export function AnalyticsPage() {
               />
             ))
           ) : (
-            <p className="text-sm text-(--color-ink-muted)">
-              No subject schedules yet.
-            </p>
+            <p className="text-sm text-(--color-ink-muted)">No subject schedules yet.</p>
           )}
         </div>
       </Card>

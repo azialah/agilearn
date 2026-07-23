@@ -133,9 +133,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     <Icon className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-sm font-medium text-(--color-ink)">
-                      {item.title}
-                    </p>
+                    <p className="text-sm font-medium text-(--color-ink)">{item.title}</p>
                     {item.description && (
                       <p className="mt-0.5 text-sm text-(--color-ink-muted)">
                         {item.description}

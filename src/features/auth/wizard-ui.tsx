@@ -1,12 +1,75 @@
-import type { ReactNode } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link } from '@tanstack/react-router'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Label } from '@/components/ui/Label'
+import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { BackgroundLines } from '@/components/ui/BackgroundLines'
 import { cn } from '@/lib/cn'
+
+/** True at `lg` and up — the breakpoint where the desktop rail + staggered
+ * text reveal replace the plain mobile fade (per design: xs/sm/md keep their
+ * existing subtle animation untouched). */
+function useIsLargeScreen() {
+  const [large, setLarge] = useState(
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  )
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setLarge(media.matches)
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
+  }, [])
+  return large
+}
+
+const staggerContainer: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+}
+
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
+}
+
+/**
+ * Groups direct `StaggerItem` children so they reveal one after another on
+ * `lg`+ screens, replaying on every mount (step change or refresh). Below
+ * `lg` it renders children as-is — the existing per-page fade stays untouched.
+ */
+export function StaggerGroup({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  const isLarge = useIsLargeScreen()
+  const reduce = useReducedMotion()
+  if (!isLarge || reduce) return <div className={className}>{children}</div>
+  return (
+    <motion.div
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+/** One reveal step inside a `StaggerGroup`; a no-op passthrough below `lg`. */
+export function StaggerItem({ children }: { children: ReactNode }) {
+  const isLarge = useIsLargeScreen()
+  if (!isLarge) return <>{children}</>
+  return <motion.div variants={staggerItem}>{children}</motion.div>
+}
 
 export interface AuthRailMilestone {
   label: string
@@ -31,33 +94,46 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           initial={reduce ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="flex items-center gap-2 text-(--color-surface-1)"
+          className="flex items-center gap-2 text-(--color-rail-fg)"
         >
-          <span className="flex size-9 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
-            A
-          </span>
-          <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+          <Link to="/" className="flex items-center gap-2">
+            <Logo size={9} />
+            <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+          </Link>
         </motion.div>
 
         <motion.div
           key={title}
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: 'easeOut', delay: reduce ? 0 : 0.12 }}
+          variants={staggerContainer}
+          initial={reduce ? 'visible' : 'hidden'}
+          animate="visible"
           className="my-auto py-12"
         >
-          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-accent-200)">
+          <motion.p
+            variants={staggerItem}
+            className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-rail-fg-muted)"
+          >
             {eyebrow}
-          </p>
-          <h2 className="mt-4 max-w-md text-balance font-display text-4xl font-semibold leading-[1.02] tracking-tight text-(--color-surface-1) xl:text-5xl">
+          </motion.p>
+          <motion.h2
+            variants={staggerItem}
+            className="mt-4 max-w-md text-balance font-display text-4xl font-semibold leading-[1.02] tracking-tight text-(--color-rail-fg) xl:text-5xl"
+          >
             {title}
-          </h2>
-          <p className="mt-5 max-w-sm text-pretty text-base leading-relaxed text-[color-mix(in_srgb,var(--color-surface-1)_72%,transparent)]">
+          </motion.h2>
+          <motion.p
+            variants={staggerItem}
+            className="mt-5 max-w-sm text-pretty text-base leading-relaxed text-[color-mix(in_srgb,var(--color-rail-fg)_72%,transparent)]"
+          >
             {body}
-          </p>
+          </motion.p>
 
           {milestones && (
-            <ol className="mt-10 space-y-3" aria-label="Account setup progress">
+            <motion.ol
+              variants={staggerItem}
+              className="mt-10 space-y-3"
+              aria-label="Account setup progress"
+            >
               {milestones.map((milestone) => (
                 <li key={milestone.label} className="flex items-center gap-3">
                   <span
@@ -66,9 +142,9 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
                       milestone.state === 'complete' &&
                         'border-(--color-accent-400) bg-(--color-accent-400) text-(--color-accent-fg)',
                       milestone.state === 'current' &&
-                        'border-(--color-accent-200) bg-(--color-accent-200)/15 text-(--color-accent-100)',
+                        'border-(--color-rail-fg-muted) bg-(--color-rail-fg-muted)/15 text-(--color-rail-fg-muted)',
                       milestone.state === 'upcoming' &&
-                        'border-[color-mix(in_srgb,var(--color-surface-1)_20%,transparent)] text-[color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]',
+                        'border-[color-mix(in_srgb,var(--color-rail-fg)_20%,transparent)] text-[color-mix(in_srgb,var(--color-rail-fg)_45%,transparent)]',
                     )}
                   >
                     {milestone.state === 'complete' ? (
@@ -82,15 +158,15 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
                     className={cn(
                       'text-sm transition-colors',
                       milestone.state === 'upcoming'
-                        ? 'text-[color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]'
-                        : 'font-medium text-(--color-surface-1)',
+                        ? 'text-[color-mix(in_srgb,var(--color-rail-fg)_45%,transparent)]'
+                        : 'font-medium text-(--color-rail-fg)',
                     )}
                   >
                     {milestone.label}
                   </span>
                 </li>
               ))}
-            </ol>
+            </motion.ol>
           )}
         </motion.div>
 
@@ -98,7 +174,7 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.3 }}
-          className="max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--color-surface-1)_58%,transparent)]"
+          className="max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--color-rail-fg)_58%,transparent)]"
         >
           One place for grades, attendance, and the materials that make class happen.
         </motion.p>
@@ -141,10 +217,10 @@ export function AuthShell({
                 transition={{ duration: 0.4, ease: 'easeOut', delay: reduce ? 0 : 0.08 }}
                 className="mb-6 flex items-center gap-2"
               >
-                <span className="flex size-8 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
-                  A
-                </span>
-                <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+                <Link to="/" className="flex items-center gap-2">
+                  <Logo />
+                  <span className="text-lg font-semibold tracking-tight">Agilearn</span>
+                </Link>
               </motion.div>
               <motion.div
                 initial={reduce ? false : { opacity: 0, y: 10 }}
@@ -166,18 +242,24 @@ interface FieldProps {
   htmlFor: string
   error?: string
   optional?: boolean
+  className?: string
   children: ReactNode
 }
 
 /** Label + control + inline error. */
-export function Field({ label, htmlFor, error, optional, children }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  error,
+  optional,
+  className,
+  children,
+}: FieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn('space-y-1.5', className)}>
       <Label htmlFor={htmlFor}>
         {label}
-        {optional && (
-          <span className="ml-1 text-(--color-ink-faint)">(optional)</span>
-        )}
+        {optional && <span className="ml-1 text-(--color-ink-faint)">(optional)</span>}
       </Label>
       {children}
       {error && (
@@ -238,7 +320,7 @@ export function StickyCta({
         loading={loading}
         disabled={disabled}
         onClick={onClick}
-        className="w-full rounded-full"
+        className="w-full !rounded-full"
       >
         {label}
       </Button>

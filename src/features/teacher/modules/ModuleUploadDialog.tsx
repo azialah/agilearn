@@ -145,17 +145,13 @@ export function ModuleUploadDialog({
             >
               {file ? (
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-(--color-ink)">
-                    {file.name}
-                  </span>
+                  <span className="block truncate text-(--color-ink)">{file.name}</span>
                   <span className="text-xs text-(--color-ink-faint)">
                     {formatFileSize(file.size)}
                   </span>
                 </span>
               ) : (
-                <span className="text-(--color-ink-faint)">
-                  Choose a file to upload
-                </span>
+                <span className="text-(--color-ink-faint)">Choose a file to upload</span>
               )}
               <span className="shrink-0 rounded-sm bg-(--color-surface-3) px-2 py-1 text-xs text-(--color-ink-muted)">
                 Browse

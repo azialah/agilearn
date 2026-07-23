@@ -23,9 +23,7 @@ export function PageHeader({
         <h1 className="text-xl font-semibold tracking-tight text-(--color-ink)">
           {title}
         </h1>
-        {description && (
-          <p className="text-sm text-(--color-ink-muted)">{description}</p>
-        )}
+        {description && <p className="text-sm text-(--color-ink-muted)">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

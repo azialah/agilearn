@@ -291,9 +291,7 @@ export function CalendarPage() {
               >
                 <p className="font-medium">{event.title}</p>
                 {event.notes && (
-                  <p className="mt-1 text-xs text-(--color-ink-muted)">
-                    {event.notes}
-                  </p>
+                  <p className="mt-1 text-xs text-(--color-ink-muted)">{event.notes}</p>
                 )}
               </div>
             ))}

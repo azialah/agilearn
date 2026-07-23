@@ -2,6 +2,7 @@ import { useTheme, type Theme } from '@/lib/theme'
 import { MonitorIcon, MoonIcon, SunIcon } from '@/components/icons'
 import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { Tooltip } from '@/components/ui/Tooltip'
 
 // Match the sibling 1em custom glyphs (size + 1.8 stroke) instead of lucide's
 // fixed 24px / stroke-2 defaults, which render oversized in this text-sized slot.
@@ -30,23 +31,23 @@ export function ThemeToggle({ className }: { className?: string }) {
       {OPTIONS.map(({ value, label, Icon }) => {
         const active = theme === value
         return (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-label={label}
-            title={label}
-            onClick={() => setTheme(value)}
-            className={cn(
-              'inline-flex size-7 items-center justify-center rounded-full text-[0.95rem] transition-colors',
-              active
-                ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
-                : 'text-(--color-ink-muted) hover:text-(--color-ink)',
-            )}
-          >
-            <Icon />
-          </button>
+          <Tooltip key={value} content={label}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={label}
+              onClick={() => setTheme(value)}
+              className={cn(
+                'inline-flex size-7 items-center justify-center rounded-full text-[0.95rem] transition-colors',
+                active
+                  ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                  : 'text-(--color-ink-muted) hover:text-(--color-ink)',
+              )}
+            >
+              <Icon />
+            </button>
+          </Tooltip>
         )
       })}
     </div>

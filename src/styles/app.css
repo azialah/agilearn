@@ -54,6 +54,16 @@
 :root {
   color-scheme: light;
 
+  /* AuthRail (the branded left panel on auth/onboarding screens) paints its
+     own always-dark gradient regardless of the active theme, so its text
+     needs FIXED colors here — not the theme-flipping surface/accent tokens
+     below, which read as light in light mode but flip dark in dark mode and
+     go invisible against a background that never changes. Declared once,
+     unconditionally, so :root.dark / :root.calm-white don't touch them. */
+  --color-rail-fg: #fffcf5;
+  --color-rail-fg-muted: #f6bd86;
+  --color-rail-fg-faint: #fbdcc0;
+
   --color-surface-0: #faf5ec;
   --color-surface-1: #fffcf5;
   --color-surface-2: #f3ebdb;
@@ -144,6 +154,22 @@
   --color-accent-fg: #fffaf2;
   --shadow-card: 0 1px 2px rgba(31, 41, 51, 0.04), 0 10px 28px rgba(31, 41, 51, 0.06);
   --shadow-pop: 0 18px 48px rgba(31, 41, 51, 0.12);
+}
+
+/* Splash-only token for PageLoader, resolved from the RAW media query, not
+   the .dark class — defense-in-depth for the case where the anti-FOUC inline
+   script in index.html silently no-ops (localStorage blocked/unavailable)
+   and .dark never gets set. In the normal path .dark is already correct by
+   the time PageLoader can render (index.html's script runs synchronously
+   before #root exists), so this isn't fixing a real timing race — it's a
+   fallback for that one failure mode. */
+:root {
+  --color-splash-bg: var(--color-surface-0);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark):not(.calm-white) {
+    --color-splash-bg: #17110d;
+  }
 }
 
 .page-enter {
@@ -402,6 +428,17 @@ html.custom-cursor-active .app-cursor {
   ::selection {
     background: var(--color-accent-500);
     color: #fff;
+  }
+
+  /* App-wide hover affordance for every link: brighten whatever color it
+     already has instead of hand-rolling a hover: color on each one. Scoped
+     to [href] so it never touches <button>s, which have their own hover
+     backgrounds. */
+  a[href] {
+    transition: filter 150ms ease;
+  }
+  a[href]:hover {
+    filter: brightness(1.2);
   }
 }
 

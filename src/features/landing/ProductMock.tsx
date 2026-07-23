@@ -85,9 +85,7 @@ export function ProductMock() {
                   className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-(--color-ink)">
-                      {student.name}
-                    </p>
+                    <p className="truncate text-sm text-(--color-ink)">{student.name}</p>
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-(--color-surface-3)">
                         <motion.div

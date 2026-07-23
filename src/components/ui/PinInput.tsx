@@ -10,6 +10,7 @@ export interface PinInputProps {
   onComplete?: (value: string) => void
   /** Base label; each box gets "<label> digit N". */
   label?: string
+  className?: string
 }
 
 /** Segmented numeric code entry (e.g. an email one-time code). */
@@ -21,6 +22,7 @@ export function PinInput({
   autoFocus,
   onComplete,
   label = 'Verification code',
+  className,
 }: PinInputProps) {
   const refs = useRef<(HTMLInputElement | null)[]>([])
   const digits = Array.from({ length }, (_, i) => value[i] ?? '')
@@ -81,7 +83,7 @@ export function PinInput({
   }
 
   return (
-    <div className="flex gap-2" role="group" aria-label={label}>
+    <div className={cn('flex gap-2', className)} role="group" aria-label={label}>
       {digits.map((digit, i) => (
         <input
           key={i}

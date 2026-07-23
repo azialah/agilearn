@@ -214,9 +214,7 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
                     <TBody>
                       {result.rows.map((row) => (
                         <TR key={`${row.rowNumber}-${row.studentNo}`}>
-                          <TD className="text-(--color-ink-faint)">
-                            {row.rowNumber}
-                          </TD>
+                          <TD className="text-(--color-ink-faint)">{row.rowNumber}</TD>
                           <TD>{row.studentNo || '—'}</TD>
                           <TD>
                             {[row.lastName, row.firstName].filter(Boolean).join(', ') ||

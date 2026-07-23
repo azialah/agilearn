@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn'
 import { TopBar } from './TopBar'
 import { CommandPalette } from './CommandPalette'
 import { IconButton } from '@/components/ui/IconButton'
+import { Logo } from '@/components/ui/Logo'
 import { CloseIcon } from '@/components/icons'
 import {
   BookOpen,
@@ -48,8 +49,7 @@ function NavLinks({
               compact ? 'justify-center px-0' : 'gap-3 px-3',
             )}
             activeProps={{
-              className:
-                'bg-(--color-surface-2) text-(--color-ink) font-medium',
+              className: 'bg-(--color-surface-2) text-(--color-ink) font-medium',
             }}
             inactiveProps={{ className: 'text-(--color-ink-muted)' }}
             activeOptions={{ exact: false }}
@@ -96,9 +96,7 @@ function SettingsSidebarNav() {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link to="/teacher/dashboard" className="flex items-center gap-2 px-2">
-      <span className="flex size-8 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
-        A
-      </span>
+      <Logo />
       {!compact && (
         <span className="text-base font-semibold tracking-tight text-(--color-ink)">
           Agilearn
@@ -226,10 +224,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
             <div className="space-y-2">
               {classrooms?.slice(0, 3).map((classroom) => (
-                <div
-                  key={classroom.id}
-                  className="rounded-xl bg-(--color-surface-2) p-2"
-                >
+                <div key={classroom.id} className="rounded-xl bg-(--color-surface-2) p-2">
                   <Link
                     to="/teacher/classrooms/$classroomId"
                     params={{ classroomId: classroom.id }}

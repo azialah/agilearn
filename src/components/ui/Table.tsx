@@ -61,7 +61,5 @@ export function TD({
   className,
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <td className={cn('px-4 py-2.5 text-(--color-ink)', className)} {...props} />
-  )
+  return <td className={cn('px-4 py-2.5 text-(--color-ink)', className)} {...props} />
 }

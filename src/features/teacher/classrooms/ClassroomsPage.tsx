@@ -51,7 +51,7 @@ export function ClassroomsPage() {
             <ClassroomFormDialog
               ownerId={profile.id}
               trigger={
-                <Button className="rounded-full">
+                <Button className="!rounded-full">
                   <Plus className="size-4" /> New classroom
                 </Button>
               }
@@ -92,7 +92,7 @@ export function ClassroomsPage() {
               <ClassroomFormDialog
                 ownerId={profile.id}
                 trigger={
-                  <Button className="rounded-full">
+                  <Button className="!rounded-full">
                     <Plus className="size-4" /> Create classroom
                   </Button>
                 }
@@ -174,7 +174,7 @@ export function ClassroomsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="shrink-0 rounded-full"
+                          className="shrink-0 !rounded-full"
                           loading={adopt.isPending}
                           onClick={() => void adoptClassroom(classroom.id)}
                         >

@@ -128,10 +128,7 @@ export function MultiplierDemo() {
                 />
               </div>
               <div className="rounded-md border border-(--color-border) bg-(--color-surface-0) px-3 py-2.5 transition-colors focus-within:border-(--color-accent-400)">
-                <label
-                  htmlFor="demo-laboratory"
-                  className="text-(--color-ink-faint)"
-                >
+                <label htmlFor="demo-laboratory" className="text-(--color-ink-faint)">
                   Laboratory average
                 </label>
                 <input

@@ -8,10 +8,8 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 const variants = {
-  ghost:
-    'text-(--color-ink-muted) hover:bg-(--color-surface-2) hover:text-(--color-ink)',
-  solid:
-    'bg-(--color-surface-3) text-(--color-ink) hover:bg-(--color-border)',
+  ghost: 'text-(--color-ink-muted) hover:bg-(--color-surface-2) hover:text-(--color-ink)',
+  solid: 'bg-(--color-surface-3) text-(--color-ink) hover:bg-(--color-border)',
   danger:
     'text-(--color-ink-muted) hover:bg-(--color-danger)/15 hover:text-(--color-danger)',
 }

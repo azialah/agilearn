@@ -7,8 +7,10 @@ import {
   useScroll,
   type Variants,
 } from 'motion/react'
+import { ExternalLink, Mail, MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
+import { Logo as LogoMark } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import {
   CalendarIcon,
@@ -84,9 +86,7 @@ const FEATURES = [
 function Logo({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex size-8 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
-        A
-      </span>
+      <LogoMark />
       {!compact && <span className="text-lg font-semibold tracking-tight">Agilearn</span>}
     </div>
   )
@@ -238,7 +238,7 @@ function Hero() {
             <MagneticButton className="inline-block">
               <Button
                 size="lg"
-                className="group gap-2.5 rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
               >
                 Get started
                 <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
@@ -248,7 +248,7 @@ function Hero() {
             </MagneticButton>
           </Link>
           <a href="#features">
-            <Button size="lg" variant="outline" className="rounded-full">
+            <Button size="lg" variant="outline" className="!rounded-full">
               Explore features
             </Button>
           </a>
@@ -299,9 +299,7 @@ function SectionHeading({
       <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
         {title}
       </h2>
-      {subtitle && (
-        <p className="mt-3 text-base text-(--color-ink-muted)">{subtitle}</p>
-      )}
+      {subtitle && <p className="mt-3 text-base text-(--color-ink-muted)">{subtitle}</p>}
     </motion.div>
   )
 }
@@ -357,9 +355,7 @@ function Features() {
               <h3 className="font-display font-medium text-(--color-ink)">
                 {feature.title}
               </h3>
-              <p className="mt-1.5 text-sm text-(--color-ink-muted)">
-                {feature.body}
-              </p>
+              <p className="mt-1.5 text-sm text-(--color-ink-muted)">{feature.body}</p>
             </motion.div>
           )
         })}
@@ -410,10 +406,21 @@ function CallToAction() {
             <div className="pointer-events-none absolute -inset-x-8 -inset-y-6 bg-[radial-gradient(50%_120%_at_50%_50%,var(--color-accent-400),transparent_70%)] opacity-[0.16] blur-xl" />
             <Link to="/login" className="relative">
               <MagneticButton className="inline-block">
-                <Button size="lg">Sign in to Agilearn</Button>
+                <Button
+                  size="lg"
+                  className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                >
+                  Sign in to Agilearn
+                  <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
+                    <ChevronRightIcon />
+                  </span>
+                </Button>
               </MagneticButton>
             </Link>
           </div>
+          <p className="relative mt-5 text-sm text-(--color-ink-faint)">
+            Sign in with your school email — no setup, no waiting.
+          </p>
         </div>
       </motion.div>
     </section>
@@ -452,7 +459,7 @@ function Footer() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.06]" />
 
       <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
-        <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-(--color-ink-muted)">
@@ -494,9 +501,38 @@ function Footer() {
                   Sign in
                 </Link>
               </li>
+            </ul>
+          </nav>
+
+          {/* Personal contacts for now — will move to a Codexia-branded
+              email/channel once that's set up. */}
+          <nav aria-label="Developer">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
+              Developer
+            </h3>
+            <ul className="mt-4 space-y-3">
               <li>
-                <a href="mailto:johnneomanuel@gmail.com" className={footerLinkClass}>
-                  Contact
+                <a
+                  href="mailto:johnneomanuel@gmail.com"
+                  className={cn(footerLinkClass, 'flex items-center gap-2')}
+                >
+                  <Mail className="size-4 shrink-0" aria-hidden />
+                  <span className="truncate">Email</span>
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-sm text-(--color-ink-muted)">
+                <MessageCircle className="size-4 shrink-0" aria-hidden />
+                <span className="truncate">WhatsApp: johnneo.ml</span>
+              </li>
+              <li>
+                <a
+                  href="https://www.linkedin.com/in/johnneomlpz"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(footerLinkClass, 'flex items-center gap-2')}
+                >
+                  <ExternalLink className="size-4 shrink-0" aria-hidden />
+                  <span className="truncate">LinkedIn</span>
                 </a>
               </li>
             </ul>
