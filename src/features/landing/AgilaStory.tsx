@@ -43,7 +43,7 @@ export function AgilaStory() {
       >
         <motion.p
           variants={fade}
-          className="font-[family-name:var(--font-script)] text-3xl text-[var(--color-accent-350)] sm:text-4xl"
+          className="font-(family-name:--font-script) text-3xl text-(--color-accent-350) sm:text-4xl"
         >
           Agila
         </motion.p>
@@ -52,7 +52,7 @@ export function AgilaStory() {
           <Sparkles className="-inset-x-12 -inset-y-6" />
           <motion.h2
             aria-label="Agilearn"
-            className="relative font-[family-name:var(--font-display)] text-7xl font-semibold leading-none tracking-tight sm:text-8xl md:text-9xl"
+            className="relative font-display text-7xl font-semibold leading-none tracking-tight sm:text-8xl md:text-9xl"
           >
             {WORD.map((char, i) => (
               <motion.span
@@ -61,7 +61,7 @@ export function AgilaStory() {
                 aria-hidden="true"
                 className={
                   i < ACCENT_LETTERS
-                    ? 'inline-block text-[var(--color-accent-400)]'
+                    ? 'inline-block text-(--color-accent-400)'
                     : 'inline-block'
                 }
               >
@@ -73,7 +73,7 @@ export function AgilaStory() {
 
         <motion.p
           variants={fade}
-          className="mx-auto mt-8 max-w-xl text-pretty text-lg text-[var(--color-ink-muted)] sm:text-xl"
+          className="mx-auto mt-8 max-w-xl text-pretty text-lg text-(--color-ink-muted) sm:text-xl"
         >
           In 1995, President Fidel V. Ramos declared the Philippine eagle{' '}
           <em>Pithecophaga jefferyi</em> the country&apos;s national bird. Filipinos call
@@ -85,7 +85,7 @@ export function AgilaStory() {
 
         <motion.p
           variants={fade}
-          className="mx-auto mt-4 max-w-xl text-pretty text-lg text-[var(--color-ink-muted)] sm:text-xl"
+          className="mx-auto mt-4 max-w-xl text-pretty text-lg text-(--color-ink-muted) sm:text-xl"
         >
           That&apos;s the eagle in Agilearn: sharp-eyed and exact, watching the numbers so
           you can watch the class.
@@ -93,7 +93,7 @@ export function AgilaStory() {
 
         <motion.p
           variants={fade}
-          className="mt-6 font-[family-name:var(--font-mono)] text-sm text-[var(--color-ink-faint)]"
+          className="mt-6 font-mono text-sm text-(--color-ink-faint)"
         >
           Agila + Learn = Agilearn
         </motion.p>

@@ -100,7 +100,7 @@ export function AttendancePage({ classroomId }: { classroomId: string }) {
             aria-label="Course subject"
             value={subjectId}
             onChange={(event) => setSubjectId(event.target.value)}
-            className="mt-1.5 h-10 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3"
+            className="mt-1.5 h-10 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-3"
           >
             {subjects.map((subject) => (
               <option key={subject.id} value={subject.id}>
@@ -157,7 +157,7 @@ function SessionCard({
   const title = session.title.trim() || 'Untitled session'
 
   return (
-    <Card className="transition-colors hover:border-[var(--color-border-strong)]">
+    <Card className="transition-colors hover:border-(--color-border-strong)">
       <CardBody className="flex items-center gap-3 p-4">
         <Link
           to="/teacher/classrooms/$classroomId/attendance/$sessionId"
@@ -165,10 +165,10 @@ function SessionCard({
           className="flex min-w-0 flex-1 items-center gap-4"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-[var(--color-ink)] hover:text-[var(--color-accent-300)]">
+            <p className="truncate font-medium text-(--color-ink) hover:text-(--color-accent-300)">
               {title}
             </p>
-            <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
+            <p className="mt-0.5 text-sm text-(--color-ink-muted)">
               {formatSessionDate(session.session_date)}
             </p>
           </div>
@@ -176,7 +176,7 @@ function SessionCard({
             <Badge tone="success">{present} present</Badge>
             <Badge tone="danger">{absent} absent</Badge>
           </div>
-          <ChevronRightIcon className="shrink-0 text-[var(--color-ink-faint)]" />
+          <ChevronRightIcon className="shrink-0 text-(--color-ink-faint)" />
         </Link>
         <div className="flex items-center gap-1">
           <SessionFormDialog

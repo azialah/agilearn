@@ -39,7 +39,7 @@ export function Sparkles({
       {dots.map((d) => (
         <motion.span
           key={d.id}
-          className="absolute rounded-full bg-[var(--color-accent-400)]"
+          className="absolute rounded-full bg-(--color-accent-400)"
           style={{ left: `${d.left}%`, top: `${d.top}%`, width: d.size, height: d.size }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}

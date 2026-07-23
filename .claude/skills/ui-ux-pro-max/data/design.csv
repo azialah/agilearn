@@ -70,7 +70,7 @@ Cards (Mobile Stack)
 ● Base Style: White background, border-2 border-black, shadow-[4px_4px_0px_0px_black], mb-6.
 ● Decoration:
     ○ Geometric badge in top-right: absolute top-0 right-0 h-8 w-8 bg-[#F0C020] border-l-2 border-b-2 border-black flex items-center justify-center.
-● Interaction: Entire card is a touch target. active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_black].
+● Interaction: Entire card is a touch target. active:translate-x-px active:translate-y-px active:shadow-[2px_2px_0px_0px_black].
 ● Content: Image usually takes top half (aspect-video), bold text below.
 Bottom Navigation (The Anchor)
 ● Container: fixed bottom-0 w-full bg-white border-t-2 border-black z-50 h-20.

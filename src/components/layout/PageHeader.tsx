@@ -20,11 +20,11 @@ export function PageHeader({
       )}
     >
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-ink)]">
+        <h1 className="text-xl font-semibold tracking-tight text-(--color-ink)">
           {title}
         </h1>
         {description && (
-          <p className="text-sm text-[var(--color-ink-muted)]">{description}</p>
+          <p className="text-sm text-(--color-ink-muted)">{description}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

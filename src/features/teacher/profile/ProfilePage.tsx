@@ -21,14 +21,18 @@ export function ProfilePage() {
   const savePreferences = useUpdateProfilePreferences()
   const { toast } = useToast()
   const [firstName, setFirstName] = useState('')
+  const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [suffix, setSuffix] = useState('')
   const [school, setSchool] = useState('')
   const [location, setLocation] = useState('')
   const [loadedId, setLoadedId] = useState('')
   if (profile && loadedId !== profile.id) {
     setLoadedId(profile.id)
     setFirstName(profile.first_name ?? '')
+    setMiddleName(profile.middle_name ?? '')
     setLastName(profile.last_name ?? '')
+    setSuffix(profile.suffix ?? '')
     setSchool(profile.school ?? '')
     setLocation(profile.location ?? '')
   }
@@ -37,7 +41,8 @@ export function ProfilePage() {
     if (!firstName.trim() || !lastName.trim()) return
     try {
       await Promise.all([
-        saveName.mutateAsync({ firstName, lastName }),
+        // Always send middle_name/suffix so saving never wipes them.
+        saveName.mutateAsync({ firstName, middleName, lastName, suffix }),
         saveDetails.mutateAsync({
           school,
           location,
@@ -59,28 +64,47 @@ export function ProfilePage() {
         title="Profile"
         description="The teaching details you shared during onboarding, kept ready for your workspace."
       />
-      <Card className="overflow-hidden rounded-[2rem] p-0">
-        <div className="bg-gradient-to-br from-[var(--color-accent-400)]/22 via-[var(--color-surface-1)] to-transparent px-6 py-8">
-          <div className="inline-flex items-center gap-3 rounded-full border border-white/30 bg-[var(--color-surface-1)]/75 p-2 pr-5 shadow-[var(--shadow-card)] backdrop-blur">
-            <Avatar
-              name={profile?.full_name || profile?.email}
-              color={profile?.avatar_color}
-              className="size-12 text-base"
-            />
-            <div>
-              <p className="font-semibold">
-                {profile?.full_name || 'Your teaching profile'}
-              </p>
-              <p className="text-xs text-[var(--color-ink-muted)]">{profile?.email}</p>
+      <Card className="overflow-hidden rounded-4xl p-0">
+        <div className="relative bg-linear-to-br from-(--color-accent-400)/25 via-(--color-surface-1) to-(--color-surface-1) px-6 py-8">
+          {/* Layered warmth + a lit top edge, matching the landing CTA. */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_120%_at_100%_0%,var(--color-accent-500),transparent_55%)] opacity-[0.1]" />
+          <div className="pointer-events-none absolute inset-0 rounded-4xl shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
+          <div className="relative flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/30 bg-(--color-surface-1)/75 p-2 pr-5 shadow-(--shadow-card) backdrop-blur">
+              <Avatar
+                name={profile?.full_name || profile?.email}
+                color={profile?.avatar_color}
+                className="size-12 text-base"
+              />
+              <div>
+                <p className="font-semibold">
+                  {profile?.full_name || 'Your teaching profile'}
+                </p>
+                <p className="text-xs text-(--color-ink-muted)">{profile?.email}</p>
+              </div>
             </div>
+            {(profile?.school || profile?.location) && (
+              <div className="flex flex-wrap gap-2">
+                {profile?.school && (
+                  <span className="rounded-full border border-(--color-border) bg-(--color-surface-1)/70 px-3 py-1 text-xs text-(--color-ink-muted)">
+                    {profile.school}
+                  </span>
+                )}
+                {profile?.location && (
+                  <span className="rounded-full border border-(--color-border) bg-(--color-surface-1)/70 px-3 py-1 text-xs text-(--color-ink-muted)">
+                    {profile.location}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <p className="mt-6 font-[var(--font-calligraphy)] text-3xl text-[var(--color-accent-350)]">
+          <p className="relative mt-6 pb-1 font-(family-name:--font-calligraphy) text-3xl leading-[1.15] text-(--color-accent-350)">
             A teacher’s work leaves a kind trace
           </p>
         </div>
       </Card>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <Card className="rounded-[2rem] p-6">
+        <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Teaching details</h2>
           <form className="mt-5 space-y-4" onSubmit={(event) => void submit(event)}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -100,6 +124,32 @@ export function ProfilePage() {
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   placeholder="Santos"
+                />
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-medium">
+                Middle name{' '}
+                <span className="font-normal text-(--color-ink-faint)">
+                  (optional)
+                </span>
+                <Input
+                  className="mt-1.5"
+                  value={middleName}
+                  onChange={(event) => setMiddleName(event.target.value)}
+                  placeholder="Manuel"
+                />
+              </label>
+              <label className="text-sm font-medium">
+                Suffix{' '}
+                <span className="font-normal text-(--color-ink-faint)">
+                  (optional)
+                </span>
+                <Input
+                  className="mt-1.5"
+                  value={suffix}
+                  onChange={(event) => setSuffix(event.target.value)}
+                  placeholder="Jr."
                 />
               </label>
             </div>
@@ -123,7 +173,7 @@ export function ProfilePage() {
             </label>
             <div>
               <p className="text-sm font-medium">Teaching levels</p>
-              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
                 {profile?.teaching_levels?.length
                   ? profile.teaching_levels.join(', ').replaceAll('_', ' ')
                   : 'Not set during onboarding'}
@@ -134,7 +184,7 @@ export function ProfilePage() {
             </Button>
           </form>
         </Card>
-        <Card className="rounded-[2rem] p-6">
+        <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Avatar color</h2>
           <div className="mt-4 grid grid-cols-2 gap-2">
             {COLORS.map((color) => (
@@ -145,8 +195,8 @@ export function ProfilePage() {
                 className={
                   'rounded-xl border p-3 text-left text-sm capitalize ' +
                   (profile?.avatar_color === color
-                    ? 'border-[var(--color-accent-400)] bg-[var(--color-accent-400)]/10'
-                    : 'border-[var(--color-border)]')
+                    ? 'border-(--color-accent-400) bg-(--color-accent-400)/10'
+                    : 'border-(--color-border)')
                 }
               >
                 <Avatar

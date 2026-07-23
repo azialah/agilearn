@@ -141,23 +141,23 @@ export function ModuleUploadDialog({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-1)] px-3 py-3 text-left text-sm transition-colors hover:border-[var(--color-accent-400)]"
+              className="flex w-full items-center justify-between gap-3 rounded-md border border-dashed border-(--color-border-strong) bg-(--color-surface-1) px-3 py-3 text-left text-sm transition-colors hover:border-(--color-accent-400)"
             >
               {file ? (
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[var(--color-ink)]">
+                  <span className="block truncate text-(--color-ink)">
                     {file.name}
                   </span>
-                  <span className="text-xs text-[var(--color-ink-faint)]">
+                  <span className="text-xs text-(--color-ink-faint)">
                     {formatFileSize(file.size)}
                   </span>
                 </span>
               ) : (
-                <span className="text-[var(--color-ink-faint)]">
+                <span className="text-(--color-ink-faint)">
                   Choose a file to upload
                 </span>
               )}
-              <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-surface-3)] px-2 py-1 text-xs text-[var(--color-ink-muted)]">
+              <span className="shrink-0 rounded-sm bg-(--color-surface-3) px-2 py-1 text-xs text-(--color-ink-muted)">
                 Browse
               </span>
             </button>
@@ -170,7 +170,7 @@ export function ModuleUploadDialog({
               placeholder="e.g. midterm, programming, worksheet"
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
             />
-            <p className="text-xs text-[var(--color-ink-faint)]">
+            <p className="text-xs text-(--color-ink-faint)">
               Separate light, helpful tags with commas.
             </p>
           </div>
@@ -233,7 +233,7 @@ export function ModuleUploadDialog({
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] transition-colors focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none"
+              className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm text-(--color-ink) placeholder:text-(--color-ink-faint) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none"
               placeholder="What is this module and how is it used?"
             />
           </div>
@@ -246,9 +246,9 @@ export function ModuleUploadDialog({
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--color-surface-3)">
                   <motion.div
-                    className="h-full w-1/3 rounded-full bg-[var(--color-accent-400)]"
+                    className="h-full w-1/3 rounded-full bg-(--color-accent-400)"
                     animate={{ x: ['-120%', '360%'] }}
                     transition={{
                       duration: 1.1,
@@ -257,7 +257,7 @@ export function ModuleUploadDialog({
                     }}
                   />
                 </div>
-                <p className="mt-1.5 text-xs text-[var(--color-ink-muted)]">
+                <p className="mt-1.5 text-xs text-(--color-ink-muted)">
                   Uploading {file ? formatFileSize(file.size) : ''}…
                 </p>
               </motion.div>

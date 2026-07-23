@@ -275,7 +275,7 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
   return (
     <>
       <h1 className="text-lg font-semibold">Create your teacher account</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-1 text-sm text-(--color-ink-muted)">
         Use your school email to get started.
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -293,15 +293,15 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
             id="email-domain-hint"
             aria-live="polite"
             className={cn(
-              'mt-1.5 rounded-[var(--radius-md)] px-3 py-2 text-xs',
+              'mt-1.5 rounded-md px-3 py-2 text-xs',
               domainStatus === 'approved' &&
-                'bg-[var(--color-success)]/10 text-[var(--color-success)]',
+                'bg-(--color-success)/10 text-(--color-success)',
               domainStatus === 'unapproved' &&
-                'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
+                'bg-(--color-warning)/10 text-(--color-warning)',
               domainStatus === 'unavailable' &&
-                'bg-[var(--color-danger)]/10 text-[var(--color-danger)]',
+                'bg-(--color-danger)/10 text-(--color-danger)',
               (domainStatus === 'idle' || domainStatus === 'checking') &&
-                'bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]',
+                'bg-(--color-surface-2) text-(--color-ink-muted)',
             )}
           >
             {domainHint}
@@ -399,7 +399,7 @@ function VerifyStep({
   return (
     <>
       <h1 className="text-lg font-semibold">Verify your email</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-1 text-sm text-(--color-ink-muted)">
         {notice ?? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`}
       </p>
       <div className="mt-5 space-y-4">
@@ -418,7 +418,7 @@ function VerifyStep({
           <button
             type="button"
             onClick={onBack}
-            className="text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+            className="text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
           >
             Use a different email
           </button>
@@ -426,7 +426,7 @@ function VerifyStep({
             type="button"
             onClick={resend}
             disabled={submitting}
-            className="text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)] disabled:opacity-50"
+            className="text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:opacity-50"
           >
             Resend code
           </button>
@@ -478,7 +478,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
   return (
     <>
       <h1 className="text-lg font-semibold">What's your name?</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-1 text-sm text-(--color-ink-muted)">
         This is how you'll appear across Agilearn.
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -514,7 +514,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
             id="suffix"
             value={suffix}
             onChange={(e) => setSuffix(e.target.value)}
-            className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-base text-[var(--color-ink)] transition-colors focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none md:text-sm"
+            className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base text-(--color-ink) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none md:text-sm"
           >
             <option value="">Select a suffix</option>
             {SUFFIXES.map((option) => (
@@ -595,7 +595,7 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
   return (
     <>
       <h1 className="text-lg font-semibold">What school are you in?</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-1 text-sm text-(--color-ink-muted)">
         Tell us where you teach.
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -661,7 +661,7 @@ function LevelStep({ onDone }: { onDone: () => void }) {
   return (
     <>
       <h1 className="text-lg font-semibold">What level are you teaching?</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">Choose all that apply.</p>
+      <p className="mt-1 text-sm text-(--color-ink-muted)">Choose all that apply.</p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Teaching level">
           {LEVELS.map((level) => {
@@ -673,14 +673,14 @@ function LevelStep({ onDone }: { onDone: () => void }) {
                 aria-pressed={active}
                 onClick={() => toggle(level.value)}
                 className={cn(
-                  'flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-3 text-sm transition-colors',
+                  'flex items-center justify-between rounded-md border px-3 py-3 text-sm transition-colors',
                   active
-                    ? 'border-[var(--color-accent-400)] bg-[var(--color-accent-50)] text-[var(--color-ink)]'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-strong)]',
+                    ? 'border-(--color-accent-400) bg-(--color-accent-50) text-(--color-ink)'
+                    : 'border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) hover:border-(--color-border-strong)',
                 )}
               >
                 {level.label}
-                {active && <Check className="size-4 text-[var(--color-accent-400)]" />}
+                {active && <Check className="size-4 text-(--color-accent-400)" />}
               </button>
             )
           })}
@@ -760,11 +760,11 @@ function WelcomeStep() {
             transition={{ duration: 0.2 }}
             className="text-center"
           >
-            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-2xl text-[var(--color-accent-400)]">
+            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-(--color-surface-2) text-2xl text-(--color-accent-400)">
               <feature.icon />
             </div>
             <h1 className="text-lg font-semibold">{feature.title}</h1>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-[var(--color-ink-muted)]">
+            <p className="mx-auto mt-2 max-w-xs text-sm text-(--color-ink-muted)">
               {feature.body}
             </p>
           </motion.div>
@@ -781,8 +781,8 @@ function WelcomeStep() {
             onClick={() => setIndex(i)}
             className={
               i === index
-                ? 'h-2 w-6 rounded-full bg-[var(--color-accent-400)] transition-all'
-                : 'h-2 w-2 rounded-full bg-[var(--color-surface-3)] transition-all'
+                ? 'h-2 w-6 rounded-full bg-(--color-accent-400) transition-all'
+                : 'h-2 w-2 rounded-full bg-(--color-surface-3) transition-all'
             }
           />
         ))}

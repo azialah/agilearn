@@ -46,7 +46,11 @@ export function DashboardPage() {
     >
       <motion.div variants={rise} transition={{ duration: reducedMotion ? 0 : 0.28 }}>
         <PageHeader
-          title={`Good day, ${firstName}`}
+          title={
+            <span className="inline-block pb-1 font-greeting text-4xl font-normal leading-[1.15] text-(--color-accent-350)">
+              Good day, {firstName}
+            </span>
+          }
           description="Your teaching day, gathered in one calm place."
         />
       </motion.div>
@@ -54,22 +58,22 @@ export function DashboardPage() {
       <motion.section
         variants={rise}
         transition={{ duration: reducedMotion ? 0 : 0.34 }}
-        className="relative isolate overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-[var(--shadow-card)]"
+        className="relative isolate overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1) shadow-(--shadow-card)"
       >
         <img
           src="/images/home-teaching-ritual.png"
           alt=""
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center] opacity-80"
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[var(--color-surface-1)] via-[var(--color-surface-1)]/92 to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-linear-to-r from-(--color-surface-1) via-(--color-surface-1)/92 to-transparent" />
         <div className="max-w-xl p-6 sm:p-8">
-          <p className="font-[cursive] text-2xl text-[var(--color-accent-350)]">
+          <p className="font-[cursive] text-2xl text-(--color-accent-350)">
             A steady day of teaching.
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
             Start where your students need you most.
           </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-[var(--color-ink-muted)]">
+          <p className="mt-3 max-w-md text-sm leading-6 text-(--color-ink-muted)">
             Keep the roster close, grades clear, and materials ready for the next lesson.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -110,7 +114,7 @@ export function DashboardPage() {
       </motion.div>
 
       <motion.div variants={rise} transition={{ duration: reducedMotion ? 0 : 0.28 }}>
-        <Card className="rounded-[1.5rem]">
+        <Card className="rounded-3xl">
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">
@@ -118,7 +122,7 @@ export function DashboardPage() {
                   ? `${activePeriod.semester_name} — SY ${activePeriod.school_year}`
                   : 'Set up your academic period'}
               </p>
-              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
                 {daysRemaining === null
                   ? 'Add an end date to show how much teaching time remains.'
                   : daysRemaining >= 0
@@ -145,13 +149,13 @@ export function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Continue with a class</p>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+                <p className="mt-1 text-sm text-(--color-ink-muted)">
                   Your recent teaching spaces and their next step.
                 </p>
               </div>
               <Link
                 to="/teacher/classrooms"
-                className="text-sm text-[var(--color-accent-350)]"
+                className="text-sm text-(--color-accent-350)"
               >
                 All classes
               </Link>
@@ -179,20 +183,20 @@ export function DashboardPage() {
                     key={classroom.id}
                     to="/teacher/classrooms/$classroomId"
                     params={{ classroomId: classroom.id }}
-                    className="group rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-card)]"
+                    className="group rounded-md border border-(--color-border) bg-(--color-surface-0) p-4 transition hover:-translate-y-0.5 hover:border-(--color-border-strong) hover:shadow-(--shadow-card)"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate font-medium">{classroom.course_name}</p>
-                        <p className="mt-1 truncate text-xs text-[var(--color-ink-muted)]">
+                        <p className="mt-1 truncate text-xs text-(--color-ink-muted)">
                           {classroom.course_code} · {classroom.block}
                         </p>
                       </div>
-                      <ChevronRight className="size-4 shrink-0 text-[var(--color-ink-faint)]" />
+                      <ChevronRight className="size-4 shrink-0 text-(--color-ink-faint)" />
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <Badge>{classroom.student_count} students</Badge>
-                      <span className="text-xs text-[var(--color-ink-faint)]">
+                      <span className="text-xs text-(--color-ink-faint)">
                         {classroom.term_name || 'Term not set'}
                       </span>
                     </div>
@@ -206,7 +210,7 @@ export function DashboardPage() {
           <CardBody className="space-y-4">
             <div>
               <p className="text-sm font-medium">Today at a glance</p>
-              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
                 Small nudges to keep your teaching flow moving.
               </p>
             </div>
@@ -241,7 +245,7 @@ export function DashboardPage() {
         <Card>
           <CardBody>
             <p className="text-sm font-medium">Subject readiness</p>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+            <p className="mt-1 text-sm text-(--color-ink-muted)">
               A quick view of the cohorts most ready to teach.
             </p>
             <div className="mt-5 space-y-4">
@@ -255,17 +259,17 @@ export function DashboardPage() {
                 return (
                   <div key={classroom.id}>
                     <div className="mb-1.5 flex justify-between gap-3 text-xs">
-                      <span className="truncate text-[var(--color-ink-muted)]">
+                      <span className="truncate text-(--color-ink-muted)">
                         {classroom.cohort_name || classroom.block} ·{' '}
                         {classroom.course_name}
                       </span>
-                      <span className="tabular-nums text-[var(--color-ink-faint)]">
+                      <span className="tabular-nums text-(--color-ink-faint)">
                         {readiness}%
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                    <div className="h-2 overflow-hidden rounded-full bg-(--color-surface-3)">
                       <div
-                        className="h-full rounded-full bg-[var(--color-accent-400)] transition-[width] duration-500"
+                        className="h-full rounded-full bg-(--color-accent-400) transition-[width] duration-500"
                         style={{ width: `${readiness}%` }}
                       />
                     </div>
@@ -273,7 +277,7 @@ export function DashboardPage() {
                 )
               })}
               {!classrooms?.length && (
-                <p className="text-sm text-[var(--color-ink-muted)]">
+                <p className="text-sm text-(--color-ink-muted)">
                   Create a classroom to start measuring subject readiness.
                 </p>
               )}
@@ -283,12 +287,12 @@ export function DashboardPage() {
         <Card>
           <CardBody>
             <p className="text-sm font-medium">Attendance rhythm</p>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+            <p className="mt-1 text-sm text-(--color-ink-muted)">
               Recent sessions will appear here as attendance is recorded.
             </p>
             <Link
               to="/teacher/analytics"
-              className="mt-5 inline-flex text-sm text-[var(--color-accent-350)] hover:underline"
+              className="mt-5 inline-flex text-sm text-(--color-accent-350) hover:underline"
             >
               Open Analytics to view real attendance trends
             </Link>
@@ -311,9 +315,9 @@ function Metric({
   return (
     <Card>
       <CardBody>
-        <p className="text-sm text-[var(--color-ink-muted)]">{label}</p>
+        <p className="text-sm text-(--color-ink-muted)">{label}</p>
         <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
-        <p className="mt-1 text-xs text-[var(--color-ink-faint)]">{detail}</p>
+        <p className="mt-1 text-xs text-(--color-ink-faint)">{detail}</p>
       </CardBody>
     </Card>
   )
@@ -328,11 +332,11 @@ function AtGlance({
   detail: string
 }) {
   return (
-    <div className="flex gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-3">
-      <span className="mt-0.5 text-[var(--color-accent-350)] [&>svg]:size-4">{icon}</span>
+    <div className="flex gap-3 rounded-md bg-(--color-surface-2) p-3">
+      <span className="mt-0.5 text-(--color-accent-350) [&>svg]:size-4">{icon}</span>
       <div>
         <p className="text-sm font-medium">{title}</p>
-        <p className="mt-1 text-xs leading-5 text-[var(--color-ink-muted)]">{detail}</p>
+        <p className="mt-1 text-xs leading-5 text-(--color-ink-muted)">{detail}</p>
       </div>
     </div>
   )

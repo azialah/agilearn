@@ -104,7 +104,7 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
             aria-label="Course subject"
             value={activeSubjectId}
             onChange={(event) => setSubjectId(event.target.value)}
-            className="h-10 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 text-sm"
+            className="h-10 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-4 text-sm"
           >
             {subjectsQuery.data?.map((subject) => (
               <option key={subject.id} value={subject.id}>
@@ -187,9 +187,9 @@ export function GradesPage({ classroomId }: { classroomId: string }) {
           </AnimatePresence>
 
           {structure!.categories.length === 0 && (
-            <p className="text-sm text-[var(--color-ink-muted)]">
+            <p className="text-sm text-(--color-ink-muted)">
               Add activity categories from the{' '}
-              <span className="font-medium text-[var(--color-ink)]">Structure</span> panel
+              <span className="font-medium text-(--color-ink)">Structure</span> panel
               before recording scores.
             </p>
           )}
@@ -236,7 +236,7 @@ function ViewTabs({
   return (
     <div
       role="tablist"
-      className="scrollbar-thin flex gap-1 overflow-x-auto border-b border-[var(--color-border)] pb-px"
+      className="scrollbar-thin flex gap-1 overflow-x-auto border-b border-(--color-border) pb-px"
     >
       {periods.map((period) => {
         const active = view.kind === 'period' && view.periodId === period.id
@@ -276,17 +276,17 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={
-        'relative whitespace-nowrap rounded-t-[var(--radius-md)] px-4 py-2 text-sm font-medium transition-colors ' +
+        'relative whitespace-nowrap rounded-t-md px-4 py-2 text-sm font-medium transition-colors ' +
         (active
-          ? 'text-[var(--color-ink)]'
-          : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]')
+          ? 'text-(--color-ink)'
+          : 'text-(--color-ink-muted) hover:text-(--color-ink)')
       }
     >
       {children}
       {active && (
         <motion.span
           layoutId="grade-tab-underline"
-          className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--color-accent-400)]"
+          className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-(--color-accent-400)"
         />
       )}
     </button>

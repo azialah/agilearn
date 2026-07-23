@@ -118,13 +118,13 @@ function ModuleCard({
           </div>
 
           <div className="min-w-0">
-            <p className="truncate font-medium text-[var(--color-ink)]">{module.title}</p>
+            <p className="truncate font-medium text-(--color-ink)">{module.title}</p>
             {module.description ? (
-              <p className="mt-1 line-clamp-2 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 line-clamp-2 text-sm text-(--color-ink-muted)">
                 {module.description}
               </p>
             ) : (
-              <p className="mt-1 text-sm italic text-[var(--color-ink-faint)]">
+              <p className="mt-1 text-sm italic text-(--color-ink-faint)">
                 No description
               </p>
             )}
@@ -135,13 +135,13 @@ function ModuleCard({
               <Link
                 to="/teacher/classrooms/$classroomId"
                 params={{ classroomId: module.classroom.id }}
-                className="inline-flex max-w-full items-center gap-1 truncate text-xs text-[var(--color-accent-300)] hover:text-[var(--color-accent-200)]"
+                className="inline-flex max-w-full items-center gap-1 truncate text-xs text-(--color-accent-300) hover:text-(--color-accent-200)"
               >
                 {module.classroom.course_code} · {module.classroom.course_name}
               </Link>
             )}
 
-            <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-ink-faint)]">
+            <div className="flex items-center justify-between gap-2 text-xs text-(--color-ink-faint)">
               <span className="min-w-0 truncate">
                 {module.owner?.full_name ?? 'Unknown'}
               </span>
@@ -150,7 +150,7 @@ function ModuleCard({
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-[var(--color-ink-faint)]">
+              <span className="text-xs text-(--color-ink-faint)">
                 {formatModuleDate(module.created_at)}
               </span>
               <Button
@@ -254,6 +254,9 @@ export function ModulesPage() {
         title="Teaching modules"
         description="Your private repository of lesson plans, activity stories, and teaching resources."
         actions={
+          // Hidden while empty — the empty state hosts the upload CTA, so the
+          // header button returns only once there are modules.
+          hasModules &&
           profile && (
             <ModuleUploadDialog
               ownerId={profile.id}
@@ -318,7 +321,26 @@ export function ModulesPage() {
         <EmptyState
           icon={<ModuleIcon />}
           title="No modules yet"
-          description="Example cards will appear after your first upload. Add a resource here, then link it to the course subjects that need it."
+          description="Upload a lesson plan, activity story, or resource, then link it to the course subjects that need it."
+          preview={
+            <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-(--color-border) bg-(--color-surface-1) p-5 shadow-(--shadow-card)"
+                >
+                  <div className="h-5 w-20 rounded-full bg-(--color-accent-500)/20" />
+                  <div className="mt-4 h-4 w-3/4 rounded-full bg-(--color-surface-3)" />
+                  <div className="mt-2 h-3 w-full rounded-full bg-(--color-surface-2)" />
+                  <div className="mt-2 h-3 w-2/3 rounded-full bg-(--color-surface-2)" />
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="h-3 w-16 rounded-full bg-(--color-surface-2)" />
+                    <div className="h-8 w-24 rounded-md bg-(--color-surface-2)" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
           action={
             profile && (
               <ModuleUploadDialog

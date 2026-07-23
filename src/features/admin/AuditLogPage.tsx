@@ -11,9 +11,9 @@ import { useProfile, useProfiles } from '@/lib/queries/profiles'
 import { useAuditLog, type AuditLogRow } from '@/lib/queries/auditLog'
 
 const selectClassName =
-  'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] ' +
-  'px-3 text-base md:text-sm text-[var(--color-ink)] transition-colors ' +
-  'focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none'
+  'h-9 rounded-md border border-(--color-border) bg-(--color-surface-1) ' +
+  'px-3 text-base md:text-sm text-(--color-ink) transition-colors ' +
+  'focus-visible:border-(--color-accent-400) focus-visible:outline-none'
 
 const PAGE_SIZE = 50
 
@@ -140,14 +140,14 @@ export function AuditLogPage() {
               <TBody>
                 {(entries ?? []).map((entry) => (
                   <TR key={entry.id}>
-                    <TD className="text-[var(--color-ink-muted)]">
+                    <TD className="text-(--color-ink-muted)">
                       {formatTimestamp(entry.created_at)}
                     </TD>
                     <TD className="font-medium">{actorLabel(entry)}</TD>
                     <TD>
                       <Badge tone="neutral">{entry.action}</Badge>
                     </TD>
-                    <TD className="text-[var(--color-ink-muted)]">
+                    <TD className="text-(--color-ink-muted)">
                       {entry.target_table} · {shortId(entry.target_id)}
                     </TD>
                   </TR>

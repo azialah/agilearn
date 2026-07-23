@@ -4,7 +4,7 @@
  *
  * Each theme is expressed as a bag of CSS custom properties applied to the
  * player root, so slide components can reference them with Tailwind arbitrary
- * values such as `text-[var(--ss-accent)]`. Keeping this as pure data (no React)
+ * values such as `text-(--ss-accent)`. Keeping this as pure data (no React)
  * makes the palette trivial to extend and test.
  */
 

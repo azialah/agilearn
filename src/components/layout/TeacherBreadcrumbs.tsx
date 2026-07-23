@@ -42,7 +42,7 @@ export function TeacherBreadcrumbs() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mx-auto flex w-full max-w-6xl items-center gap-1 px-4 pt-4 text-xs text-[var(--color-ink-faint)] sm:px-6"
+      className="mx-auto flex w-full max-w-6xl items-center gap-1 px-4 pt-4 text-xs text-(--color-ink-faint) sm:px-6"
     >
       {crumbs.map((crumb, index) => (
         <span key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-1">
@@ -50,12 +50,12 @@ export function TeacherBreadcrumbs() {
           {crumb.to ? (
             <Link
               to={crumb.to}
-              className="truncate transition-colors hover:text-[var(--color-ink)]"
+              className="truncate transition-colors hover:text-(--color-ink)"
             >
               {crumb.label}
             </Link>
           ) : (
-            <span className="truncate text-[var(--color-ink-muted)]" aria-current="page">
+            <span className="truncate text-(--color-ink-muted)" aria-current="page">
               {crumb.label}
             </span>
           )}

@@ -40,27 +40,27 @@ export function ProductMock() {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className="relative mx-auto w-full max-w-4xl"
     >
-      <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)]/90 p-3 shadow-[var(--shadow-pop)] backdrop-blur-sm sm:p-4">
+      <div className="rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/90 p-3 shadow-(--shadow-pop) backdrop-blur-sm sm:p-4">
         {/* Faux window chrome */}
         <div className="mb-3 flex items-center gap-1.5 px-1">
-          <span className="size-2.5 rounded-full bg-[var(--color-surface-3)]" />
-          <span className="size-2.5 rounded-full bg-[var(--color-surface-3)]" />
-          <span className="size-2.5 rounded-full bg-[var(--color-surface-3)]" />
-          <span className="ml-3 text-xs text-[var(--color-ink-faint)]">
+          <span className="size-2.5 rounded-full bg-(--color-surface-3)" />
+          <span className="size-2.5 rounded-full bg-(--color-surface-3)" />
+          <span className="size-2.5 rounded-full bg-(--color-surface-3)" />
+          <span className="ml-3 text-xs text-(--color-ink-faint)">
             Agilearn · Gradebook
           </span>
         </div>
 
-        <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4 sm:p-5">
+        <div className="rounded-lg border border-(--color-border) bg-(--color-surface-0) p-4 sm:p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-[var(--color-ink)]">
+              <p className="text-sm font-semibold text-(--color-ink)">
                 CS 201 · Data Structures
               </p>
-              <p className="text-xs text-[var(--color-ink-faint)]">Prelim · Block B</p>
+              <p className="text-xs text-(--color-ink-faint)">Prelim · Block B</p>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1 text-xs text-[var(--color-ink-muted)]">
-              <span className="size-1.5 rounded-full bg-[var(--color-accent-400)]" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-2) px-3 py-1 text-xs text-(--color-ink-muted)">
+              <span className="size-1.5 rounded-full bg-(--color-accent-400)" />
               Lecture 40% · Lab 60%
             </span>
           </div>
@@ -72,7 +72,7 @@ export function ProductMock() {
             viewport={{ once: true, amount: 0.4 }}
             className="space-y-2.5"
           >
-            <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-1 text-[10px] uppercase tracking-wide text-[var(--color-ink-faint)]">
+            <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-1 text-[10px] uppercase tracking-wide text-(--color-ink-faint)">
               <span>Student</span>
               <span className="hidden sm:block">Lecture · Lab</span>
             </div>
@@ -82,14 +82,14 @@ export function ProductMock() {
                 <motion.div
                   key={student.name}
                   variants={row}
-                  className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2.5"
+                  className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-[var(--color-ink)]">
+                    <p className="truncate text-sm text-(--color-ink)">
                       {student.name}
                     </p>
                     <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                      <div className="h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-(--color-surface-3)">
                         <motion.div
                           className="h-full rounded-full"
                           style={{ backgroundColor: tone(final) }}
@@ -107,11 +107,11 @@ export function ProductMock() {
                       </span>
                     </div>
                   </div>
-                  <div className="hidden items-center gap-1.5 text-xs tabular-nums text-[var(--color-ink-muted)] sm:flex">
-                    <span className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">
+                  <div className="hidden items-center gap-1.5 text-xs tabular-nums text-(--color-ink-muted) sm:flex">
+                    <span className="rounded bg-(--color-surface-3) px-1.5 py-0.5">
                       {student.lecture}
                     </span>
-                    <span className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">
+                    <span className="rounded bg-(--color-surface-3) px-1.5 py-0.5">
                       {student.lab}
                     </span>
                   </div>
@@ -128,10 +128,10 @@ export function ProductMock() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.4 }}
-        className="absolute -bottom-5 -right-2 hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 shadow-[var(--shadow-pop)] sm:block"
+        className="absolute -bottom-5 -right-2 hidden rounded-lg border border-(--color-border) bg-(--color-surface-2) px-4 py-3 shadow-(--shadow-pop) sm:block"
       >
-        <p className="text-xs text-[var(--color-ink-faint)]">Attendance today</p>
-        <p className="text-lg font-semibold text-[var(--color-success)]">96%</p>
+        <p className="text-xs text-(--color-ink-faint)">Attendance today</p>
+        <p className="text-lg font-semibold text-(--color-success)">96%</p>
       </motion.div>
     </motion.div>
   )

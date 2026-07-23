@@ -24,12 +24,13 @@ export function ResponsiveDrawerContent({
           exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }}
           transition={{ duration: reducedMotion ? 0.01 : 0.2, ease: 'easeOut' }}
           className={cn(
-            'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] min-h-[74dvh] flex-col rounded-t-[2rem] border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-[var(--shadow-pop)] outline-none',
-            'md:inset-x-auto md:left-1/2 md:top-1/2 md:min-h-0 md:w-[min(42rem,calc(100%-3rem))] md:max-h-[86dvh] md:[translate:-50%_-50%] md:rounded-[2rem]',
+            'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] min-h-[60dvh] flex-col rounded-t-4xl border border-(--color-border) bg-(--color-surface-1) shadow-(--shadow-pop) outline-none',
+            'md:inset-x-auto md:left-1/2 md:top-1/2 md:min-h-0 md:max-h-[86dvh] md:w-[min(42rem,calc(100%-3rem))] md:[translate:-50%_-50%] md:rounded-4xl',
+            'lg:max-h-[88dvh] lg:w-[min(52rem,calc(100%-4rem))] xl:w-[min(60rem,calc(100%-8rem))]',
             className,
           )}
         >
-          <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-[var(--color-border-strong)] md:hidden" />
+          <div className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-(--color-border-strong) md:hidden" />
           {children}
         </motion.section>
       </DialogPrimitive.Content>
@@ -47,20 +48,20 @@ export function ResponsiveDrawerHeader({
   step?: { current: number; total: number; label: string }
 }) {
   return (
-    <header className="shrink-0 border-b border-[var(--color-border)] px-5 pb-4 pt-5 sm:px-6">
+    <header className="shrink-0 border-b border-(--color-border) px-5 pb-4 pt-5 sm:px-6">
       {step && (
-        <div className="mb-3 flex items-center justify-between text-xs text-[var(--color-ink-faint)]">
+        <div className="mb-3 flex items-center justify-between text-xs text-(--color-ink-faint)">
           <span>{step.label}</span>
           <span>
             {step.current} of {step.total}
           </span>
         </div>
       )}
-      <DialogPrimitive.Title className="text-xl font-semibold tracking-tight text-[var(--color-ink)]">
+      <DialogPrimitive.Title className="text-xl font-semibold tracking-tight text-(--color-ink)">
         {title}
       </DialogPrimitive.Title>
       {description && (
-        <DialogPrimitive.Description className="mt-1 text-sm leading-6 text-[var(--color-ink-muted)]">
+        <DialogPrimitive.Description className="mt-1 text-sm leading-6 text-(--color-ink-muted)">
           {description}
         </DialogPrimitive.Description>
       )}
@@ -90,7 +91,7 @@ export function ResponsiveDrawerFooter({
   onSecondary: () => void
 }) {
   return (
-    <footer className="flex shrink-0 gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 md:justify-end">
+    <footer className="flex shrink-0 gap-2 border-t border-(--color-border) bg-(--color-surface-1) px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 md:justify-end">
       <Button
         type="button"
         variant="ghost"

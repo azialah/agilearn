@@ -250,7 +250,7 @@ export function ClassroomFormDialog({
                     onChange={(event) =>
                       setForm({ ...form, periodId: event.target.value })
                     }
-                    className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm"
+                    className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                   >
                     <option value="">
                       Create from the School Year and Semester above
@@ -294,7 +294,7 @@ export function ClassroomFormDialog({
                       schoolLevel: event.target.value as TeachingLevel | '',
                     })
                   }
-                  className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                 >
                   <option value="">Choose level</option>
                   <option value="preschool">Preschool</option>
@@ -347,7 +347,7 @@ export function ClassroomFormDialog({
                   onChange={(event) =>
                     setForm({ ...form, kind: event.target.value as CourseSubjectKind })
                   }
-                  className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                 >
                   <option value="other">Other</option>
                   <option value="lecture">Lecture</option>
@@ -363,7 +363,7 @@ export function ClassroomFormDialog({
                   onChange={(event) =>
                     setForm({ ...form, description: event.target.value })
                   }
-                  className="w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm"
+                  className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm"
                 />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">

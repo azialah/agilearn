@@ -34,7 +34,7 @@ export function ScrollGradient() {
 
       <motion.div
         style={reduce ? { opacity: 0.16 } : { opacity: o1, y: y1 }}
-        className="absolute -left-[15%] -top-[20%] h-[75vh] w-[75vh] rounded-full bg-[radial-gradient(circle,var(--color-accent-400),transparent_62%)] blur-3xl"
+        className="absolute left-[-15%] top-[-20%] h-[75vh] w-[75vh] rounded-full bg-[radial-gradient(circle,var(--color-accent-400),transparent_62%)] blur-3xl"
       />
       <motion.div
         style={reduce ? { opacity: 0 } : { opacity: o2, y: y2 }}

@@ -23,12 +23,12 @@ function Bar({
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between gap-3 text-xs">
-        <span className="truncate text-[var(--color-ink-muted)]">{label}</span>
-        <span className="shrink-0 font-medium text-[var(--color-ink)]">{detail}</span>
+        <span className="truncate text-(--color-ink-muted)">{label}</span>
+        <span className="shrink-0 font-medium text-(--color-ink)">{detail}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+      <div className="h-2 overflow-hidden rounded-full bg-(--color-surface-3)">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent-350)] to-[var(--color-accent-500)]"
+          className="h-full rounded-full bg-linear-to-r from-(--color-accent-350) to-(--color-accent-500)"
           style={{ width: `${width}%` }}
         />
       </div>
@@ -102,37 +102,37 @@ export function AnalyticsPage() {
       />
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="rounded-[1.75rem] p-5">
-          <BarChart3 className="size-5 text-[var(--color-accent-350)]" />
+          <BarChart3 className="size-5 text-(--color-accent-350)" />
           <p className="mt-4 text-3xl font-semibold">
             {Math.round(
               (weeklyLoad.reduce((sum, item) => sum + item.minutes, 0) / 60) * 10,
             ) / 10}
             h
           </p>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
             scheduled this week
           </p>
         </Card>
         <Card className="rounded-[1.75rem] p-5">
-          <TrendingUp className="size-5 text-[var(--color-accent-350)]" />
+          <TrendingUp className="size-5 text-(--color-accent-350)" />
           <p className="mt-4 text-3xl font-semibold">{subjects.length}</p>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
             active course subjects
           </p>
         </Card>
         <Card className="rounded-[1.75rem] p-5">
-          <p className="font-[var(--font-calligraphy)] text-2xl text-[var(--color-accent-350)]">
+          <p className="font-(family-name:--font-calligraphy) text-2xl text-(--color-accent-350)">
             A clear week ahead
           </p>
-          <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-2 text-sm text-(--color-ink-muted)">
             Insights appear as your schedule, attendance, and materials grow.
           </p>
         </Card>
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="rounded-[2rem] p-6">
+        <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Weekly teaching load</h2>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
             Sunday-first scheduled minutes.
           </p>
           <div className="mt-6 space-y-4">
@@ -147,9 +147,9 @@ export function AnalyticsPage() {
             ))}
           </div>
         </Card>
-        <Card className="rounded-[2rem] p-6">
+        <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Subject readiness</h2>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
             Schedule, materials, and recorded attendance.
           </p>
           <div className="mt-6 space-y-4">
@@ -164,41 +164,41 @@ export function AnalyticsPage() {
                 />
               ))
             ) : (
-              <p className="text-sm text-[var(--color-ink-muted)]">
+              <p className="text-sm text-(--color-ink-muted)">
                 Create a course subject to see readiness signals here.
               </p>
             )}
           </div>
         </Card>
-        <Card className="rounded-[2rem] p-6 lg:col-span-2">
+        <Card className="rounded-4xl p-6 lg:col-span-2">
           <h2 className="font-semibold">Attendance trend</h2>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
             Present, late, and excused learners across recorded sessions.
           </p>
           {attendanceRates.length ? (
-            <div className="mt-6 flex h-40 items-end gap-3 border-b border-[var(--color-border)] px-2">
+            <div className="mt-6 flex h-40 items-end gap-3 border-b border-(--color-border) px-2">
               {attendanceRates.map((item) => (
                 <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
                   <div
-                    className="w-full rounded-t-xl bg-gradient-to-t from-[var(--color-accent-350)] to-[var(--color-accent-500)]"
+                    className="w-full rounded-t-xl bg-linear-to-t from-(--color-accent-350) to-(--color-accent-500)"
                     style={{ height: `${Math.max(6, item.rate)}%` }}
                     title={`${item.label}: ${item.rate}%`}
                   />
-                  <span className="text-[10px] text-[var(--color-ink-faint)]">
+                  <span className="text-[10px] text-(--color-ink-faint)">
                     {item.label}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-6 rounded-xl bg-[var(--color-surface-2)] p-4 text-sm text-[var(--color-ink-muted)]">
+            <p className="mt-6 rounded-xl bg-(--color-surface-2) p-4 text-sm text-(--color-ink-muted)">
               Record attendance from a subject workspace to build this trend. No sample
               attendance is displayed.
             </p>
           )}
         </Card>
       </div>
-      <Card className="rounded-[2rem] p-6">
+      <Card className="rounded-4xl p-6">
         <h2 className="font-semibold">Course load</h2>
         <div className="mt-5 space-y-4">
           {subjectLoad.length ? (
@@ -212,7 +212,7 @@ export function AnalyticsPage() {
               />
             ))
           ) : (
-            <p className="text-sm text-[var(--color-ink-muted)]">
+            <p className="text-sm text-(--color-ink-muted)">
               No subject schedules yet.
             </p>
           )}

@@ -141,7 +141,7 @@ export function CategoryDialog({
               {isLegacyCategory ? (
                 <p
                   id="category-component"
-                  className="flex h-10 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-ink-muted)]"
+                  className="flex h-10 items-center rounded-md border border-(--color-border) bg-(--color-surface-2) px-3 text-sm text-(--color-ink-muted)"
                 >
                   {category.component === 'lecture' ? 'Lecture' : 'Laboratory'}
                 </p>
@@ -178,7 +178,7 @@ export function CategoryDialog({
               />
             </div>
           </div>
-          <p className="text-xs text-[var(--color-ink-faint)]">
+          <p className="text-xs text-(--color-ink-faint)">
             Category weights are relative within their component and renormalize when a
             category has no graded work.
           </p>

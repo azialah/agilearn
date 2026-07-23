@@ -122,7 +122,7 @@ export function ActivityDialog({
           <DialogTitle>{isEditing ? 'Edit activity' : 'New activity'}</DialogTitle>
         </DialogHeader>
         {noCategories ? (
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-sm text-(--color-ink-muted)">
             Add at least one activity category before creating activities.
           </p>
         ) : (

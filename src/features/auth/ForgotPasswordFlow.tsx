@@ -120,7 +120,7 @@ export function ForgotPasswordFlow() {
           {stage === 'email' && (
             <>
               <h1 className="text-lg font-semibold">Reset your password</h1>
-              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
                 Enter your email and we'll send a {CODE_LENGTH}-digit code.
               </p>
               <form onSubmit={sendCode} className="mt-5 space-y-4">
@@ -138,10 +138,10 @@ export function ForgotPasswordFlow() {
                 {formError && <FormError message={formError} />}
                 <StickyCta label="Send code" loading={submitting} />
               </form>
-              <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-4 text-center text-sm text-(--color-ink-muted)">
                 <Link
                   to="/login"
-                  className="text-[var(--color-accent-350)] hover:text-[var(--color-accent-300)]"
+                  className="text-(--color-accent-350) hover:text-(--color-accent-300)"
                 >
                   Back to sign in
                 </Link>
@@ -152,7 +152,7 @@ export function ForgotPasswordFlow() {
           {stage === 'code' && (
             <>
               <h1 className="text-lg font-semibold">Enter your code</h1>
-              <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
                 We sent a {CODE_LENGTH}-digit code to {email.trim()}.
               </p>
               <div className="mt-5 space-y-4">
@@ -172,7 +172,7 @@ export function ForgotPasswordFlow() {
                   <button
                     type="button"
                     onClick={() => setStage('email')}
-                    className="text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                    className="text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
                   >
                     Use a different email
                   </button>
@@ -180,7 +180,7 @@ export function ForgotPasswordFlow() {
                     type="button"
                     onClick={resendCode}
                     disabled={submitting}
-                    className="text-sm text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)] disabled:opacity-50"
+                    className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:opacity-50"
                   >
                     Send a new code
                   </button>

@@ -18,7 +18,7 @@ export function Stepper({ current, total }: { current: number; total: number }) 
           aria-hidden
           className={cn(
             'h-1.5 flex-1 rounded-full transition-colors',
-            i <= current ? 'bg-[var(--color-accent-400)]' : 'bg-[var(--color-surface-3)]',
+            i <= current ? 'bg-(--color-accent-400)' : 'bg-(--color-surface-3)',
           )}
         />
       ))}

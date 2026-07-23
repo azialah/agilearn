@@ -109,7 +109,7 @@ export function StudentFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="student_email">
                 Student email{' '}
-                <span className="font-normal text-[var(--color-ink-faint)]">
+                <span className="font-normal text-(--color-ink-faint)">
                   (optional)
                 </span>
               </Label>
@@ -124,7 +124,7 @@ export function StudentFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="guardian_email">
                 Guardian email{' '}
-                <span className="font-normal text-[var(--color-ink-faint)]">
+                <span className="font-normal text-(--color-ink-faint)">
                   (optional)
                 </span>
               </Label>
@@ -137,7 +137,7 @@ export function StudentFormDialog({
               />
             </div>
           </div>
-          <p className="text-xs leading-5 text-[var(--color-ink-faint)]">
+          <p className="text-xs leading-5 text-(--color-ink-faint)">
             Contacts are optional and only used when you choose to compose a private grade
             report.
           </p>

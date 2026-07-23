@@ -7,22 +7,22 @@ import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
 import { AuthShell } from './wizard-ui'
+import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { redirect } = Route.useSearch()
   const { t } = useLocale()
+  const { toast } = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setError(null)
     setSubmitting(true)
     // Persist the session to localStorage only when "remember me" is checked;
     // the storage adapter in supabase.ts reads this flag.
@@ -33,7 +33,7 @@ export function LoginPage() {
     })
     setSubmitting(false)
     if (signInError) {
-      setError(signInError.message)
+      toast({ title: signInError.message, tone: 'error' })
       return
     }
     if (redirect) {
@@ -48,7 +48,7 @@ export function LoginPage() {
       rail={{ eyebrow: t('authEyebrow'), title: t('authTitle'), body: t('authBody') }}
     >
       <h1 className="text-lg font-semibold">{t('signIn')}</h1>
-      <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-1 text-sm text-(--color-ink-muted)">
         {t('signInDescription')}
       </p>
 
@@ -70,7 +70,7 @@ export function LoginPage() {
             <Label htmlFor="password">{t('password')}</Label>
             <Link
               to="/forgot-password"
-              className="text-sm text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)]"
+              className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
             >
               {t('forgotPassword')}
             </Link>
@@ -85,24 +85,15 @@ export function LoginPage() {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-[var(--color-ink-muted)] select-none">
+        <label className="flex items-center gap-2 text-sm text-(--color-ink-muted) select-none">
           <input
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
-            className="size-4 rounded border-[var(--color-border)] accent-[var(--color-accent-400)]"
+            className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
           />
           {t('rememberMe')}
         </label>
-
-        {error && (
-          <p
-            role="alert"
-            className="rounded-[var(--radius-md)] border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-3 py-2 text-sm text-[var(--color-danger)]"
-          >
-            {error}
-          </p>
-        )}
 
         <Button
           type="submit"
@@ -114,11 +105,11 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-[var(--color-ink-muted)]">
+      <p className="mt-6 text-center text-sm text-(--color-ink-muted)">
         {t('newTeacher')}{' '}
         <Link
           to="/teacher/signup"
-          className="font-medium text-[var(--color-accent-350)] transition-colors hover:text-[var(--color-accent-300)]"
+          className="font-medium text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
         >
           {t('createAccount')}
         </Link>

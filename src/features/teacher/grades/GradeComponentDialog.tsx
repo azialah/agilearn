@@ -106,7 +106,7 @@ export function GradeComponentDialog({
               onChange={(event) => setWeight(event.target.value)}
             />
           </div>
-          <p className="text-xs text-[var(--color-ink-faint)]">
+          <p className="text-xs text-(--color-ink-faint)">
             Components combine into the class grade. Their weights are normalized across
             the class.
           </p>

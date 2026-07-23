@@ -102,8 +102,8 @@ export function DomainRequestsPage() {
                     <Badge tone="accent">{request.domain}</Badge>
                   </TD>
                   <TD className="font-medium">{request.school}</TD>
-                  <TD className="text-[var(--color-ink-muted)]">{request.name}</TD>
-                  <TD className="max-w-xs truncate text-[var(--color-ink-muted)]">
+                  <TD className="text-(--color-ink-muted)">{request.name}</TD>
+                  <TD className="max-w-xs truncate text-(--color-ink-muted)">
                     {request.message || '—'}
                   </TD>
                   <TD>

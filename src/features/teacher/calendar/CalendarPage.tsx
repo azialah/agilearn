@@ -87,7 +87,7 @@ export function CalendarPage() {
           </Button>
         }
       />
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-(--color-border) bg-(--color-surface-1) p-3">
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -109,7 +109,7 @@ export function CalendarPage() {
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-sm font-semibold text-[var(--color-ink)]">
+        <p className="text-sm font-semibold text-(--color-ink)">
           {weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
           {addDays(weekStart, 6).toLocaleDateString(undefined, {
             month: 'short',
@@ -126,7 +126,7 @@ export function CalendarPage() {
                 new Date(selectedDate.getFullYear(), Number(event.target.value), 1),
               )
             }
-            className="h-9 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 text-sm"
+            className="h-9 rounded-full border border-(--color-border) bg-(--color-surface-0) px-3 text-sm"
           >
             {MONTHS.map((month, index) => (
               <option key={month} value={index}>
@@ -142,7 +142,7 @@ export function CalendarPage() {
                 new Date(Number(event.target.value), selectedDate.getMonth(), 1),
               )
             }
-            className="h-9 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 text-sm"
+            className="h-9 rounded-full border border-(--color-border) bg-(--color-surface-0) px-3 text-sm"
           >
             {[-1, 0, 1, 2].map((offset) => {
               const year = new Date().getFullYear() + offset
@@ -152,8 +152,8 @@ export function CalendarPage() {
         </div>
       </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="overflow-hidden rounded-[2rem] p-0">
-          <div className="grid grid-cols-7 border-b border-[var(--color-border)]">
+        <Card className="overflow-hidden rounded-4xl p-0">
+          <div className="grid grid-cols-7 border-b border-(--color-border)">
             {days.map((day, index) => {
               const key = toDateKey(day)
               const active = key === selectedKey
@@ -163,21 +163,21 @@ export function CalendarPage() {
                   type="button"
                   onClick={() => setSelectedDate(day)}
                   className={
-                    'min-h-20 border-r border-[var(--color-border)] p-3 text-left last:border-r-0 ' +
+                    'min-h-20 border-r border-(--color-border) p-3 text-left last:border-r-0 ' +
                     (active
-                      ? 'bg-[var(--color-accent-400)]/12'
-                      : 'hover:bg-[var(--color-surface-2)]')
+                      ? 'bg-(--color-accent-400)/12'
+                      : 'hover:bg-(--color-surface-2)')
                   }
                 >
-                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-(--color-ink-faint)">
                     {WEEKDAY_LABELS[index]}
                   </span>
                   <span
                     className={
                       'mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm ' +
                       (key === today
-                        ? 'bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]'
-                        : 'text-[var(--color-ink)]')
+                        ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                        : 'text-(--color-ink)')
                     }
                   >
                     {day.getDate()}
@@ -186,7 +186,7 @@ export function CalendarPage() {
               )
             })}
           </div>
-          <div className="grid min-h-[26rem] grid-cols-7">
+          <div className="grid min-h-104 grid-cols-7">
             {days.map((day) => {
               const daySlots = slots.filter((slot) => slot.weekday === day.getDay())
               const dayEvents = (events.data ?? []).filter(
@@ -195,7 +195,7 @@ export function CalendarPage() {
               return (
                 <div
                   key={toDateKey(day)}
-                  className="min-w-0 border-r border-[var(--color-border)] p-2 last:border-r-0"
+                  className="min-w-0 border-r border-(--color-border) p-2 last:border-r-0"
                 >
                   {daySlots.map((slot) => {
                     const subject = subjects.find(
@@ -204,15 +204,15 @@ export function CalendarPage() {
                     return (
                       <div
                         key={slot.id}
-                        className="mb-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-2 text-[10px]"
+                        className="mb-2 rounded-xl border border-(--color-border) bg-(--color-surface-2) p-2 text-[10px]"
                       >
-                        <p className="truncate font-semibold text-[var(--color-ink)]">
+                        <p className="truncate font-semibold text-(--color-ink)">
                           {subject?.name ?? 'Course subject'}
                         </p>
-                        <p className="mt-1 text-[var(--color-ink-muted)]">
+                        <p className="mt-1 text-(--color-ink-muted)">
                           {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
                         </p>
-                        <p className="mt-1 truncate text-[var(--color-accent-350)]">
+                        <p className="mt-1 truncate text-(--color-accent-350)">
                           {slot.modality === 'online'
                             ? 'Online'
                             : slot.modality === 'hybrid'
@@ -225,10 +225,10 @@ export function CalendarPage() {
                   {dayEvents.map((event) => (
                     <div
                       key={event.id}
-                      className="mb-2 rounded-xl bg-[var(--color-accent-400)]/12 p-2 text-[10px] text-[var(--color-ink)]"
+                      className="mb-2 rounded-xl bg-(--color-accent-400)/12 p-2 text-[10px] text-(--color-ink)"
                     >
                       <p className="truncate font-medium">{event.title}</p>
-                      <p className="mt-1 text-[var(--color-ink-muted)]">
+                      <p className="mt-1 text-(--color-ink-muted)">
                         {event.kind === 'holiday'
                           ? 'Holiday'
                           : event.kind === 'note'
@@ -238,7 +238,7 @@ export function CalendarPage() {
                     </div>
                   ))}
                   {daySlots.length === 0 && dayEvents.length === 0 && (
-                    <p className="p-1 text-[10px] leading-relaxed text-[var(--color-ink-faint)]">
+                    <p className="p-1 text-[10px] leading-relaxed text-(--color-ink-faint)">
                       Example slots and events appear here after you add a subject
                       schedule or note.
                     </p>
@@ -248,9 +248,9 @@ export function CalendarPage() {
             })}
           </div>
         </Card>
-        <Card className="rounded-[2rem] p-5">
+        <Card className="rounded-4xl p-5">
           <div className="flex items-center gap-2">
-            <CalendarDays className="size-4 text-[var(--color-accent-350)]" />
+            <CalendarDays className="size-4 text-(--color-accent-350)" />
             <p className="text-sm font-semibold">
               {selectedDate.toLocaleDateString(undefined, {
                 weekday: 'long',
@@ -259,25 +259,25 @@ export function CalendarPage() {
               })}
             </p>
           </div>
-          <p className="mt-3 font-[var(--font-calligraphy)] text-2xl text-[var(--color-accent-350)]">
+          <p className="mt-3 font-(family-name:--font-calligraphy) text-2xl text-(--color-accent-350)">
             Plan a gentle day
           </p>
           <div className="mt-5 space-y-3">
             {selectedSlots.map((slot) => (
               <div
                 key={slot.id}
-                className="rounded-xl bg-[var(--color-surface-2)] p-3 text-sm"
+                className="rounded-xl bg-(--color-surface-2) p-3 text-sm"
               >
                 <p className="font-medium">
                   {subjects.find((item) => item.id === slot.course_subject_id)?.name ??
                     'Course subject'}
                 </p>
-                <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                <p className="mt-1 text-xs text-(--color-ink-muted)">
                   {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)} ·{' '}
                   {slot.modality.replaceAll('_', ' ')}
                 </p>
                 {slot.location_label && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-[var(--color-ink-faint)]">
+                  <p className="mt-1 flex items-center gap-1 text-xs text-(--color-ink-faint)">
                     <MapPin className="size-3" />
                     {slot.location_label}
                   </p>
@@ -287,18 +287,18 @@ export function CalendarPage() {
             {selectedEvents.map((event) => (
               <div
                 key={event.id}
-                className="rounded-xl border border-[var(--color-border)] p-3 text-sm"
+                className="rounded-xl border border-(--color-border) p-3 text-sm"
               >
                 <p className="font-medium">{event.title}</p>
                 {event.notes && (
-                  <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                  <p className="mt-1 text-xs text-(--color-ink-muted)">
                     {event.notes}
                   </p>
                 )}
               </div>
             ))}
             {selectedSlots.length === 0 && selectedEvents.length === 0 && (
-              <p className="text-sm text-[var(--color-ink-muted)]">
+              <p className="text-sm text-(--color-ink-muted)">
                 This day is open. Add a private note or create a subject meeting schedule
                 from its workspace.
               </p>
@@ -328,7 +328,7 @@ export function CalendarPage() {
                 Notes
                 <textarea
                   id="calendar-note-body"
-                  className="mt-1.5 min-h-28 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3 text-sm"
+                  className="mt-1.5 min-h-28 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) p-3 text-sm"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="A light reminder for this day…"

@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -44,14 +45,30 @@ const TONE_ICON = {
 } as const
 
 const TONE_ICON_CLASS: Record<ToastTone, string> = {
-  default: 'text-[var(--color-accent-350)] bg-[var(--color-accent-500)]/15',
-  success: 'text-[var(--color-success)] bg-[var(--color-success)]/15',
-  error: 'text-[var(--color-danger)] bg-[var(--color-danger)]/15',
+  default: 'text-(--color-accent-350) bg-(--color-accent-500)/15',
+  success: 'text-(--color-success) bg-(--color-success)/15',
+  error: 'text-(--color-danger) bg-(--color-danger)/15',
+}
+
+/** True at lg+ (≥1024px), reacting to viewport changes. */
+function useIsLargeScreen() {
+  const [large, setLarge] = useState(
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  )
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setLarge(media.matches)
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
+  }, [])
+  return large
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
   const reduce = useReducedMotion()
+  const isLarge = useIsLargeScreen()
 
   const dismiss = useCallback((id: number) => {
     setItems((current) => current.filter((t) => t.id !== id))
@@ -72,13 +89,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {/* Mobile: top-center dropdown banner (iOS-style). md+: top-right
-          corner stack (macOS/Windows-style) — kept off the bottom so it
-          never collides with a step wizard's fixed sticky CTA. */}
+      {/* xs–md: top-center banner sliding down from the top (iOS-style).
+          lg+: top-right corner stack sliding in from the right (Sonner-style). */}
       <div
         className={cn(
-          'pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4',
-          'sm:inset-x-auto sm:right-4 sm:items-end sm:px-0',
+          'pointer-events-none fixed inset-x-0 top-4 z-100 flex flex-col items-center gap-2 px-4',
+          'lg:inset-x-auto lg:right-4 lg:items-end lg:px-0',
         )}
       >
         <AnimatePresence>
@@ -89,11 +105,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 key={item.id}
                 role="status"
                 layout
-                initial={reduce ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.96 }}
+                initial={
+                  reduce
+                    ? { opacity: 0 }
+                    : isLarge
+                      ? { opacity: 0, x: 32, scale: 0.98 }
+                      : { opacity: 0, y: -16, scale: 0.96 }
+                }
+                animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+                exit={
+                  reduce
+                    ? { opacity: 0 }
+                    : isLarge
+                      ? { opacity: 0, x: 32, scale: 0.98 }
+                      : { opacity: 0, y: -8, scale: 0.96 }
+                }
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)]/95 shadow-[var(--shadow-pop)] backdrop-blur-md"
+                className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/95 shadow-(--shadow-pop) backdrop-blur-md"
               >
                 <div className="flex items-start gap-3 p-4">
                   <span
@@ -105,11 +133,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     <Icon className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-sm font-medium text-[var(--color-ink)]">
+                    <p className="text-sm font-medium text-(--color-ink)">
                       {item.title}
                     </p>
                     {item.description && (
-                      <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
+                      <p className="mt-0.5 text-sm text-(--color-ink-muted)">
                         {item.description}
                       </p>
                     )}
@@ -117,7 +145,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <button
                     aria-label="Dismiss"
                     onClick={() => dismiss(item.id)}
-                    className="shrink-0 rounded-full p-1 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+                    className="shrink-0 rounded-full p-1 text-(--color-ink-faint) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)"
                   >
                     <X className="size-4" />
                   </button>
@@ -125,7 +153,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {!reduce && (
                   <motion.div
                     aria-hidden
-                    className="h-[3px] origin-left bg-[var(--color-accent-400)]/50"
+                    className="h-[3px] origin-left bg-(--color-accent-400)/50"
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
                     transition={{ duration: DURATION_MS / 1000, ease: 'linear' }}

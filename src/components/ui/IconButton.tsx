@@ -9,11 +9,11 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 
 const variants = {
   ghost:
-    'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
+    'text-(--color-ink-muted) hover:bg-(--color-surface-2) hover:text-(--color-ink)',
   solid:
-    'bg-[var(--color-surface-3)] text-[var(--color-ink)] hover:bg-[var(--color-border)]',
+    'bg-(--color-surface-3) text-(--color-ink) hover:bg-(--color-border)',
   danger:
-    'text-[var(--color-ink-muted)] hover:bg-[var(--color-danger)]/15 hover:text-[var(--color-danger)]',
+    'text-(--color-ink-muted) hover:bg-(--color-danger)/15 hover:text-(--color-danger)',
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -23,7 +23,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex items-center justify-center rounded-[var(--radius-md)] transition-colors',
+        'inline-flex items-center justify-center rounded-md transition-colors',
         'focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed',
         size === 'sm' ? 'size-7' : 'size-9',
         variants[variant],

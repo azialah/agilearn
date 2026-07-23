@@ -28,7 +28,7 @@ import { GradeComponentDialog } from './GradeComponentDialog'
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
+    <h4 className="text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
       {children}
     </h4>
   )
@@ -152,16 +152,16 @@ export function StructurePanel({
               />
             </div>
             {structure.periods.length === 0 ? (
-              <p className="text-sm text-[var(--color-ink-muted)]">No periods yet.</p>
+              <p className="text-sm text-(--color-ink-muted)">No periods yet.</p>
             ) : (
-              <ul className="divide-y divide-[var(--color-border)] rounded-[var(--radius-md)] border border-[var(--color-border)]">
+              <ul className="divide-y divide-(--color-border) rounded-md border border-(--color-border)">
                 {structure.periods.map((period) => (
                   <li
                     key={period.id}
                     className="flex items-center justify-between gap-2 px-3 py-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-[var(--color-ink)]">
+                      <span className="text-sm text-(--color-ink)">
                         {period.name}
                       </span>
                       <Badge tone="neutral">w {round2(period.weight)}</Badge>
@@ -213,7 +213,7 @@ export function StructurePanel({
               {structure.components.map((component) => (
                 <div
                   key={component.id}
-                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2"
+                  className="flex items-center justify-between rounded-md border border-(--color-border) px-3 py-2"
                 >
                   <span className="text-sm font-medium">{component.name}</span>
                   <div className="flex items-center gap-1">
@@ -265,10 +265,10 @@ export function StructurePanel({
                 return (
                   <div
                     key={component.id}
-                    className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3"
+                    className="space-y-2 rounded-md border border-(--color-border) p-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-[var(--color-ink)]">
+                      <span className="text-sm font-medium text-(--color-ink)">
                         {component.name}
                       </span>
                       <Badge tone={categories.length === 0 ? 'neutral' : 'accent'}>
@@ -276,7 +276,7 @@ export function StructurePanel({
                       </Badge>
                     </div>
                     {categories.length === 0 ? (
-                      <p className="text-xs text-[var(--color-ink-faint)]">
+                      <p className="text-xs text-(--color-ink-faint)">
                         No categories.
                       </p>
                     ) : (
@@ -286,9 +286,9 @@ export function StructurePanel({
                             key={category.id}
                             className="flex items-center justify-between gap-2"
                           >
-                            <span className="text-sm text-[var(--color-ink-muted)]">
+                            <span className="text-sm text-(--color-ink-muted)">
                               {category.name}{' '}
-                              <span className="text-[var(--color-ink-faint)]">
+                              <span className="text-(--color-ink-faint)">
                                 ({round2(category.weight)})
                               </span>
                             </span>
@@ -345,7 +345,7 @@ export function StructurePanel({
                 )
               })}
             </div>
-            <p className="text-xs text-[var(--color-ink-faint)]">
+            <p className="text-xs text-(--color-ink-faint)">
               Weights need not sum to exactly 1 — they are normalized per component when
               grades are computed. The Σ badge is a convenience check.
             </p>
@@ -382,7 +382,7 @@ export function StructurePanel({
             </div>
 
             {structure.periods.length === 0 ? (
-              <p className="text-sm text-[var(--color-ink-muted)]">
+              <p className="text-sm text-(--color-ink-muted)">
                 Add a grading period first.
               </p>
             ) : (
@@ -396,10 +396,10 @@ export function StructurePanel({
                         type="button"
                         onClick={() => setActivePeriodId(period.id)}
                         className={
-                          'rounded-[var(--radius-md)] px-3 py-1 text-xs font-medium transition-colors ' +
+                          'rounded-md px-3 py-1 text-xs font-medium transition-colors ' +
                           (active
-                            ? 'bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]'
-                            : 'bg-[var(--color-surface-3)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]')
+                            ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                            : 'bg-(--color-surface-3) text-(--color-ink-muted) hover:text-(--color-ink)')
                         }
                       >
                         {period.name}
@@ -415,13 +415,13 @@ export function StructurePanel({
                     )
                     if (activities.length === 0) {
                       return (
-                        <p className="text-sm text-[var(--color-ink-muted)]">
+                        <p className="text-sm text-(--color-ink-muted)">
                           No activities in {selectedPeriod.name} yet.
                         </p>
                       )
                     }
                     return (
-                      <ul className="divide-y divide-[var(--color-border)] rounded-[var(--radius-md)] border border-[var(--color-border)]">
+                      <ul className="divide-y divide-(--color-border) rounded-md border border-(--color-border)">
                         {activities.map((activity) => {
                           const category = structure.categories.find(
                             (c) => c.id === activity.category_id,
@@ -432,10 +432,10 @@ export function StructurePanel({
                               className="flex items-center justify-between gap-2 px-3 py-2"
                             >
                               <div className="min-w-0">
-                                <p className="truncate text-sm text-[var(--color-ink)]">
+                                <p className="truncate text-sm text-(--color-ink)">
                                   {activity.name}
                                 </p>
-                                <p className="text-xs text-[var(--color-ink-faint)]">
+                                <p className="text-xs text-(--color-ink-faint)">
                                   {category?.name ?? 'Uncategorized'} · max{' '}
                                   {activity.max_score}
                                   {activity.date ? ` · ${activity.date}` : ''}

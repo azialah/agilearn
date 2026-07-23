@@ -44,7 +44,10 @@ export function ClassroomsPage() {
         title="Classrooms"
         description="School Year and Semester first, then cohorts and their course subjects."
         actions={
-          profile && (
+          // Hidden while empty — the empty state hosts the create CTA, so the
+          // header button returns only once there are classrooms.
+          profile &&
+          (classrooms.data?.length ?? 0) > 0 && (
             <ClassroomFormDialog
               ownerId={profile.id}
               trigger={
@@ -67,6 +70,23 @@ export function ClassroomsPage() {
           icon={<GraduationCap />}
           title="Create your first teaching context"
           description="Start with a School Year and Semester, add a classroom cohort, then create its course subjects."
+          preview={
+            <div className="grid gap-4 p-4 sm:grid-cols-2">
+              {[0, 1].map((index) => (
+                <div
+                  key={index}
+                  className="rounded-4xl border border-(--color-border) bg-(--color-surface-1) p-5 shadow-(--shadow-card)"
+                >
+                  <div className="h-5 w-2/3 rounded-full bg-(--color-surface-3)" />
+                  <div className="mt-3 h-3 w-1/2 rounded-full bg-(--color-surface-2)" />
+                  <div className="mt-5 space-y-2">
+                    <div className="h-8 rounded-xl bg-(--color-surface-2)" />
+                    <div className="h-8 w-5/6 rounded-xl bg-(--color-surface-2)" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
           action={
             profile && (
               <ClassroomFormDialog
@@ -91,14 +111,14 @@ export function ClassroomsPage() {
             return (
               <section
                 key={period.id}
-                className="overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-[var(--shadow-card)]"
+                className="overflow-hidden rounded-4xl border border-(--color-border) bg-(--color-surface-1) shadow-(--shadow-card)"
               >
-                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4 sm:px-6">
+                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-(--color-border) px-5 py-4 sm:px-6">
                   <div>
                     <h2 className="font-semibold">
                       {period.semester_name} — SY {period.school_year}
                     </h2>
-                    <p className="mt-1 text-xs text-[var(--color-ink-faint)]">
+                    <p className="mt-1 text-xs text-(--color-ink-faint)">
                       {periodClassrooms.length} classroom
                       {periodClassrooms.length === 1 ? '' : 's'}
                     </p>
@@ -126,14 +146,14 @@ export function ClassroomsPage() {
           })}
 
           {(classrooms.data ?? []).some((classroom) => !classroom.academic_period_id) && (
-            <section className="rounded-[2rem] border border-dashed border-[var(--color-border-strong)] p-5">
+            <section className="rounded-4xl border border-dashed border-(--color-border-strong) p-5">
               <div className="mb-4 flex items-center gap-3">
-                <span className="rounded-full bg-[var(--color-accent-400)]/12 p-2 text-[var(--color-accent-350)]">
+                <span className="rounded-full bg-(--color-accent-400)/12 p-2 text-(--color-accent-350)">
                   <Archive className="size-4" />
                 </span>
                 <div>
                   <h2 className="font-medium">Imported classrooms</h2>
-                  <p className="text-sm text-[var(--color-ink-muted)]">
+                  <p className="text-sm text-(--color-ink-muted)">
                     Organize legacy classes without changing their roster, scores, or
                     attendance.
                   </p>
@@ -147,7 +167,7 @@ export function ClassroomsPage() {
                       <CardBody className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate font-medium">{classroom.course_name}</p>
-                          <p className="truncate text-xs text-[var(--color-ink-muted)]">
+                          <p className="truncate text-xs text-(--color-ink-muted)">
                             {classroom.block || classroom.year || classroom.course_code}
                           </p>
                         </div>
@@ -180,13 +200,13 @@ function ClassroomGroup({
   subjects: NonNullable<ReturnType<typeof useAllCourseSubjects>['data']>
 }) {
   return (
-    <article className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4">
+    <article className="rounded-3xl border border-(--color-border) bg-(--color-surface-0) p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">
             {classroom.cohort_name || classroom.block || classroom.course_name}
           </h3>
-          <p className="mt-1 text-xs text-[var(--color-ink-faint)]">
+          <p className="mt-1 text-xs text-(--color-ink-faint)">
             {classroom.year || 'Year level not set'} · {classroom.student_count} students
           </p>
         </div>
@@ -198,13 +218,13 @@ function ClassroomGroup({
             key={subject.id}
             to="/teacher/classrooms/$classroomId"
             params={{ classroomId: classroom.id }}
-            className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-3 transition hover:border-[var(--color-accent-400)]"
+            className="group flex items-center justify-between gap-3 rounded-xl border border-(--color-border) bg-(--color-surface-1) px-3 py-3 transition hover:border-(--color-accent-400)"
           >
             <span className="flex min-w-0 items-center gap-2">
-              <BookOpen className="size-4 shrink-0 text-[var(--color-accent-350)]" />
+              <BookOpen className="size-4 shrink-0 text-(--color-accent-350)" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{subject.name}</span>
-                <span className="block truncate text-xs text-[var(--color-ink-faint)]">
+                <span className="block truncate text-xs text-(--color-ink-faint)">
                   {subject.course_code || subject.subject_code || subject.kind}
                 </span>
               </span>
@@ -213,7 +233,7 @@ function ClassroomGroup({
           </Link>
         ))}
         {!subjects.length && (
-          <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-ink-muted)]">
+          <p className="rounded-xl bg-(--color-surface-2) px-3 py-3 text-sm text-(--color-ink-muted)">
             No course subjects yet.
           </p>
         )}

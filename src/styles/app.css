@@ -40,6 +40,9 @@
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --font-script: 'Dancing Script', cursive;
   --font-calligraphy: 'Dancing Script', cursive;
+  /* CAC Champagne is a local/desktop script font; Dancing Script is the
+     self-hosted fallback so the greeting stays script-y everywhere. */
+  --font-greeting: 'CAC Champagne', 'Dancing Script', cursive;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -69,7 +72,7 @@
   --color-accent-200: #f6bd86;
   --color-accent-300: #b3560f;
   --color-accent-350: #a94f0e;
-  --color-accent-400: #e8781c;
+  --color-accent-400: #f0863a;
   --color-accent-500: #d0670f;
   --color-accent-600: #ad5410;
   --color-accent-700: #8a4310;
@@ -103,7 +106,7 @@
   --color-accent-200: #5c330d;
   --color-accent-300: #f6ac66;
   --color-accent-350: #f2963f;
-  --color-accent-400: #ef811f;
+  --color-accent-400: #f2934e;
   --color-accent-500: #db6c15;
   --color-accent-600: #b85611;
   --color-accent-700: #8f4310;
@@ -217,6 +220,89 @@
   animation: dialog-content-out 150ms ease-in;
 }
 
+/* Command palette: edge-to-edge content and a subtle, centered zoom-in.
+   Class-selector overrides (specificity 0,2,0) beat the Tailwind utilities. */
+.dialog-content.command-content {
+  padding: 0;
+  overflow: hidden;
+}
+.dialog-content.command-content[data-state='open'] {
+  animation: command-pop 160ms ease-out;
+}
+@keyframes command-pop {
+  /* Centering is handled by the `translate` property (Tailwind v4), so the
+     entrance only touches scale/opacity — otherwise it slides in off-center. */
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Below lg the palette becomes a full-screen sheet (no card, just a fade). */
+@media (max-width: 1023px) {
+  .dialog-content.command-content {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .dialog-content.command-content[data-state='open'] {
+    animation: command-fade 160ms ease-out;
+  }
+}
+@keyframes command-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Dropdown / account menu: subtle scale+fade on open and close. Radix keeps
+   the Popper positioning transform on a wrapper, so animating the inner
+   content's transform here is safe. */
+.dropdown-content[data-state='open'] {
+  animation: dropdown-in 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dropdown-content[data-state='closed'] {
+  animation: dropdown-out 120ms ease-in;
+}
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+@keyframes dropdown-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-content[data-state] {
+    animation: none;
+  }
+}
+
+/* Bottom navbar: a subtle rise-in when the app mounts (mobile / PWA shells). */
+.bottom-nav-enter {
+  animation: bottom-nav-in 340ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes bottom-nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-enter {
+    animation: none;
+  }
+}
+
 @keyframes dialog-overlay-in {
   from {
     opacity: 0;
@@ -228,15 +314,16 @@
   }
 }
 @keyframes dialog-content-in {
+  /* Only translateY the offset — the `translate` property already centers it. */
   from {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 10px)) scale(0.985);
+    transform: translateY(10px) scale(0.985);
   }
 }
 @keyframes dialog-content-out {
   to {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 6px)) scale(0.99);
+    transform: translateY(6px) scale(0.99);
   }
 }
 
@@ -363,7 +450,8 @@ html.custom-cursor-active .app-cursor {
 
 @media (prefers-reduced-motion: reduce) {
   .dialog-overlay[data-state],
-  .dialog-content[data-state] {
+  .dialog-content[data-state],
+  .dialog-content.command-content[data-state] {
     animation: none;
   }
 

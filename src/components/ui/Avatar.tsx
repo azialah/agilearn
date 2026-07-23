@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn'
 export type AvatarColor = 'orange' | 'plum' | 'teal' | 'blue'
 
 const colors: Record<AvatarColor, string> = {
-  orange: 'bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]',
+  orange: 'bg-(--color-accent-400) text-(--color-accent-fg)',
   plum: 'bg-violet-500 text-white',
   teal: 'bg-teal-600 text-white',
   blue: 'bg-sky-600 text-white',

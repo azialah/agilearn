@@ -4,8 +4,8 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[var(--color-border)]',
-        'bg-[var(--color-surface-1)] shadow-[var(--shadow-card)]',
+        'rounded-lg border border-(--color-border)',
+        'bg-(--color-surface-1) shadow-(--shadow-card)',
         className,
       )}
       {...props}
@@ -20,7 +20,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 border-b border-[var(--color-border)] p-5',
+        'flex flex-col gap-1 border-b border-(--color-border) p-5',
         className,
       )}
       {...props}
@@ -34,7 +34,7 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn('text-base font-semibold text-[var(--color-ink)]', className)}
+      className={cn('text-base font-semibold text-(--color-ink)', className)}
       {...props}
     />
   )

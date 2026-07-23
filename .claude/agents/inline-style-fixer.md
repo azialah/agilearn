@@ -16,7 +16,7 @@ Grep `src/` for `style={{` and inspect each hit. This is Tailwind v4 — CSS-fir
    - `style={{ background: "var(--card)" }}` → `bg-card`
    - `"#fff"` → `text-white` / `bg-white`; fixed px → the nearest spacing/size utility or an arbitrary value `w-[42px]`.
    Check `src/styles/app.css` for the actual token names before assuming a utility exists.
-2. **Static value with no named utility → arbitrary-value utility.** For a raw value or a token not in `@theme`, use the arbitrary form that emits identical CSS — `bg-[var(--some-token)]`, `text-[#334155]`, `shadow-[…]`. Do NOT invent utilities that don't compile.
+2. **Static value with no named utility → arbitrary-value utility.** For a raw value or a token not in `@theme`, use the arbitrary form that emits identical CSS — `bg-(--some-token)`, `text-[#334155]`, `shadow-[…]`. Do NOT invent utilities that don't compile.
 
 ## What to LEAVE (do not touch — report as skipped)
 - **Any DYNAMIC style:** values from props, state, variables, function calls, template literals, computed/conditional expressions (`active ? … : …`), or CSS custom props set from JS.
