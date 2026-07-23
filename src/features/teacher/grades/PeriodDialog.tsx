@@ -135,7 +135,7 @@ export function PeriodDialog({
               />
             </div>
           </div>
-          <p className="text-xs text-[var(--color-ink-faint)]">
+          <p className="text-xs text-(--color-ink-faint)">
             Weights are relative — periods that have no graded work are dropped and the
             rest renormalize automatically.
           </p>

@@ -13,16 +13,16 @@ export const SelectTrigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius-md)]',
-      'border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm',
-      'text-[var(--color-ink)] focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none',
-      'data-[placeholder]:text-[var(--color-ink-faint)] disabled:opacity-50',
+      'inline-flex h-9 w-full items-center justify-between gap-2 rounded-md',
+      'border border-(--color-border) bg-(--color-surface-1) px-3 text-sm',
+      'text-(--color-ink) focus-visible:border-(--color-accent-400) focus-visible:outline-none',
+      'data-placeholder:text-(--color-ink-faint) disabled:opacity-50',
       className,
     )}
     {...props}
   >
     {children}
-    <SelectPrimitive.Icon aria-hidden className="text-[var(--color-ink-faint)]">
+    <SelectPrimitive.Icon aria-hidden className="text-(--color-ink-faint)">
       ▾
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
@@ -38,9 +38,9 @@ export const SelectContent = forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        'z-50 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]',
-        'bg-[var(--color-surface-2)] shadow-[var(--shadow-pop)]',
-        position === 'popper' && 'w-[var(--radix-select-trigger-width)]',
+        'z-50 overflow-hidden rounded-md border border-(--color-border)',
+        'bg-(--color-surface-2) shadow-(--shadow-pop)',
+        position === 'popper' && 'w-(--radix-select-trigger-width)',
         className,
       )}
       {...props}
@@ -58,9 +58,9 @@ export const SelectItem = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-pointer select-none items-center rounded-[var(--radius-sm)]',
-      'px-2 py-1.5 pr-8 text-sm text-[var(--color-ink)] outline-none',
-      'data-[highlighted]:bg-[var(--color-surface-3)] data-[state=checked]:text-[var(--color-accent-350)]',
+      'relative flex cursor-pointer select-none items-center rounded-sm',
+      'px-2 py-1.5 pr-8 text-sm text-(--color-ink) outline-none',
+      'data-highlighted:bg-(--color-surface-3) data-[state=checked]:text-(--color-accent-350)',
       className,
     )}
     {...props}

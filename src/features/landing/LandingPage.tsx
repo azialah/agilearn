@@ -84,7 +84,7 @@ const FEATURES = [
 function Logo({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
+      <span className="flex size-8 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
         A
       </span>
       {!compact && <span className="text-lg font-semibold tracking-tight">Agilearn</span>}
@@ -113,10 +113,10 @@ function Header() {
     <header className="sticky top-0 z-40 px-4 pt-3">
       <div
         className={cn(
-          'mx-auto flex items-center justify-between rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)]/80 backdrop-blur-md transition-all duration-300 ease-out',
+          'mx-auto flex items-center justify-between rounded-full border border-(--color-border) bg-(--color-surface-1)/80 backdrop-blur-md transition-all duration-300 ease-out',
           compact
-            ? 'max-w-md gap-2 px-3 py-1.5 shadow-[var(--shadow-pop)]'
-            : 'max-w-3xl gap-4 px-5 py-3 shadow-[var(--shadow-card)]',
+            ? 'max-w-md gap-2 px-3 py-1.5 shadow-(--shadow-pop)'
+            : 'max-w-3xl gap-4 px-5 py-3 shadow-(--shadow-card)',
         )}
       >
         <Logo compact={compact} />
@@ -124,7 +124,7 @@ function Header() {
           <a
             href="#features"
             className={cn(
-              'rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]',
+              'rounded-md px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)',
               compact ? 'hidden' : 'hidden sm:inline-block',
             )}
           >
@@ -169,7 +169,7 @@ function Hero() {
       {/* Warm focus glow behind the headline for depth. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[38%] -z-[5] h-64 w-[38rem] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,var(--color-accent-400),transparent_70%)] opacity-[0.13] blur-2xl"
+        className="pointer-events-none absolute left-1/2 top-[38%] z-[-5] h-64 w-152 max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,var(--color-accent-400),transparent_70%)] opacity-[0.13] blur-2xl"
       />
 
       <motion.div
@@ -180,17 +180,17 @@ function Hero() {
       >
         <motion.p
           variants={fade}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)]/70 px-3 py-1 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.18em] text-[var(--color-ink-muted)] backdrop-blur-sm"
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1)/70 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-(--color-ink-muted) backdrop-blur-sm"
         >
-          <span className="size-1.5 rounded-full bg-[var(--color-accent-400)]" />
+          <span className="size-1.5 rounded-full bg-(--color-accent-400)" />
           Built for
           <LayoutTextFlip
             words={AUDIENCE_WORDS}
-            wordClassName="text-[var(--color-accent-350)] normal-case tracking-normal"
+            wordClassName="text-(--color-accent-350) normal-case tracking-normal"
           />
         </motion.p>
 
-        <h1 className="text-balance font-[family-name:var(--font-display)] text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+        <h1 className="text-balance font-display text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
           {HEADLINE.map((token, index) => {
             const highlight = token === 'workspace.'
             return (
@@ -199,7 +199,7 @@ function Hero() {
                   variants={word}
                   className={
                     highlight
-                      ? 'relative mr-[0.25em] inline-block text-[var(--color-accent-350)]'
+                      ? 'relative mr-[0.25em] inline-block text-(--color-accent-350)'
                       : 'mr-[0.25em] inline-block'
                   }
                 >
@@ -207,7 +207,7 @@ function Hero() {
                   {highlight && (
                     <motion.span
                       aria-hidden
-                      className="absolute -bottom-1 left-0 h-[0.08em] w-full origin-left rounded-full bg-[var(--color-accent-400)]"
+                      className="absolute -bottom-1 left-0 h-[0.08em] w-full origin-left rounded-full bg-(--color-accent-400)"
                       initial={{ scaleX: reduce ? 1 : 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{
@@ -225,7 +225,7 @@ function Hero() {
 
         <motion.p
           variants={fade}
-          className="mx-auto mt-6 flex min-h-[1.6em] max-w-xl items-center justify-center font-[family-name:var(--font-mono)] text-base text-[var(--color-ink-muted)] sm:text-lg"
+          className="mx-auto mt-6 flex min-h-[1.6em] max-w-xl items-center justify-center font-mono text-base text-(--color-ink-muted) sm:text-lg"
         >
           <Typewriter phrases={HERO_PHRASES} />
         </motion.p>
@@ -241,7 +241,7 @@ function Hero() {
                 className="group gap-2.5 rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
               >
                 Get started
-                <span className="flex size-6 items-center justify-center rounded-full bg-[var(--color-accent-fg)]/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
+                <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
                   <ChevronRightIcon />
                 </span>
               </Button>
@@ -256,12 +256,12 @@ function Hero() {
 
         <motion.div
           variants={fade}
-          className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-[var(--color-ink-muted)] sm:text-sm"
+          className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-(--color-ink-muted) sm:text-sm"
         >
           {['Weighted grades', 'Live attendance', 'Shared teaching modules'].map(
             (item) => (
               <span key={item} className="inline-flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-[var(--color-accent-400)]" />
+                <span className="size-1.5 rounded-full bg-(--color-accent-400)" />
                 {item}
               </span>
             ),
@@ -292,15 +292,15 @@ function SectionHeading({
       className="mx-auto max-w-2xl text-center"
     >
       {eyebrow && (
-        <p className="text-xs font-medium uppercase tracking-widest text-[var(--color-accent-350)]">
+        <p className="text-xs font-medium uppercase tracking-widest text-(--color-accent-350)">
           {eyebrow}
         </p>
       )}
-      <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
+      <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
         {title}
       </h2>
       {subtitle && (
-        <p className="mt-3 text-base text-[var(--color-ink-muted)]">{subtitle}</p>
+        <p className="mt-3 text-base text-(--color-ink-muted)">{subtitle}</p>
       )}
     </motion.div>
   )
@@ -347,17 +347,17 @@ function Features() {
                 // No backdrop-blur here: cards sit over a near-solid surface, so
                 // the blur is barely visible but costs compositing on every paint.
                 tinted
-                  ? 'group rounded-[var(--radius-lg)] border border-[var(--color-accent-500)]/25 bg-[var(--color-accent-500)]/[0.08] p-5'
-                  : 'group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-1)]/95 p-5'
+                  ? 'group rounded-lg border border-(--color-accent-500)/25 bg-(--color-accent-500)/8 p-5'
+                  : 'group rounded-lg border border-(--color-border) bg-(--color-surface-1)/95 p-5'
               }
             >
-              <div className="mb-4 flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-500)]/15 text-xl text-[var(--color-accent-300)] transition-colors group-hover:bg-[var(--color-accent-500)]/25">
+              <div className="mb-4 flex size-11 items-center justify-center rounded-md bg-(--color-accent-500)/15 text-xl text-(--color-accent-300) transition-colors group-hover:bg-(--color-accent-500)/25">
                 <IconComp />
               </div>
-              <h3 className="font-[family-name:var(--font-display)] font-medium text-[var(--color-ink)]">
+              <h3 className="font-display font-medium text-(--color-ink)">
                 {feature.title}
               </h3>
-              <p className="mt-1.5 text-sm text-[var(--color-ink-muted)]">
+              <p className="mt-1.5 text-sm text-(--color-ink-muted)">
                 {feature.body}
               </p>
             </motion.div>
@@ -390,18 +390,18 @@ function CallToAction() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.4 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-6 py-16 text-center shadow-[var(--shadow-card)] sm:py-20"
+        className="relative overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1) px-6 py-16 text-center shadow-(--shadow-card) sm:py-20"
       >
         {/* Layered warm ambience: a top halo, a soft floor wash, and a 1px lit
             top edge for a refined, elevated surface. All single-accent. */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_120%_at_50%_-10%,var(--color-accent-500),transparent_60%)] opacity-[0.14]" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[radial-gradient(60%_100%_at_50%_120%,var(--color-accent-400),transparent_70%)] opacity-[0.08]" />
-        <div className="pointer-events-none absolute inset-0 rounded-[var(--radius-xl)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
+        <div className="pointer-events-none absolute inset-0 rounded-(--radius-xl) shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
         <div className="relative">
-          <h2 className="text-balance font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="text-balance font-display text-4xl font-semibold tracking-tight sm:text-5xl">
             Ready when your class is.
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-pretty text-base text-[var(--color-ink-muted)] sm:text-lg">
+          <p className="mx-auto mt-4 max-w-md text-pretty text-base text-(--color-ink-muted) sm:text-lg">
             Sign in and pick up right where your teaching leaves off.
           </p>
           <div className="relative mt-9 flex justify-center">
@@ -424,17 +424,17 @@ function Testimonial() {
   return (
     <section className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
       <Reveal className="text-center">
-        <blockquote className="text-balance font-[family-name:var(--font-display)] text-2xl font-medium leading-snug tracking-tight text-[var(--color-ink)] sm:text-3xl">
+        <blockquote className="text-balance font-display text-2xl font-medium leading-snug tracking-tight text-(--color-ink) sm:text-3xl">
           “Grade season used to eat my weekends. I set the weights once, and every final
           was ready before the deadline.”
         </blockquote>
         <div className="mt-6 flex items-center justify-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-[var(--color-accent-500)]/20 text-sm font-semibold text-[var(--color-accent-300)]">
+          <span className="flex size-10 items-center justify-center rounded-full bg-(--color-accent-500)/20 text-sm font-semibold text-(--color-accent-300)">
             MS
           </span>
           <div className="text-left text-sm">
-            <p className="font-medium text-[var(--color-ink)]">Maribeth Suarez</p>
-            <p className="text-[var(--color-ink-faint)]">Senior high math teacher</p>
+            <p className="font-medium text-(--color-ink)">Maribeth Suarez</p>
+            <p className="text-(--color-ink-faint)">Senior high math teacher</p>
           </div>
         </div>
       </Reveal>
@@ -443,11 +443,11 @@ function Testimonial() {
 }
 
 const footerLinkClass =
-  'text-sm text-[var(--color-ink-muted)] transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-[var(--color-ink)]'
+  'text-sm text-(--color-ink-muted) transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-(--color-ink)'
 
 function Footer() {
   return (
-    <footer className="relative mt-16 border-t border-[var(--color-border)]">
+    <footer className="relative mt-16 border-t border-(--color-border)">
       {/* Warm wash bleeding up from the fold for depth. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.06]" />
 
@@ -455,14 +455,14 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
           <div>
             <Logo />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-(--color-ink-muted)">
               Named for the Philippine eagle, the Haribon: sharp-eyed and exact. Grades,
               attendance, and modules in one calm workspace.
             </p>
           </div>
 
           <nav aria-label="Product">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
               Product
             </h3>
             <ul className="mt-4 space-y-3">
@@ -485,7 +485,7 @@ function Footer() {
           </nav>
 
           <nav aria-label="Account">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
               Account
             </h3>
             <ul className="mt-4 space-y-3">
@@ -503,11 +503,11 @@ function Footer() {
           </nav>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-[var(--color-border)] pt-6 sm:flex-row">
-          <p className="text-sm text-[var(--color-ink-faint)]">
+        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-(--color-border) pt-6 sm:flex-row">
+          <p className="text-sm text-(--color-ink-faint)">
             © {new Date().getFullYear()} Agilearn. Built for teachers.
           </p>
-          <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-ink-faint)]">
+          <p className="font-mono text-xs text-(--color-ink-faint)">
             Agila + Learn = Agilearn
           </p>
         </div>
@@ -518,7 +518,7 @@ function Footer() {
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-dvh bg-[var(--color-surface-0)] text-[var(--color-ink)]">
+    <div className="relative min-h-dvh bg-(--color-surface-0) text-(--color-ink)">
       <ScrollGradient />
 
       <Header />

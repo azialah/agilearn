@@ -74,7 +74,7 @@ export function UsersPage() {
               {(profiles ?? []).map((user) => (
                 <TR key={user.id}>
                   <TD className="font-medium">{user.full_name || '—'}</TD>
-                  <TD className="text-[var(--color-ink-muted)]">{user.email}</TD>
+                  <TD className="text-(--color-ink-muted)">{user.email}</TD>
                   <TD>
                     <Badge tone={user.role === 'admin' ? 'accent' : 'neutral'}>
                       {user.role}

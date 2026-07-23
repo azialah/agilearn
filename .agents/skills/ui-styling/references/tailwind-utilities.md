@@ -276,16 +276,16 @@ Each color has 11 shades (50-950):
 ```html
 <div class="bg-black/75">75% opacity</div>
 <div class="text-blue-500/30">30% opacity</div>
-<div class="bg-purple-500/[0.87]">87% opacity</div>
+<div class="bg-purple-500/87">87% opacity</div>
 ```
 
 ### Gradients
 
 ```html
-<div class="bg-gradient-to-r from-blue-500 to-purple-600">
+<div class="bg-linear-to-r from-blue-500 to-purple-600">
   Left to right gradient
 </div>
-<div class="bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500">
+<div class="bg-linear-to-br from-pink-500 via-red-500 to-yellow-500">
   With via color
 </div>
 ```
@@ -370,7 +370,7 @@ Directions: `to-t | to-tr | to-r | to-br | to-b | to-bl | to-l | to-tl`
 <!-- Min/Max width -->
 <div class="min-w-0">min-width: 0</div>
 <div class="max-w-md">max-width: 28rem</div>
-<div class="max-w-screen-xl">max-width: 1280px</div>
+<div class="max-w-(--breakpoint-xl)">max-width: 1280px</div>
 ```
 
 ### Height
@@ -404,7 +404,7 @@ Use square brackets for custom values:
 <div class="text-[22px]">Custom font size</div>
 
 <!-- CSS variables -->
-<div class="bg-[var(--brand-color)]">CSS var</div>
+<div class="bg-(--brand-color)">CSS var</div>
 
 <!-- Complex values -->
 <div class="grid-cols-[1fr_500px_2fr]">Custom grid</div>
@@ -415,7 +415,7 @@ Use square brackets for custom values:
 ```html
 <div class="aspect-square">1:1</div>
 <div class="aspect-video">16:9</div>
-<div class="aspect-[4/3]">4:3</div>
+<div class="aspect-4/3">4:3</div>
 ```
 
 ## Overflow

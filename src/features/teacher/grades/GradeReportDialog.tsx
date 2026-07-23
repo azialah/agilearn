@@ -90,7 +90,7 @@ export function GradeReportDialog({
               aria-label="Learner"
               value={student?.id ?? ''}
               onChange={(event) => setStudentId(event.target.value)}
-              className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-base md:text-sm"
+              className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
             >
               {students.map((row) => (
                 <option key={row.id} value={row.id}>
@@ -107,7 +107,7 @@ export function GradeReportDialog({
                 aria-label="Report period"
                 value={period}
                 onChange={(event) => setPeriod(event.target.value)}
-                className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-base md:text-sm"
+                className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
                 <option value="overall">Overall grade</option>
                 {structure.periods.map((item) => (
@@ -124,21 +124,21 @@ export function GradeReportDialog({
                 aria-label="Grade report recipient"
                 value={recipient}
                 onChange={(event) => setRecipient(event.target.value as Recipient)}
-                className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-base md:text-sm"
+                className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
                 <option value="student">Student email</option>
                 <option value="guardian">Guardian email</option>
               </select>
             </div>
           </div>
-          <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
+          <div className="rounded-md bg-(--color-surface-2) p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-(--color-ink-faint)">
               {label} grade
             </p>
             <p className="mt-1 text-3xl font-semibold">
               {incomplete ? 'Incomplete' : round2(grade).toFixed(2)}
             </p>
-            <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+            <p className="mt-2 text-xs text-(--color-ink-muted)">
               {email
                 ? `Ready for ${email}`
                 : `No ${recipient} email saved for this learner.`}

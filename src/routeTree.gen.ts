@@ -16,11 +16,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TeacherSignupRouteImport } from './routes/teacher.signup'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as TeacherSignupIndexRouteImport } from './routes/teacher.signup.index'
+import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings.index'
 import { Route as AuthTeacherUsageRouteImport } from './routes/_auth/teacher/usage'
 import { Route as AuthTeacherProfileRouteImport } from './routes/_auth/teacher/profile'
 import { Route as AuthTeacherDashboardRouteImport } from './routes/_auth/teacher/dashboard'
 import { Route as AuthTeacherCalendarRouteImport } from './routes/_auth/teacher/calendar'
 import { Route as AuthTeacherAnalyticsRouteImport } from './routes/_auth/teacher/analytics'
+import { Route as AuthSettingsWorkspaceRouteImport } from './routes/_auth/settings.workspace'
+import { Route as AuthSettingsProfileRouteImport } from './routes/_auth/settings.profile'
+import { Route as AuthSettingsPrivacyRouteImport } from './routes/_auth/settings.privacy'
+import { Route as AuthSettingsAboutRouteImport } from './routes/_auth/settings.about'
 import { Route as AuthAdminUsersRouteImport } from './routes/_auth/admin/users'
 import { Route as AuthAdminDomainRequestsRouteImport } from './routes/_auth/admin/domain-requests'
 import { Route as AuthAdminAuditLogRouteImport } from './routes/_auth/admin/audit-log'
@@ -72,6 +77,11 @@ const TeacherSignupIndexRoute = TeacherSignupIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TeacherSignupRoute,
 } as any)
+const AuthSettingsIndexRoute = AuthSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
 const AuthTeacherUsageRoute = AuthTeacherUsageRouteImport.update({
   id: '/teacher/usage',
   path: '/teacher/usage',
@@ -96,6 +106,26 @@ const AuthTeacherAnalyticsRoute = AuthTeacherAnalyticsRouteImport.update({
   id: '/teacher/analytics',
   path: '/teacher/analytics',
   getParentRoute: () => AuthRoute,
+} as any)
+const AuthSettingsWorkspaceRoute = AuthSettingsWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
+const AuthSettingsProfileRoute = AuthSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
+const AuthSettingsPrivacyRoute = AuthSettingsPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
+const AuthSettingsAboutRoute = AuthSettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthSettingsRoute,
 } as any)
 const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
   id: '/admin/users',
@@ -194,16 +224,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/settings': typeof AuthSettingsRoute
+  '/settings': typeof AuthSettingsRouteWithChildren
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
+  '/settings/about': typeof AuthSettingsAboutRoute
+  '/settings/privacy': typeof AuthSettingsPrivacyRoute
+  '/settings/profile': typeof AuthSettingsProfileRoute
+  '/settings/workspace': typeof AuthSettingsWorkspaceRoute
   '/teacher/analytics': typeof AuthTeacherAnalyticsRoute
   '/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
   '/teacher/profile': typeof AuthTeacherProfileRoute
   '/teacher/usage': typeof AuthTeacherUsageRoute
+  '/settings/': typeof AuthSettingsIndexRoute
   '/teacher/signup/': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -223,15 +258,19 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/settings': typeof AuthSettingsRoute
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/admin/users': typeof AuthAdminUsersRoute
+  '/settings/about': typeof AuthSettingsAboutRoute
+  '/settings/privacy': typeof AuthSettingsPrivacyRoute
+  '/settings/profile': typeof AuthSettingsProfileRoute
+  '/settings/workspace': typeof AuthSettingsWorkspaceRoute
   '/teacher/analytics': typeof AuthTeacherAnalyticsRoute
   '/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/teacher/dashboard': typeof AuthTeacherDashboardRoute
   '/teacher/profile': typeof AuthTeacherProfileRoute
   '/teacher/usage': typeof AuthTeacherUsageRoute
+  '/settings': typeof AuthSettingsIndexRoute
   '/teacher/signup': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -253,16 +292,21 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/settings': typeof AuthSettingsRouteWithChildren
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/_auth/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/_auth/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
   '/_auth/admin/users': typeof AuthAdminUsersRoute
+  '/_auth/settings/about': typeof AuthSettingsAboutRoute
+  '/_auth/settings/privacy': typeof AuthSettingsPrivacyRoute
+  '/_auth/settings/profile': typeof AuthSettingsProfileRoute
+  '/_auth/settings/workspace': typeof AuthSettingsWorkspaceRoute
   '/_auth/teacher/analytics': typeof AuthTeacherAnalyticsRoute
   '/_auth/teacher/calendar': typeof AuthTeacherCalendarRoute
   '/_auth/teacher/dashboard': typeof AuthTeacherDashboardRoute
   '/_auth/teacher/profile': typeof AuthTeacherProfileRoute
   '/_auth/teacher/usage': typeof AuthTeacherUsageRoute
+  '/_auth/settings/': typeof AuthSettingsIndexRoute
   '/teacher/signup/': typeof TeacherSignupIndexRoute
   '/teacher/signup/step-1/create-your-account': typeof TeacherSignupStep1CreateYourAccountRoute
   '/teacher/signup/step-2/verify-your-email': typeof TeacherSignupStep2VerifyYourEmailRoute
@@ -289,11 +333,16 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
+    | '/settings/about'
+    | '/settings/privacy'
+    | '/settings/profile'
+    | '/settings/workspace'
     | '/teacher/analytics'
     | '/teacher/calendar'
     | '/teacher/dashboard'
     | '/teacher/profile'
     | '/teacher/usage'
+    | '/settings/'
     | '/teacher/signup/'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -313,15 +362,19 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/settings'
     | '/admin/audit-log'
     | '/admin/domain-requests'
     | '/admin/users'
+    | '/settings/about'
+    | '/settings/privacy'
+    | '/settings/profile'
+    | '/settings/workspace'
     | '/teacher/analytics'
     | '/teacher/calendar'
     | '/teacher/dashboard'
     | '/teacher/profile'
     | '/teacher/usage'
+    | '/settings'
     | '/teacher/signup'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -347,11 +400,16 @@ export interface FileRouteTypes {
     | '/_auth/admin/audit-log'
     | '/_auth/admin/domain-requests'
     | '/_auth/admin/users'
+    | '/_auth/settings/about'
+    | '/_auth/settings/privacy'
+    | '/_auth/settings/profile'
+    | '/_auth/settings/workspace'
     | '/_auth/teacher/analytics'
     | '/_auth/teacher/calendar'
     | '/_auth/teacher/dashboard'
     | '/_auth/teacher/profile'
     | '/_auth/teacher/usage'
+    | '/_auth/settings/'
     | '/teacher/signup/'
     | '/teacher/signup/step-1/create-your-account'
     | '/teacher/signup/step-2/verify-your-email'
@@ -427,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherSignupIndexRouteImport
       parentRoute: typeof TeacherSignupRoute
     }
+    '/_auth/settings/': {
+      id: '/_auth/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthSettingsIndexRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/teacher/usage': {
       id: '/_auth/teacher/usage'
       path: '/teacher/usage'
@@ -461,6 +526,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/teacher/analytics'
       preLoaderRoute: typeof AuthTeacherAnalyticsRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_auth/settings/workspace': {
+      id: '/_auth/settings/workspace'
+      path: '/workspace'
+      fullPath: '/settings/workspace'
+      preLoaderRoute: typeof AuthSettingsWorkspaceRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
+    '/_auth/settings/profile': {
+      id: '/_auth/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AuthSettingsProfileRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
+    '/_auth/settings/privacy': {
+      id: '/_auth/settings/privacy'
+      path: '/privacy'
+      fullPath: '/settings/privacy'
+      preLoaderRoute: typeof AuthSettingsPrivacyRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
+    '/_auth/settings/about': {
+      id: '/_auth/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof AuthSettingsAboutRouteImport
+      parentRoute: typeof AuthSettingsRoute
     }
     '/_auth/admin/users': {
       id: '/_auth/admin/users'
@@ -577,8 +670,28 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthSettingsRouteChildren {
+  AuthSettingsAboutRoute: typeof AuthSettingsAboutRoute
+  AuthSettingsPrivacyRoute: typeof AuthSettingsPrivacyRoute
+  AuthSettingsProfileRoute: typeof AuthSettingsProfileRoute
+  AuthSettingsWorkspaceRoute: typeof AuthSettingsWorkspaceRoute
+  AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
+}
+
+const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
+  AuthSettingsAboutRoute: AuthSettingsAboutRoute,
+  AuthSettingsPrivacyRoute: AuthSettingsPrivacyRoute,
+  AuthSettingsProfileRoute: AuthSettingsProfileRoute,
+  AuthSettingsWorkspaceRoute: AuthSettingsWorkspaceRoute,
+  AuthSettingsIndexRoute: AuthSettingsIndexRoute,
+}
+
+const AuthSettingsRouteWithChildren = AuthSettingsRoute._addFileChildren(
+  AuthSettingsRouteChildren,
+)
+
 interface AuthRouteChildren {
-  AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthSettingsRoute: typeof AuthSettingsRouteWithChildren
   AuthAdminAuditLogRoute: typeof AuthAdminAuditLogRoute
   AuthAdminDomainRequestsRoute: typeof AuthAdminDomainRequestsRoute
   AuthAdminUsersRoute: typeof AuthAdminUsersRoute
@@ -597,7 +710,7 @@ interface AuthRouteChildren {
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthSettingsRoute: AuthSettingsRoute,
+  AuthSettingsRoute: AuthSettingsRouteWithChildren,
   AuthAdminAuditLogRoute: AuthAdminAuditLogRoute,
   AuthAdminDomainRequestsRoute: AuthAdminDomainRequestsRoute,
   AuthAdminUsersRoute: AuthAdminUsersRoute,

@@ -12,9 +12,9 @@ import { passwordStrength } from './passwordStrength'
 
 const SEGMENT_COLOR = [
   '', // score 0 → all segments stay muted
-  'bg-[var(--color-danger)]',
-  'bg-[var(--color-warning)]',
-  'bg-[var(--color-success)]',
+  'bg-(--color-danger)',
+  'bg-(--color-warning)',
+  'bg-(--color-success)',
 ] as const
 
 const TIPS = [
@@ -36,13 +36,13 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
             key={seg}
             className={cn(
               'h-1.5 flex-1 rounded-full transition-colors',
-              score >= seg ? SEGMENT_COLOR[score] : 'bg-[var(--color-surface-3)]',
+              score >= seg ? SEGMENT_COLOR[score] : 'bg-(--color-surface-3)',
             )}
           />
         ))}
       </div>
       {password && (
-        <span className="text-xs text-[var(--color-ink-muted)]" aria-live="polite">
+        <span className="text-xs text-(--color-ink-muted)" aria-live="polite">
           {label}
         </span>
       )}
@@ -51,7 +51,7 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
           <button
             type="button"
             aria-label="Password tips"
-            className="rounded-full p-0.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
+            className="rounded-full p-0.5 text-(--color-ink-faint) transition-colors hover:text-(--color-ink)"
           >
             <HelpCircle className="size-4" />
           </button>
@@ -63,7 +63,7 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
               A stronger password is harder to guess. Aim for all of these:
             </DialogDescription>
           </DialogHeader>
-          <ul className="list-disc space-y-1.5 pl-5 text-sm text-[var(--color-ink-muted)]">
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-(--color-ink-muted)">
             {TIPS.map((tip) => (
               <li key={tip}>{tip}</li>
             ))}

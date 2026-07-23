@@ -129,7 +129,7 @@ export function SessionPage({
         <Link
           to="/teacher/classrooms/$classroomId/attendance"
           params={{ classroomId }}
-          className="inline-flex items-center gap-1 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+          className="inline-flex items-center gap-1 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
         >
           <ChevronRightIcon className="size-4 rotate-180" /> Back to attendance
         </Link>
@@ -156,7 +156,7 @@ export function SessionPage({
 
       {session?.notes?.trim() && (
         <Card>
-          <CardBody className="p-4 text-sm text-[var(--color-ink-muted)]">
+          <CardBody className="p-4 text-sm text-(--color-ink-muted)">
             {session.notes}
           </CardBody>
         </Card>
@@ -229,7 +229,7 @@ function RosterRow({
     <Card className={cn(!recorded && 'border-dashed')}>
       <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
         <div className="flex min-w-0 items-center gap-2 sm:w-56 sm:shrink-0">
-          <span className="truncate font-medium text-[var(--color-ink)]">{name}</span>
+          <span className="truncate font-medium text-(--color-ink)">{name}</span>
           {!recorded && <Badge tone="neutral">unrecorded</Badge>}
         </div>
 
@@ -259,7 +259,7 @@ function StatusToggle({
     <div
       role="group"
       aria-label="Attendance status"
-      className="flex shrink-0 gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface-1)] p-1"
+      className="flex shrink-0 gap-1 rounded-md bg-(--color-surface-1) p-1"
     >
       {ATTENDANCE_STATUSES.map((status) => {
         const meta = STATUS_META[status]
@@ -273,12 +273,12 @@ function StatusToggle({
             aria-pressed={active}
             onClick={() => onChange(status)}
             className={cn(
-              'rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors sm:px-3',
+              'rounded-sm px-2.5 py-1 text-xs font-medium transition-colors sm:px-3',
               active
                 ? meta.activeClass
-                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]',
+                : 'text-(--color-ink-muted) hover:bg-(--color-surface-3) hover:text-(--color-ink)',
               isUnsetDefault &&
-                'text-[var(--color-ink-faint)] outline outline-1 outline-dashed outline-[var(--color-border-strong)]',
+                'text-(--color-ink-faint) outline outline-1 outline-dashed outline-(--color-border-strong)',
             )}
             title={meta.label}
           >

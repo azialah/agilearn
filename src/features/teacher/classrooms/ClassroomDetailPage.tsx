@@ -115,17 +115,17 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
         </div>
       )}
 
-      <nav className="flex gap-1 border-b border-[var(--color-border)]">
+      <nav className="flex gap-1 border-b border-(--color-border)">
         {TABS.map((tab) => (
           <Link
             key={tab.to}
             to={tab.to}
             params={{ classroomId }}
             activeOptions={{ exact: tab.exact }}
-            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
             activeProps={{
               className:
-                '-mb-px border-b-2 border-[var(--color-accent-400)] px-3 py-2 text-sm font-medium text-[var(--color-ink)]',
+                '-mb-px border-b-2 border-(--color-accent-400) px-3 py-2 text-sm font-medium text-(--color-ink)',
             }}
           >
             {tab.label}
@@ -134,7 +134,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       </nav>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-[var(--color-ink-muted)]">Roster</h2>
+        <h2 className="text-sm font-medium text-(--color-ink-muted)">Roster</h2>
         <StudentFormDialog
           classroomId={classroomId}
           trigger={
@@ -168,7 +168,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
             <TBody>
               {students.map((student) => (
                 <TR key={student.id}>
-                  <TD className="font-mono text-xs text-[var(--color-ink-muted)]">
+                  <TD className="font-mono text-xs text-(--color-ink-muted)">
                     {student.student_no}
                   </TD>
                   <TD className="font-medium">{studentFullName(student)}</TD>

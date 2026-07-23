@@ -38,7 +38,7 @@ const belongsToComponent = (
     ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
       (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
 const STICKY =
-  'sticky left-0 z-20 bg-[var(--color-surface-1)] border-r border-[var(--color-border-strong)]'
+  'sticky left-0 z-20 bg-(--color-surface-1) border-r border-(--color-border-strong)'
 const fmt = (value: number | null | undefined) =>
   value == null ? '—' : round2(value).toFixed(2)
 
@@ -97,7 +97,7 @@ export function GradeGrid({
             header: () => (
               <div className="flex flex-col leading-tight">
                 <span className="truncate">{activity.name}</span>
-                <span className="text-[10px] font-normal text-[var(--color-ink-faint)]">
+                <span className="text-[10px] font-normal text-(--color-ink-faint)">
                   /{activity.max_score}
                 </span>
               </div>
@@ -201,17 +201,17 @@ export function GradeGrid({
   }
   const leaves = table.getAllLeafColumns()
   return (
-    <div className="scrollbar-thin overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+    <div className="scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)">
       <table className="border-collapse text-sm">
-        <thead className="bg-[var(--color-surface-2)] text-xs text-[var(--color-ink-faint)]">
+        <thead className="bg-(--color-surface-2) text-xs text-(--color-ink-faint)">
           {table.getHeaderGroups().map((group) => (
-            <tr key={group.id} className="border-b border-[var(--color-border)]">
+            <tr key={group.id} className="border-b border-(--color-border)">
               {group.headers.map((header) => (
                 <th
                   key={header.id}
                   colSpan={header.colSpan}
                   className={cn(
-                    'whitespace-nowrap border-r border-[var(--color-border)] px-3 py-2 text-left align-bottom font-medium',
+                    'whitespace-nowrap border-r border-(--color-border) px-3 py-2 text-left align-bottom font-medium',
                     header.column.id === 'student' && STICKY,
                     !header.isPlaceholder &&
                       header.subHeaders.length > 0 &&
@@ -233,7 +233,7 @@ export function GradeGrid({
             return (
               <tr
                 key={row.id}
-                className="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-1)]/60"
+                className="border-b border-(--color-border) hover:bg-(--color-surface-1)/60"
               >
                 {leaves.map((column) => {
                   const info = leafInfo.get(column.id)
@@ -259,7 +259,7 @@ export function GradeGrid({
                     return (
                       <td
                         key={column.id}
-                        className="border-r border-[var(--color-border)] p-0"
+                        className="border-r border-(--color-border) p-0"
                       >
                         <ScoreCell
                           value={value}
@@ -320,12 +320,12 @@ export function GradeGrid({
                     <td
                       key={column.id}
                       className={cn(
-                        'whitespace-nowrap border-r border-[var(--color-border)] px-3 py-1.5 text-right tabular-nums',
+                        'whitespace-nowrap border-r border-(--color-border) px-3 py-1.5 text-right tabular-nums',
                         emphasize
-                          ? 'font-semibold text-[var(--color-ink)]'
-                          : 'text-[var(--color-ink-muted)]',
+                          ? 'font-semibold text-(--color-ink)'
+                          : 'text-(--color-ink-muted)',
                         info.kind === 'final' &&
-                          'bg-[var(--color-accent-500)]/10 text-[var(--color-accent-300)]',
+                          'bg-(--color-accent-500)/10 text-(--color-accent-300)',
                       )}
                     >
                       {fmt(value)}

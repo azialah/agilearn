@@ -10,7 +10,7 @@ export const DropdownMenuSeparator = forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownPrimitive.Separator
     ref={ref}
-    className={cn('my-1 h-px bg-[var(--color-border)]', className)}
+    className={cn('my-1 h-px bg-(--color-border)', className)}
     {...props}
   />
 ))
@@ -25,8 +25,8 @@ export const DropdownMenuContent = forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-44 rounded-[var(--radius-md)] border border-[var(--color-border)]',
-        'bg-[var(--color-surface-2)] p-1 shadow-[var(--shadow-pop)]',
+        'dropdown-content z-50 min-w-44 rounded-md border border-(--color-border)',
+        'bg-(--color-surface-2) p-1 shadow-(--shadow-pop)',
         className,
       )}
       {...props}
@@ -42,9 +42,9 @@ export const DropdownMenuItem = forwardRef<
   <DropdownPrimitive.Item
     ref={ref}
     className={cn(
-      'flex cursor-pointer select-none items-center gap-2 rounded-[var(--radius-sm)]',
-      'px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-3)]',
-      danger ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink)]',
+      'flex cursor-pointer select-none items-center gap-2 rounded-sm',
+      'px-2 py-1.5 text-sm outline-none data-highlighted:bg-(--color-surface-3)',
+      danger ? 'text-(--color-danger)' : 'text-(--color-ink)',
       className,
     )}
     {...props}
@@ -59,7 +59,7 @@ export function DropdownMenuLabel({
   return (
     <div
       className={cn(
-        'px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-faint)]',
+        'px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-(--color-ink-faint)',
         className,
       )}
       {...props}

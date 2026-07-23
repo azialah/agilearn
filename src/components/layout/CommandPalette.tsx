@@ -115,6 +115,7 @@ export function CommandPalette({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        className="command-content"
         aria-describedby={undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault()
@@ -122,10 +123,10 @@ export function CommandPalette({
         }}
       >
         <DialogTitle className="sr-only">Jump to a page</DialogTitle>
-        <div className="-m-6">
-          <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-4 py-3">
+        <div className="flex h-full flex-col lg:h-auto">
+          <div className="flex items-center gap-3 border-b border-(--color-border) px-4 py-3.5">
             <Search
-              className="size-4 shrink-0 text-[var(--color-ink-faint)]"
+              className="size-5 shrink-0 text-(--color-accent-350)"
               aria-hidden
             />
             <input
@@ -140,10 +141,10 @@ export function CommandPalette({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              placeholder="Search pages…"
-              className="h-6 w-full bg-transparent text-sm text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] focus-visible:outline-none"
+              placeholder="Search pages, classrooms, subjects…"
+              className="h-7 w-full bg-transparent text-base text-(--color-ink) placeholder:text-(--color-ink-faint) focus-visible:outline-none"
             />
-            <kbd className="hidden shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] text-[var(--color-ink-faint)] sm:block">
+            <kbd className="hidden shrink-0 rounded border border-(--color-border) px-1.5 py-0.5 text-[10px] text-(--color-ink-faint) sm:block">
               Esc
             </kbd>
           </div>
@@ -152,10 +153,10 @@ export function CommandPalette({
             id="command-palette-list"
             role="listbox"
             aria-label="Pages"
-            className="max-h-72 overflow-y-auto p-2"
+            className="flex-1 overflow-y-auto p-2 scrollbar-none lg:max-h-72 lg:flex-none [&::-webkit-scrollbar]:hidden"
           >
             {filtered.length === 0 && (
-              <li className="px-3 py-6 text-center text-sm text-[var(--color-ink-faint)]">
+              <li className="px-3 py-6 text-center text-sm text-(--color-ink-faint)">
                 No matching pages.
               </li>
             )}
@@ -171,24 +172,24 @@ export function CommandPalette({
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => go(item)}
                   className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm transition-colors',
+                    'flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                     active
-                      ? 'bg-[var(--color-accent-500)]/15 text-[var(--color-ink)]'
-                      : 'text-[var(--color-ink-muted)]',
+                      ? 'bg-(--color-accent-500)/15 text-(--color-ink)'
+                      : 'text-(--color-ink-muted)',
                   )}
                 >
-                  <Icon className="text-base text-[var(--color-ink-faint)]" />
+                  <Icon className="text-base text-(--color-ink-faint)" />
                   {item.label}
                 </li>
               )
             })}
           </ul>
 
-          <div className="border-t border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-ink-faint)]">
-            <kbd className="rounded border border-[var(--color-border)] px-1">↑</kbd>{' '}
-            <kbd className="rounded border border-[var(--color-border)] px-1">↓</kbd> to
+          <div className="border-t border-(--color-border) px-4 py-2 text-xs text-(--color-ink-faint)">
+            <kbd className="rounded border border-(--color-border) px-1">↑</kbd>{' '}
+            <kbd className="rounded border border-(--color-border) px-1">↓</kbd> to
             navigate ·{' '}
-            <kbd className="rounded border border-[var(--color-border)] px-1">Enter</kbd>{' '}
+            <kbd className="rounded border border-(--color-border) px-1">Enter</kbd>{' '}
             to select
           </div>
         </div>

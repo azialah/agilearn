@@ -29,7 +29,7 @@ export function FlowingTextBackdrop() {
       >
         <path id="flow-curve" d={PATH_D} fill="none" />
         <text
-          className="fill-[var(--color-ink-faint)] font-[family-name:var(--font-mono)]"
+          className="fill-(--color-ink-faint) font-mono"
           style={{ fontSize: 15 }}
           opacity={0.16}
         >

@@ -140,13 +140,13 @@ export function ScoreCell({
           }}
           aria-invalid={invalid ? true : undefined}
           className={cn(
-            'h-9 w-full min-w-16 rounded-none border-2 bg-[var(--color-surface-0)] px-2 text-right text-sm',
-            'text-[var(--color-ink)] focus:outline-none',
-            invalid ? 'border-[var(--color-danger)]' : 'border-[var(--color-accent-400)]',
+            'h-9 w-full min-w-16 rounded-none border-2 bg-(--color-surface-0) px-2 text-right text-sm',
+            'text-(--color-ink) focus:outline-none',
+            invalid ? 'border-(--color-danger)' : 'border-(--color-accent-400)',
           )}
         />
         {invalid && (
-          <span className="absolute left-1 top-full z-10 mt-0.5 whitespace-nowrap rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-1.5 py-0.5 text-[10px] font-medium text-white shadow-[var(--shadow-pop)]">
+          <span className="absolute left-1 top-full z-10 mt-0.5 whitespace-nowrap rounded-sm bg-(--color-danger) px-1.5 py-0.5 text-[10px] font-medium text-white shadow-(--shadow-pop)">
             {invalid}
           </span>
         )}
@@ -167,10 +167,10 @@ export function ScoreCell({
         'flex h-9 min-w-16 cursor-cell items-center justify-end px-2 text-right text-sm tabular-nums',
         'transition-colors focus:outline-none',
         isSelected
-          ? 'bg-[var(--color-accent-500)]/25 ring-2 ring-inset ring-[var(--color-accent-400)]'
-          : 'hover:bg-[var(--color-surface-2)]',
+          ? 'bg-(--color-accent-500)/25 ring-2 ring-inset ring-(--color-accent-400)'
+          : 'hover:bg-(--color-surface-2)',
         isPending && 'opacity-60',
-        display === '' && 'text-[var(--color-ink-faint)]',
+        display === '' && 'text-(--color-ink-faint)',
       )}
     >
       {display === '' ? '·' : display}

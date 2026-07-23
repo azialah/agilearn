@@ -3,11 +3,11 @@ import { cn } from '@/lib/cn'
 export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
 
 const tones: Record<BadgeTone, string> = {
-  neutral: 'bg-[var(--color-surface-3)] text-[var(--color-ink-muted)]',
-  accent: 'bg-[var(--color-accent-500)]/20 text-[var(--color-accent-300)]',
-  success: 'bg-[var(--color-success)]/15 text-[var(--color-success)]',
-  warning: 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
-  danger: 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]',
+  neutral: 'bg-(--color-surface-3) text-(--color-ink-muted)',
+  accent: 'bg-(--color-accent-500)/20 text-(--color-accent-300)',
+  success: 'bg-(--color-success)/15 text-(--color-success)',
+  warning: 'bg-(--color-warning)/15 text-(--color-warning)',
+  danger: 'bg-(--color-danger)/15 text-(--color-danger)',
 }
 
 export function Badge({

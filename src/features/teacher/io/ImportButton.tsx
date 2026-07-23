@@ -157,15 +157,15 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)]',
+            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg',
             'border border-dashed px-6 py-8 text-center transition-colors',
             dragging
-              ? 'border-[var(--color-accent-400)] bg-[var(--color-accent-500)]/10'
-              : 'border-[var(--color-border-strong)] hover:bg-[var(--color-surface-1)]',
+              ? 'border-(--color-accent-400) bg-(--color-accent-500)/10'
+              : 'border-(--color-border-strong) hover:bg-(--color-surface-1)',
           )}
         >
-          <UploadIcon className="size-6 text-[var(--color-ink-muted)]" />
-          <p className="text-sm text-[var(--color-ink)]">
+          <UploadIcon className="size-6 text-(--color-ink-muted)" />
+          <p className="text-sm text-(--color-ink)">
             {fileName ? (
               <span className="font-medium">{fileName}</span>
             ) : (
@@ -174,11 +174,11 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
               </>
             )}
           </p>
-          <p className="text-xs text-[var(--color-ink-faint)]">.xlsx or .xls</p>
+          <p className="text-xs text-(--color-ink-faint)">.xlsx or .xls</p>
         </div>
 
         {parsing && (
-          <div className="flex items-center gap-2 text-sm text-[var(--color-ink-muted)]">
+          <div className="flex items-center gap-2 text-sm text-(--color-ink-muted)">
             <Spinner className="size-4" /> Reading file…
           </div>
         )}
@@ -214,7 +214,7 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
                     <TBody>
                       {result.rows.map((row) => (
                         <TR key={`${row.rowNumber}-${row.studentNo}`}>
-                          <TD className="text-[var(--color-ink-faint)]">
+                          <TD className="text-(--color-ink-faint)">
                             {row.rowNumber}
                           </TD>
                           <TD>{row.studentNo || '—'}</TD>
@@ -229,7 +229,7 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
                                 {STATUS_META[row.status].label}
                               </Badge>
                               {row.reason && (
-                                <span className="text-xs text-[var(--color-ink-faint)]">
+                                <span className="text-xs text-(--color-ink-faint)">
                                   {row.reason}
                                 </span>
                               )}
@@ -241,7 +241,7 @@ export function ImportButton({ classroomId }: ImportButtonProps) {
                   </Table>
                 </TableContainer>
               ) : (
-                <p className="text-sm text-[var(--color-ink-muted)]">
+                <p className="text-sm text-(--color-ink-muted)">
                   No importable rows were found in this file.
                 </p>
               )}

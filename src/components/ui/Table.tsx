@@ -7,7 +7,7 @@ export function TableContainer({
   return (
     <div
       className={cn(
-        'scrollbar-thin overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]',
+        'scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)',
         className,
       )}
       {...props}
@@ -26,7 +26,7 @@ export function THead({
   return (
     <thead
       className={cn(
-        'bg-[var(--color-surface-2)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-faint)]',
+        'bg-(--color-surface-2) text-left text-xs uppercase tracking-wide text-(--color-ink-faint)',
         className,
       )}
       {...props}
@@ -42,7 +42,7 @@ export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowEle
   return (
     <tr
       className={cn(
-        'border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-1)]',
+        'border-t border-(--color-border) transition-colors hover:bg-(--color-surface-1)',
         className,
       )}
       {...props}
@@ -62,6 +62,6 @@ export function TD({
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn('px-4 py-2.5 text-[var(--color-ink)]', className)} {...props} />
+    <td className={cn('px-4 py-2.5 text-(--color-ink)', className)} {...props} />
   )
 }

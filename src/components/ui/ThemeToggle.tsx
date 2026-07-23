@@ -22,8 +22,8 @@ export function ThemeToggle({ className }: { className?: string }) {
       role="radiogroup"
       aria-label="Color theme"
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full border border-[var(--color-border)]',
-        'bg-[var(--color-surface-1)] p-0.5',
+        'inline-flex items-center gap-0.5 rounded-full border border-(--color-border)',
+        'bg-(--color-surface-1) p-0.5',
         className,
       )}
     >
@@ -41,8 +41,8 @@ export function ThemeToggle({ className }: { className?: string }) {
             className={cn(
               'inline-flex size-7 items-center justify-center rounded-full text-[0.95rem] transition-colors',
               active
-                ? 'bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]'
-                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
+                ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                : 'text-(--color-ink-muted) hover:text-(--color-ink)',
             )}
           >
             <Icon />

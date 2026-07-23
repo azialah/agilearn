@@ -261,7 +261,7 @@ const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground",
         outline: "border border-input bg-background",
         // Add custom variant
-        gradient: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+        gradient: "bg-linear-to-r from-purple-500 to-pink-500 text-white",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -14,11 +14,11 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           ref={ref}
           type={visible ? 'text' : 'password'}
           className={cn(
-            'h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)]',
+            'h-9 w-full rounded-md border border-(--color-border)',
             // 16px on mobile prevents iOS auto-zoom on focus; 14px density on desktop.
-            'bg-[var(--color-surface-1)] pl-3 pr-10 text-base md:text-sm text-[var(--color-ink)]',
-            'placeholder:text-[var(--color-ink-faint)] transition-colors',
-            'focus-visible:border-[var(--color-accent-400)] focus-visible:outline-none',
+            'bg-(--color-surface-1) pl-3 pr-10 text-base md:text-sm text-(--color-ink)',
+            'placeholder:text-(--color-ink-faint) transition-colors',
+            'focus-visible:border-(--color-accent-400) focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
@@ -30,7 +30,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
           tabIndex={-1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-(--color-ink-faint) transition-colors hover:text-(--color-ink)"
         >
           {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>

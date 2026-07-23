@@ -26,7 +26,7 @@ function RateBar({ rate }: { rate: number | null }) {
   const pct = rate === null ? 0 : Math.round(rate * 100)
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-full min-w-16 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+      <div className="h-1.5 w-full min-w-16 overflow-hidden rounded-full bg-(--color-surface-3)">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: rateTone(rate) }}
@@ -35,7 +35,7 @@ function RateBar({ rate }: { rate: number | null }) {
           transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       </div>
-      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-[var(--color-ink-muted)]">
+      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-(--color-ink-muted)">
         {formatRate(rate)}
       </span>
     </div>
@@ -113,7 +113,7 @@ export function AttendanceSummary({
       <CardHeader className="flex-row items-center justify-between gap-4">
         <div className="space-y-1">
           <CardTitle>Attendance report</CardTitle>
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-sm text-(--color-ink-muted)">
             Per-student rates across {sessions.length}{' '}
             {sessions.length === 1 ? 'session' : 'sessions'}.
           </p>
@@ -127,12 +127,12 @@ export function AttendanceSummary({
             >
               {formatRate(classRate)}
             </p>
-            <p className="text-xs text-[var(--color-ink-faint)]">class average</p>
+            <p className="text-xs text-(--color-ink-faint)">class average</p>
           </div>
         </div>
       </CardHeader>
       <CardBody className="p-0">
-        <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-5 py-3 text-xs text-[var(--color-ink-muted)]">
+        <div className="flex items-center gap-2 border-b border-(--color-border) px-5 py-3 text-xs text-(--color-ink-muted)">
           <span>Sort by</span>
           <SortToggle
             label="Name"
@@ -188,8 +188,8 @@ function SortToggle({
       onClick={onClick}
       className={
         active
-          ? 'rounded-full bg-[var(--color-surface-3)] px-2.5 py-1 font-medium text-[var(--color-ink)]'
-          : 'rounded-full px-2.5 py-1 hover:text-[var(--color-ink)]'
+          ? 'rounded-full bg-(--color-surface-3) px-2.5 py-1 font-medium text-(--color-ink)'
+          : 'rounded-full px-2.5 py-1 hover:text-(--color-ink)'
       }
     >
       {label}
@@ -200,7 +200,7 @@ function SortToggle({
 function CountCell({ value, muted }: { value: number; muted: boolean }) {
   return (
     <TD className="text-center tabular-nums">
-      <span className={muted ? 'text-[var(--color-ink-faint)]' : undefined}>{value}</span>
+      <span className={muted ? 'text-(--color-ink-faint)' : undefined}>{value}</span>
     </TD>
   )
 }

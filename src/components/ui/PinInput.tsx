@@ -99,8 +99,8 @@ export function PinInput({
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={(e) => handlePaste(i, e)}
           className={cn(
-            'pin-box rounded-[var(--radius-md)] border border-[var(--color-border)]',
-            'bg-[var(--color-surface-1)] font-[family-name:var(--font-mono)] text-lg text-[var(--color-ink)]',
+            'pin-box rounded-md border border-(--color-border)',
+            'bg-(--color-surface-1) font-mono text-lg text-(--color-ink)',
             'disabled:cursor-not-allowed disabled:opacity-50',
             digit && 'filled',
           )}

@@ -44,21 +44,21 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
       transition={{ duration: 0.5, delay: index * 0.05, ease: 'easeOut' }}
-      className="border-b border-[var(--color-border)]"
+      className="border-b border-(--color-border)"
     >
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-4 py-4 text-left font-medium text-[var(--color-ink)]"
+        className="flex w-full items-center justify-between gap-4 py-4 text-left font-medium text-(--color-ink)"
       >
         {q}
         <ChevronDown
           className={
             open
-              ? 'size-4 shrink-0 rotate-180 text-[var(--color-accent-350)] transition-transform duration-300'
-              : 'size-4 shrink-0 text-[var(--color-ink-muted)] transition-transform duration-300'
+              ? 'size-4 shrink-0 rotate-180 text-(--color-accent-350) transition-transform duration-300'
+              : 'size-4 shrink-0 text-(--color-ink-muted) transition-transform duration-300'
           }
         />
       </button>
@@ -73,7 +73,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             transition={{ duration: 0.28, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <p className="pb-4 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            <p className="pb-4 text-sm leading-relaxed text-(--color-ink-muted)">
               {a}
             </p>
           </motion.div>
@@ -93,10 +93,10 @@ export function Faq() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="mx-auto max-w-2xl text-center"
       >
-        <p className="text-xs font-medium uppercase tracking-widest text-[var(--color-accent-350)]">
+        <p className="text-xs font-medium uppercase tracking-widest text-(--color-accent-350)">
           Questions & answers
         </p>
-        <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           Frequently asked
         </h2>
       </motion.div>

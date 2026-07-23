@@ -13,7 +13,7 @@ export function SlideshowPage({ classroomId }: { classroomId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-[var(--color-ink-muted)]">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-(--color-ink-muted)">
         <Spinner className="size-6" />
         <p className="text-sm">Preparing the presentation…</p>
       </div>

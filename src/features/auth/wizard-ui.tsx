@@ -23,7 +23,7 @@ export interface AuthRailContent {
 function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
   const reduce = useReducedMotion()
   return (
-    <BackgroundLines className="hidden min-h-dvh text-[var(--color-accent-300)] lg:block">
+    <BackgroundLines className="hidden min-h-dvh text-(--color-accent-300) lg:block">
       <div className="absolute inset-0 z-10 bg-[linear-gradient(145deg,#1d120c_0%,#302016_52%,#4b260d_100%)] opacity-90" />
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_20%_20%,var(--color-accent-400),transparent_38%)] opacity-25" />
       <div className="relative z-20 flex min-h-dvh max-w-xl flex-col px-10 py-10 xl:px-14">
@@ -31,9 +31,9 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           initial={reduce ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="flex items-center gap-2 text-[var(--color-surface-1)]"
+          className="flex items-center gap-2 text-(--color-surface-1)"
         >
-          <span className="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
+          <span className="flex size-9 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
             A
           </span>
           <span className="text-lg font-semibold tracking-tight">Agilearn</span>
@@ -46,13 +46,13 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           transition={{ duration: 0.55, ease: 'easeOut', delay: reduce ? 0 : 0.12 }}
           className="my-auto py-12"
         >
-          <p className="font-[family-name:var(--font-mono)] text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--color-accent-200)]">
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-accent-200)">
             {eyebrow}
           </p>
-          <h2 className="mt-4 max-w-md text-balance font-[family-name:var(--font-display)] text-4xl font-semibold leading-[1.02] tracking-tight text-[var(--color-surface-1)] xl:text-5xl">
+          <h2 className="mt-4 max-w-md text-balance font-display text-4xl font-semibold leading-[1.02] tracking-tight text-(--color-surface-1) xl:text-5xl">
             {title}
           </h2>
-          <p className="mt-5 max-w-sm text-pretty text-base leading-relaxed text-[color:color-mix(in_srgb,var(--color-surface-1)_72%,transparent)]">
+          <p className="mt-5 max-w-sm text-pretty text-base leading-relaxed text-[color-mix(in_srgb,var(--color-surface-1)_72%,transparent)]">
             {body}
           </p>
 
@@ -64,11 +64,11 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
                     className={cn(
                       'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors',
                       milestone.state === 'complete' &&
-                        'border-[var(--color-accent-400)] bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]',
+                        'border-(--color-accent-400) bg-(--color-accent-400) text-(--color-accent-fg)',
                       milestone.state === 'current' &&
-                        'border-[var(--color-accent-200)] bg-[var(--color-accent-200)]/15 text-[var(--color-accent-100)]',
+                        'border-(--color-accent-200) bg-(--color-accent-200)/15 text-(--color-accent-100)',
                       milestone.state === 'upcoming' &&
-                        'border-[color:color-mix(in_srgb,var(--color-surface-1)_20%,transparent)] text-[color:color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]',
+                        'border-[color-mix(in_srgb,var(--color-surface-1)_20%,transparent)] text-[color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]',
                     )}
                   >
                     {milestone.state === 'complete' ? (
@@ -82,8 +82,8 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
                     className={cn(
                       'text-sm transition-colors',
                       milestone.state === 'upcoming'
-                        ? 'text-[color:color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]'
-                        : 'font-medium text-[var(--color-surface-1)]',
+                        ? 'text-[color-mix(in_srgb,var(--color-surface-1)_45%,transparent)]'
+                        : 'font-medium text-(--color-surface-1)',
                     )}
                   >
                     {milestone.label}
@@ -98,7 +98,7 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.3 }}
-          className="max-w-xs text-sm leading-relaxed text-[color:color-mix(in_srgb,var(--color-surface-1)_58%,transparent)]"
+          className="max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--color-surface-1)_58%,transparent)]"
         >
           One place for grades, attendance, and the materials that make class happen.
         </motion.p>
@@ -117,9 +117,9 @@ export function AuthShell({
 }) {
   const reduce = useReducedMotion()
   return (
-    <div className="relative grid min-h-dvh bg-[var(--color-surface-0)] lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
+    <div className="relative grid min-h-dvh bg-(--color-surface-0) lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]">
       {rail && <AuthRail {...rail} />}
-      <div className="relative flex min-h-dvh justify-center bg-[var(--color-surface-0)] md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:[background-size:16px_16px]">
+      <div className="relative flex min-h-dvh justify-center bg-(--color-surface-0) md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:bg-size-[16px_16px]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
         <div className="absolute right-4 top-4 z-30">
           <ThemeToggle />
@@ -141,7 +141,7 @@ export function AuthShell({
                 transition={{ duration: 0.4, ease: 'easeOut', delay: reduce ? 0 : 0.08 }}
                 className="mb-6 flex items-center gap-2"
               >
-                <span className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-400)] text-sm font-bold text-[var(--color-accent-fg)]">
+                <span className="flex size-8 items-center justify-center rounded-md bg-(--color-accent-400) text-sm font-bold text-(--color-accent-fg)">
                   A
                 </span>
                 <span className="text-lg font-semibold tracking-tight">Agilearn</span>
@@ -176,12 +176,12 @@ export function Field({ label, htmlFor, error, optional, children }: FieldProps)
       <Label htmlFor={htmlFor}>
         {label}
         {optional && (
-          <span className="ml-1 text-[var(--color-ink-faint)]">(optional)</span>
+          <span className="ml-1 text-(--color-ink-faint)">(optional)</span>
         )}
       </Label>
       {children}
       {error && (
-        <p role="alert" className="text-xs text-[var(--color-danger)]">
+        <p role="alert" className="text-xs text-(--color-danger)">
           {error}
         </p>
       )}
@@ -192,7 +192,7 @@ export function Field({ label, htmlFor, error, optional, children }: FieldProps)
 /** Muted helper line explaining why we ask for profiling data. */
 export function Hint({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-ink-muted)]">
+    <p className="rounded-md bg-(--color-surface-2) px-3 py-2 text-xs text-(--color-ink-muted)">
       {children}
     </p>
   )
@@ -203,7 +203,7 @@ export function FormError({ message }: { message: string }) {
   return (
     <p
       role="alert"
-      className="rounded-[var(--radius-md)] border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-3 py-2 text-sm text-[var(--color-danger)]"
+      className="rounded-md border border-(--color-danger)/40 bg-(--color-danger)/10 px-3 py-2 text-sm text-(--color-danger)"
     >
       {message}
     </p>
@@ -231,7 +231,7 @@ export function StickyCta({
   onClick,
 }: StickyCtaProps) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:border-0 md:bg-transparent md:px-0 md:pt-2 md:pb-0">
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-(--color-border) bg-(--color-surface-1) px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:border-0 md:bg-transparent md:px-0 md:pt-2 md:pb-0">
       <Button
         type={type}
         size="lg"

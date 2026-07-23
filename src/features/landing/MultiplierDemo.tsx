@@ -55,24 +55,24 @@ export function MultiplierDemo() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           Set the weight once. We compute the rest.
         </h2>
-        <p className="mt-3 text-base text-[var(--color-ink-muted)]">
+        <p className="mt-3 text-base text-(--color-ink-muted)">
           Decide how much lecture and laboratory count, or drop in your own grades below.
           Every final grade updates the moment you do.
         </p>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-12">
-        <div className="grid gap-6 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-1)]/90 p-6 shadow-[var(--shadow-card)] sm:p-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-10">
+        <div className="grid gap-6 rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/90 p-6 shadow-(--shadow-card) sm:p-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-10">
           {/* Controls */}
           <div>
             <div className="flex items-center justify-between text-sm">
-              <label htmlFor="lecture-weight" className="text-[var(--color-ink)]">
+              <label htmlFor="lecture-weight" className="text-(--color-ink)">
                 Lecture weight
               </label>
-              <span className="font-[family-name:var(--font-mono)] text-[var(--color-accent-350)]">
+              <span className="font-mono text-(--color-accent-350)">
                 {lectureWeight}% · Lab {labWeight}%
               </span>
             </div>
@@ -85,7 +85,7 @@ export function MultiplierDemo() {
               value={lectureWeight}
               onChange={(e) => setLectureWeight(Number(e.target.value))}
               aria-label="Lecture weight percentage"
-              className="mt-3 w-full [accent-color:var(--color-accent-400)]"
+              className="mt-3 w-full accent-(--color-accent-400)"
             />
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -100,8 +100,8 @@ export function MultiplierDemo() {
                     className={cn(
                       'rounded-full border px-3 py-1.5 text-sm transition-colors',
                       active
-                        ? 'border-[var(--color-accent-400)] bg-[var(--color-accent-400)] text-[var(--color-accent-fg)]'
-                        : 'border-[var(--color-border-strong)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
+                        ? 'border-(--color-accent-400) bg-(--color-accent-400) text-(--color-accent-fg)'
+                        : 'border-(--color-border-strong) text-(--color-ink-muted) hover:text-(--color-ink)',
                     )}
                   >
                     {preset.label}
@@ -111,8 +111,8 @@ export function MultiplierDemo() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 transition-colors focus-within:border-[var(--color-accent-400)]">
-                <label htmlFor="demo-lecture" className="text-[var(--color-ink-faint)]">
+              <div className="rounded-md border border-(--color-border) bg-(--color-surface-0) px-3 py-2.5 transition-colors focus-within:border-(--color-accent-400)">
+                <label htmlFor="demo-lecture" className="text-(--color-ink-faint)">
                   Lecture average
                 </label>
                 <input
@@ -124,13 +124,13 @@ export function MultiplierDemo() {
                   step={0.01}
                   value={lecture}
                   onChange={(e) => setLecture(clampGrade(e.target.value))}
-                  className="mt-0.5 w-full bg-transparent font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)] focus-visible:outline-none"
+                  className="mt-0.5 w-full bg-transparent font-mono text-lg tabular-nums text-(--color-ink) focus-visible:outline-none"
                 />
               </div>
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 transition-colors focus-within:border-[var(--color-accent-400)]">
+              <div className="rounded-md border border-(--color-border) bg-(--color-surface-0) px-3 py-2.5 transition-colors focus-within:border-(--color-accent-400)">
                 <label
                   htmlFor="demo-laboratory"
-                  className="text-[var(--color-ink-faint)]"
+                  className="text-(--color-ink-faint)"
                 >
                   Laboratory average
                 </label>
@@ -143,19 +143,19 @@ export function MultiplierDemo() {
                   step={0.01}
                   value={laboratory}
                   onChange={(e) => setLaboratory(clampGrade(e.target.value))}
-                  className="mt-0.5 w-full bg-transparent font-[family-name:var(--font-mono)] text-lg tabular-nums text-[var(--color-ink)] focus-visible:outline-none"
+                  className="mt-0.5 w-full bg-transparent font-mono text-lg tabular-nums text-(--color-ink) focus-visible:outline-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Live result */}
-          <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-[var(--color-accent-500)]/30 bg-[var(--color-accent-500)]/[0.08] px-6 py-10 text-center">
-            <p className="text-sm text-[var(--color-ink-muted)]">Final grade</p>
-            <p className="mt-2 font-[family-name:var(--font-display)] text-6xl font-semibold text-[var(--color-accent-350)] sm:text-7xl">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-(--color-accent-500)/30 bg-(--color-accent-500)/8 px-6 py-10 text-center">
+            <p className="text-sm text-(--color-ink-muted)">Final grade</p>
+            <p className="mt-2 font-display text-6xl font-semibold text-(--color-accent-350) sm:text-7xl">
               <AnimatedGrade value={final} />
             </p>
-            <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-ink-faint)]">
+            <p className="mt-3 font-mono text-xs text-(--color-ink-faint)">
               {lecture} x {(lectureWeight / 100).toFixed(2)} + {laboratory} x{' '}
               {(labWeight / 100).toFixed(2)}
             </p>

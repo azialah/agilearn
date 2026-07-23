@@ -64,7 +64,7 @@ export function ProgressBar({
     >
       <div
         ref={fillRef}
-        className="h-full w-0 bg-[var(--ss-accent)] transition-[width] duration-75 ease-linear"
+        className="h-full w-0 bg-(--ss-accent) transition-[width] duration-75 ease-linear"
       />
     </div>
   )

@@ -159,14 +159,14 @@ export function GradeBreakdownSlide({
 
 function GradeStat({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="min-w-[5.5rem] flex-1">
-      <p className="mb-1 text-[0.7rem] font-medium uppercase tracking-[0.1em] text-white/45">
+    <div className="min-w-22 flex-1">
+      <p className="mb-1 text-[0.7rem] font-medium uppercase tracking-widest text-white/45">
         {label}
       </p>
       <p
         className={
           'text-4xl font-black tabular-nums sm:text-5xl ' +
-          (value === null ? 'text-white/30' : 'text-[var(--ss-accent)]')
+          (value === null ? 'text-white/30' : 'text-(--ss-accent)')
         }
       >
         {formatGrade(value)}
@@ -177,8 +177,8 @@ function GradeStat({ label, value }: { label: string; value: number | null }) {
 
 function ComponentPill({ label, value }: { label: string; value: number | null }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 text-white/70">
-      <span className="text-xs uppercase tracking-[0.1em] text-white/45">{label}</span>
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-white/70">
+      <span className="text-xs uppercase tracking-widest text-white/45">{label}</span>
       <span
         className={
           'font-bold tabular-nums ' + (value === null ? 'text-white/40' : 'text-white')
@@ -218,11 +218,11 @@ export function AverageSlide({
 
       <motion.div
         variants={item}
-        className="relative flex flex-col items-center rounded-[2rem] border border-white/20 bg-white/[0.06] px-10 py-10 backdrop-blur-sm sm:px-20 sm:py-12"
+        className="relative flex flex-col items-center rounded-4xl border border-white/20 bg-white/6 px-10 py-10 backdrop-blur-sm sm:px-20 sm:py-12"
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 rounded-[2rem] blur-3xl"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-4xl blur-3xl"
           style={{
             background: hasFinal
               ? 'radial-gradient(circle at 50% 40%, var(--ss-glow), transparent 70%)'
@@ -247,7 +247,7 @@ export function AverageSlide({
           }
           className={
             'text-7xl font-black leading-none tabular-nums sm:text-8xl lg:text-9xl ' +
-            (hasFinal ? 'text-[var(--ss-avg)]' : 'text-white/40')
+            (hasFinal ? 'text-(--ss-avg)' : 'text-white/40')
           }
         >
           {hasFinal ? final.toFixed(2) : 'N/A'}
