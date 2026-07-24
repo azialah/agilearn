@@ -15,13 +15,13 @@ import { useClassroom } from '@/lib/queries/classrooms'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useDeleteStudent, useStudents } from '@/lib/queries/students'
 import { studentFullName } from '@/types/domain'
-const ImportButton = lazy(
-  () => import('@/features/teacher/io/ImportButton').then((module) => ({
+const ImportButton = lazy(() =>
+  import('@/features/teacher/io/ImportButton').then((module) => ({
     default: module.ImportButton,
   })),
 )
-const ExportMenu = lazy(
-  () => import('@/features/teacher/io/ExportMenu').then((module) => ({
+const ExportMenu = lazy(() =>
+  import('@/features/teacher/io/ExportMenu').then((module) => ({
     default: module.ExportMenu,
   })),
 )

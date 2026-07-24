@@ -694,25 +694,31 @@ export type Database = {
         Row: {
           classroom_id: string
           course_subject_id: string
+          ends_on: string | null
           id: string
           name: string
           position: number
+          starts_on: string | null
           weight: number
         }
         Insert: {
           classroom_id: string
           course_subject_id: string
+          ends_on?: string | null
           id?: string
           name: string
           position?: number
+          starts_on?: string | null
           weight?: number
         }
         Update: {
           classroom_id?: string
           course_subject_id?: string
+          ends_on?: string | null
           id?: string
           name?: string
           position?: number
+          starts_on?: string | null
           weight?: number
         }
         Relationships: [
