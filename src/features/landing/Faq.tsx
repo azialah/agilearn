@@ -73,9 +73,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             transition={{ duration: 0.28, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <p className="pb-4 text-sm leading-relaxed text-(--color-ink-muted)">
-              {a}
-            </p>
+            <p className="pb-4 text-sm leading-relaxed text-(--color-ink-muted)">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>

@@ -44,9 +44,7 @@ export function EmptyState({
         </>
       )}
       <div className="relative flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-        {icon && (
-          <div className="text-(--color-ink-faint) [&>svg]:size-8">{icon}</div>
-        )}
+        {icon && <div className="text-(--color-ink-faint) [&>svg]:size-8">{icon}</div>}
         <div className="space-y-1">
           <p className="text-base font-semibold text-(--color-ink)">{title}</p>
           {description && (

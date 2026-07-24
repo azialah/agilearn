@@ -109,9 +109,7 @@ export function StudentFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="student_email">
                 Student email{' '}
-                <span className="font-normal text-(--color-ink-faint)">
-                  (optional)
-                </span>
+                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
               </Label>
               <Input
                 id="student_email"
@@ -124,9 +122,7 @@ export function StudentFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="guardian_email">
                 Guardian email{' '}
-                <span className="font-normal text-(--color-ink-faint)">
-                  (optional)
-                </span>
+                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
               </Label>
               <Input
                 id="guardian_email"

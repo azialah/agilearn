@@ -154,7 +154,7 @@ export function RequestAccess() {
             <Button
               type="submit"
               size="lg"
-              className="w-full rounded-full"
+              className="w-full !rounded-full"
               loading={submitting}
             >
               Send request

@@ -60,9 +60,7 @@ export function WorkspaceSection() {
             <Languages className="size-4 text-(--color-accent-350)" />{' '}
             {t('displayLanguage')}
           </CardTitle>
-          <p className="text-sm text-(--color-ink-muted)">
-            {t('languageDescription')}
-          </p>
+          <p className="text-sm text-(--color-ink-muted)">{t('languageDescription')}</p>
         </CardHeader>
         <CardBody>
           <label
@@ -91,8 +89,8 @@ export function WorkspaceSection() {
             <Bell className="size-4 text-(--color-accent-350)" /> Notifications
           </CardTitle>
           <p className="text-sm text-(--color-ink-muted)">
-            Get a system notification for account milestones, like finishing onboarding,
-            even when Agilearn isn&apos;t the active tab.
+            Turn on optional browser alerts while Agilearn is open. Your reliable
+            low-grade and attendance alerts always stay in the in-app notification bell.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -122,10 +120,7 @@ export function WorkspaceSection() {
 
       <Card>
         <CardBody className="flex items-center gap-2 text-sm text-(--color-ink-muted)">
-          <Command
-            className="size-4 shrink-0 text-(--color-accent-350)"
-            aria-hidden
-          />
+          <Command className="size-4 shrink-0 text-(--color-accent-350)" aria-hidden />
           Press{' '}
           <kbd className="rounded border border-(--color-border) px-1.5 py-0.5 text-xs text-(--color-ink)">
             {isMac ? '⌘' : 'Ctrl'}

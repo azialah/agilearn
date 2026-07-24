@@ -18,7 +18,13 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
+      includeAssets: [
+        'favicon.svg',
+        'apple-touch-icon.png',
+        'icon-192.png',
+        'icon-512.png',
+        'icon-512-maskable.png',
+      ],
       manifest: {
         name: 'Agilearn',
         short_name: 'Agilearn',
@@ -30,7 +36,10 @@ export default defineConfig({
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: 'icon-512.png',
+            // Logo alone fills icon-512.png edge-to-edge, which Android's
+            // adaptive-icon mask would crop — this is the same artwork
+            // scaled to ~70% on a solid canvas so it survives any mask shape.
+            src: 'icon-512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

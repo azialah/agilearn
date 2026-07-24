@@ -746,6 +746,94 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          classroom_id: string
+          course_subject_id: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          payload: Json
+          read_at: string | null
+          recipient_id: string
+          resolved_at: string | null
+          student_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          course_subject_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id: string
+          resolved_at?: string | null
+          student_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          course_subject_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id?: string
+          resolved_at?: string | null
+          student_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_roster"
+            referencedColumns: ["classroom_id"]
+          },
+          {
+            foreignKeyName: "notifications_course_subject_id_fkey"
+            columns: ["course_subject_id"]
+            isOneToOne: false
+            referencedRelation: "course_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_roster"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_color: string
@@ -1061,6 +1149,17 @@ export type Database = {
         }[]
       }
       owns_classroom: { Args: { cid: string }; Returns: boolean }
+      reconcile_notification_incident: {
+        Args: {
+          p_active: boolean
+          p_classroom_id: string
+          p_course_subject_id: string
+          p_payload?: Json
+          p_student_id: string
+          p_type: string
+        }
+        Returns: string
+      }
       submit_domain_request: {
         Args: {
           p_domain: string

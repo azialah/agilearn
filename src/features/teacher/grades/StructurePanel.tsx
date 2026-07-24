@@ -161,9 +161,7 @@ export function StructurePanel({
                     className="flex items-center justify-between gap-2 px-3 py-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-(--color-ink)">
-                        {period.name}
-                      </span>
+                      <span className="text-sm text-(--color-ink)">{period.name}</span>
                       <Badge tone="neutral">w {round2(period.weight)}</Badge>
                     </div>
                     <div className="flex items-center gap-1">
@@ -276,9 +274,7 @@ export function StructurePanel({
                       </Badge>
                     </div>
                     {categories.length === 0 ? (
-                      <p className="text-xs text-(--color-ink-faint)">
-                        No categories.
-                      </p>
+                      <p className="text-xs text-(--color-ink-faint)">No categories.</p>
                     ) : (
                       <ul className="space-y-1">
                         {categories.map((category) => (

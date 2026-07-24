@@ -130,9 +130,7 @@ export function ProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">
                 Middle name{' '}
-                <span className="font-normal text-(--color-ink-faint)">
-                  (optional)
-                </span>
+                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
                 <Input
                   className="mt-1.5"
                   value={middleName}
@@ -142,9 +140,7 @@ export function ProfilePage() {
               </label>
               <label className="text-sm font-medium">
                 Suffix{' '}
-                <span className="font-normal text-(--color-ink-faint)">
-                  (optional)
-                </span>
+                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
                 <Input
                   className="mt-1.5"
                   value={suffix}

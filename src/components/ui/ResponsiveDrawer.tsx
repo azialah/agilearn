@@ -95,14 +95,14 @@ export function ResponsiveDrawerFooter({
       <Button
         type="button"
         variant="ghost"
-        className="flex-1 rounded-full md:flex-none"
+        className="flex-1 !rounded-full md:flex-none"
         onClick={onSecondary}
       >
         {secondaryLabel}
       </Button>
       <Button
         type="button"
-        className="flex-1 rounded-full md:flex-none"
+        className="flex-1 !rounded-full md:flex-none"
         loading={primaryLoading}
         disabled={primaryDisabled}
         onClick={onPrimary}

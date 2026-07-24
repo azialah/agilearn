@@ -51,28 +51,20 @@ export function HeroWorkspace() {
               </span>
             </div>
             <div className="mt-5 flex items-end gap-2" aria-hidden>
-              {[
-                'h-11',
-                'h-17',
-                'h-13.5',
-                'h-20.5',
-                'h-18',
-                'h-23.5',
-                'h-21.5',
-              ].map((heightClass) => (
-                <span
-                  key={heightClass}
-                  className={`flex-1 rounded-t-sm bg-(--color-accent-400)/20 ${heightClass}`}
-                >
-                  <span className="block size-full origin-bottom rounded-t-sm bg-(--color-accent-400)" />
-                </span>
-              ))}
+              {['h-11', 'h-17', 'h-13.5', 'h-20.5', 'h-18', 'h-23.5', 'h-21.5'].map(
+                (heightClass) => (
+                  <span
+                    key={heightClass}
+                    className={`flex-1 rounded-t-sm bg-(--color-accent-400)/20 ${heightClass}`}
+                  >
+                    <span className="block size-full origin-bottom rounded-t-sm bg-(--color-accent-400)" />
+                  </span>
+                ),
+              )}
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-(--color-ink-muted)">
               <span>42 students</span>
-              <span className="font-medium text-(--color-ink)">
-                89.4% class average
-              </span>
+              <span className="font-medium text-(--color-ink)">89.4% class average</span>
             </div>
           </motion.div>
 

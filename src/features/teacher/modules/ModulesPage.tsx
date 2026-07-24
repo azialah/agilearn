@@ -28,6 +28,7 @@ import {
   type ModuleWithRelations,
 } from '@/lib/queries/modules'
 import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import {
   ResponsiveDrawer,
   ResponsiveDrawerBody,
@@ -186,6 +187,7 @@ export function ModulesPage() {
     kind: 'all',
     mineOnly: false,
   })
+  const debouncedSearch = useDebouncedValue(filters.search, 250)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [importingModule, setImportingModule] = useState<ModuleWithRelations | null>(null)
   const [subjectId, setSubjectId] = useState('')
@@ -193,8 +195,13 @@ export function ModulesPage() {
   const isAdmin = profile?.role === 'admin'
 
   const visible = useMemo(
-    () => filterModules(modules ?? [], filters, profile?.id ?? null),
-    [modules, filters, profile?.id],
+    () =>
+      filterModules(
+        modules ?? [],
+        { ...filters, search: debouncedSearch },
+        profile?.id ?? null,
+      ),
+    [debouncedSearch, filters, modules, profile?.id],
   )
 
   async function handleDownload(module: ModuleWithRelations) {
@@ -216,10 +223,7 @@ export function ModulesPage() {
 
   async function handleDelete(module: ModuleWithRelations) {
     try {
-      await deleteModule.mutateAsync({
-        id: module.id,
-        storage_path: module.storage_path,
-      })
+      await deleteModule.mutateAsync(module)
       toast({ title: 'Module deleted', tone: 'success' })
     } catch (error) {
       toast({

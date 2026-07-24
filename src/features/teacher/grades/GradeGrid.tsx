@@ -48,12 +48,14 @@ export function GradeGrid({
   scores,
   students,
   periodId,
+  focusStudentId,
 }: {
   classroomId: string
   structure: GradebookStructure
   scores: ScoreMap
   students: Student[]
   periodId: string
+  focusStudentId?: string
 }) {
   const upsertScore = useUpsertScore()
   const { toast } = useToast()
@@ -233,7 +235,12 @@ export function GradeGrid({
             return (
               <tr
                 key={row.id}
-                className="border-b border-(--color-border) hover:bg-(--color-surface-1)/60"
+                data-student-id={student.id}
+                className={cn(
+                  'border-b border-(--color-border) hover:bg-(--color-surface-1)/60',
+                  student.id === focusStudentId &&
+                    'bg-(--color-accent-500)/15 outline outline-2 outline-(--color-accent-400)/55 outline-offset-[-2px]',
+                )}
               >
                 {leaves.map((column) => {
                   const info = leafInfo.get(column.id)

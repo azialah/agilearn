@@ -791,6 +791,80 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          id: string
+          recipient_id: string
+          type: string
+          student_id: string
+          classroom_id: string
+          course_subject_id: string | null
+          dedupe_key: string
+          payload: Json
+          read_at: string | null
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          recipient_id: string
+          type: string
+          student_id: string
+          classroom_id: string
+          course_subject_id?: string | null
+          dedupe_key: string
+          payload?: Json
+          read_at?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          recipient_id?: string
+          type?: string
+          student_id?: string
+          classroom_id?: string
+          course_subject_id?: string | null
+          dedupe_key?: string
+          payload?: Json
+          read_at?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_recipient_id_fkey'
+            columns: ['recipient_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notifications_student_id_fkey'
+            columns: ['student_id']
+            isOneToOne: false
+            referencedRelation: 'students'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notifications_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notifications_course_subject_id_fkey'
+            columns: ['course_subject_id']
+            isOneToOne: false
+            referencedRelation: 'course_subjects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       teaching_modules: {
         Row: {
           id: string
@@ -978,6 +1052,17 @@ export type Database = {
       module_storage_quota_allows: {
         Args: { p_name: string; p_metadata: Json; p_existing_name?: string | null }
         Returns: boolean
+      }
+      reconcile_notification_incident: {
+        Args: {
+          p_type: string
+          p_classroom_id: string
+          p_student_id: string
+          p_course_subject_id: string | null
+          p_active: boolean
+          p_payload?: Json
+        }
+        Returns: string | null
       }
     }
     Enums: {

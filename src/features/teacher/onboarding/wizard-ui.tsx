@@ -1,10 +1,18 @@
 import { cn } from '@/lib/cn'
 
 /** Segmented progress bar for a wizard (current is 0-indexed). */
-export function Stepper({ current, total }: { current: number; total: number }) {
+export function Stepper({
+  current,
+  total,
+  className,
+}: {
+  current: number
+  total: number
+  className?: string
+}) {
   return (
     <div
-      className="mb-5 flex gap-1.5 lg:hidden"
+      className={cn('flex gap-1.5 lg:hidden', className)}
       role="progressbar"
       aria-label="Account setup progress"
       aria-valuemin={1}
