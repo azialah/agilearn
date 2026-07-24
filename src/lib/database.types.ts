@@ -454,6 +454,8 @@ export type Database = {
           name: string
           weight: number
           position: number
+          starts_on: string | null
+          ends_on: string | null
         }
         Insert: {
           id?: string
@@ -462,6 +464,8 @@ export type Database = {
           name: string
           weight?: number
           position?: number
+          starts_on?: string | null
+          ends_on?: string | null
         }
         Update: {
           id?: string
@@ -470,6 +474,8 @@ export type Database = {
           name?: string
           weight?: number
           position?: number
+          starts_on?: string | null
+          ends_on?: string | null
         }
         Relationships: [
           {

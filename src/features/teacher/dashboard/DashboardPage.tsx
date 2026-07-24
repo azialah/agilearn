@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
+import React from 'react'
 import { motion, useReducedMotion } from 'motion/react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   BookOpen,
   CalendarCheck,
@@ -17,6 +19,13 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useProfile } from '@/lib/queries/profiles'
 import { useAcademicPeriods } from '@/lib/queries/academicWorkspace'
+import { useAllStudents } from '@/lib/queries/students'
+import { useAllClassSessions } from '@/lib/queries/attendance'
+import { computeStudentGradebook } from '@/lib/grading'
+import { computeStudentSummary } from '@/features/teacher/attendance/summary'
+import { useQueries } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { keys } from '@/lib/queries/keys'
 
 const rise = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }
 
@@ -25,6 +34,7 @@ export function DashboardPage() {
   const { data: classrooms, isLoading } = useClassrooms()
   const { data: periods = [] } = useAcademicPeriods()
   const reducedMotion = useReducedMotion()
+  const navigate = useNavigate()
   const firstName = profile?.first_name || 'there'
   const totalStudents =
     classrooms?.reduce((total, classroom) => total + classroom.student_count, 0) ?? 0
@@ -36,6 +46,222 @@ export function DashboardPage() {
         (new Date(`${activePeriod.ends_on}T23:59:59`).getTime() - Date.now()) / 86400000,
       )
     : null
+
+  // Cross-classroom queries used by the dashboard widgets below. RLS on the
+  // DB ensures teachers only see their own classrooms/students/sessions.
+  const studentsQuery = useAllStudents()
+  const allSessionsQuery = useAllClassSessions()
+
+  // Dynamically fetch each classroom's gradebook structure using useQueries so
+  // the number of hooks can vary with the teacher's number of classrooms.
+  const structureQueries = useQueries({
+    queries: (classrooms ?? []).map((classroom) => ({
+      queryKey: keys.grades.structure(classroom.id),
+      enabled: !!classroom.id,
+      queryFn: async () => {
+        const periodsQ = supabase
+          .from('grading_periods')
+          .select('*')
+          .eq('classroom_id', classroom.id)
+          .order('position', { ascending: true })
+          .order('name', { ascending: true })
+        const activitiesQ = supabase
+          .from('activities')
+          .select('*, grading_periods!inner(classroom_id, course_subject_id)')
+          .eq('grading_periods.classroom_id', classroom.id)
+          .order('position', { ascending: true })
+          .order('name', { ascending: true })
+
+        const [components, periodsRes, categories, activitiesRes] = await Promise.all([
+          supabase
+            .from('grade_components')
+            .select('*')
+            .eq('classroom_id', classroom.id)
+            .order('position', { ascending: true })
+            .order('name', { ascending: true }),
+          periodsQ,
+          supabase
+            .from('activity_categories')
+            .select('*')
+            .eq('classroom_id', classroom.id)
+            .order('component', { ascending: true })
+            .order('name', { ascending: true }),
+          activitiesQ,
+        ])
+
+        if (periodsRes.error) throw periodsRes.error
+        if (components.error) throw components.error
+        if (categories.error) throw categories.error
+        if (activitiesRes.error) throw activitiesRes.error
+
+        const cleanActivities = (activitiesRes.data ?? []).map((row: any) => {
+          const { grading_periods: _relation, ...activity } = row
+          return activity
+        })
+
+        return {
+          periods: (periodsRes.data ?? []) as any,
+          components: (components.data ?? []) as any,
+          categories: (categories.data ?? []) as any,
+          activities: cleanActivities,
+        }
+      },
+    })),
+  })
+
+  // Fetch score maps for every classroom (activityId -> studentId -> score).
+  const scoresQueries = useQueries({
+    queries: (classrooms ?? []).map((classroom, idx) => ({
+      queryKey: keys.grades.byClassroom(classroom.id),
+      enabled: !!classroom.id,
+      queryFn: async () => {
+        const structure = structureQueries[idx]?.data
+        const activityIds: string[] = (structure?.activities ?? []).map((a: any) => a.id)
+        if (!activityIds || activityIds.length === 0) return {}
+        const { data, error } = await supabase
+          .from('scores')
+          .select('activity_id, student_id, score')
+          .in('activity_id', activityIds)
+        if (error) throw error
+        const map: Record<string, Record<string, number | null>> = {}
+        for (const row of data ?? []) {
+          const bucket = (map[row.activity_id] ??= {})
+          bucket[row.student_id] = row.score
+        }
+        return map
+      },
+    })),
+  })
+
+  // Build quick lookup maps keyed by classroom id.
+  const structureByClassroom = React.useMemo(() => {
+    const m = new Map<string, any>()
+    ;(classrooms ?? []).forEach((c, i) => {
+      const q = structureQueries[i]
+      if (q?.data) m.set(c.id, q.data)
+    })
+    return m
+  }, [classrooms, structureQueries.map((q) => q.data)])
+
+  const scoresByClassroom = React.useMemo(() => {
+    const m = new Map<string, Record<string, Record<string, number | null>>>()
+    ;(classrooms ?? []).forEach((c, i) => {
+      const q = scoresQueries[i]
+      if (q?.data) m.set(c.id, q.data as any)
+    })
+    return m
+  }, [classrooms, scoresQueries.map((q) => q.data)])
+
+  // Compute per-student final grade (when structure + scores exist) and
+  // attendance summaries. Attendance will be scoped to each classroom's
+  // grading_period date ranges when those dates are present. If a classroom
+  // has no grading_period start/end dates the code falls back to the active
+  // academic period, and finally to including all sessions.
+
+  const students = studentsQuery.data ?? []
+  const sessions = allSessionsQuery.data ?? []
+
+  const studentGradeMap = React.useMemo(() => {
+    const map = new Map<string, { final: number | null }>()
+    for (const student of students) {
+      const structure = structureByClassroom.get(student.classroom_id)
+      const scores = scoresByClassroom.get(student.classroom_id) ?? {}
+      if (structure) {
+        try {
+          const final = computeStudentGradebook(structure, scores, student.id).final
+          map.set(student.id, { final })
+        } catch {
+          map.set(student.id, { final: null })
+        }
+      } else {
+        map.set(student.id, { final: null })
+      }
+    }
+    return map
+  }, [students, structureByClassroom, scoresByClassroom])
+
+  const attendanceByStudent = React.useMemo(() => {
+    // For each session, prefer scoping by that classroom's grading_period
+    // date ranges (periods from the gradebook structure). If a classroom has
+    // no period dates, fall back to the active academic period. If neither
+    // is present, include the session.
+    const inAnyPeriod = (sessionDate: string | undefined, classroomId?: string) => {
+      if (!sessionDate) return false
+      const d = new Date(sessionDate).getTime()
+
+      const structure = classroomId ? structureByClassroom.get(classroomId) : undefined
+      const periods: any[] = structure?.periods ?? []
+
+      // If any grading period has explicit start/end, prefer those ranges
+      const hasRange = periods.some((p) => p.starts_on || p.ends_on)
+      if (hasRange) {
+        for (const p of periods) {
+          const start = p.starts_on
+            ? new Date(`${p.starts_on}T00:00:00`).getTime()
+            : -Infinity
+          const end = p.ends_on ? new Date(`${p.ends_on}T23:59:59`).getTime() : Infinity
+          if (d >= start && d <= end) return true
+        }
+        return false
+      }
+
+      // Fallback to active academic period when classroom periods have no dates
+      if (activePeriod?.starts_on || activePeriod?.ends_on) {
+        const start = activePeriod?.starts_on
+          ? new Date(`${activePeriod.starts_on}T00:00:00`).getTime()
+          : -Infinity
+        const end = activePeriod?.ends_on
+          ? new Date(`${activePeriod.ends_on}T23:59:59`).getTime()
+          : Infinity
+        return d >= start && d <= end
+      }
+
+      // As a last resort include the session
+      return true
+    }
+
+    const byStudent = new Map<string, any[]>()
+    for (const session of sessions) {
+      // class_sessions include classroom_id; use it to scope by-classroom
+      if (!inAnyPeriod(session.session_date, (session as any).classroom_id)) continue
+      for (const rec of session.attendance_records ?? []) {
+        const arr = byStudent.get(rec.student_id) ?? []
+        arr.push({ status: rec.status })
+        byStudent.set(rec.student_id, arr)
+      }
+    }
+    return byStudent
+  }, [sessions, activePeriod, structureByClassroom])
+
+  const atRiskStudents = React.useMemo(() => {
+    const out: Array<{
+      id: string
+      student: import('@/types/domain').Student
+      classroomId: string
+      final: number | null
+      absentRate: number | null
+    }> = []
+    for (const student of students) {
+      const gradeRow = studentGradeMap.get(student.id)
+      const final = gradeRow?.final ?? null
+      const records = attendanceByStudent.get(student.id) ?? []
+      const summary = computeStudentSummary(student.id, records)
+      const absentRate =
+        summary.counted > 0 ? summary.counts.absent / summary.counted : null
+      const lowGrade = final !== null && final < 70
+      const highAbsence = absentRate !== null && absentRate > 0.2
+      if (lowGrade || highAbsence) {
+        out.push({
+          id: student.id,
+          student,
+          classroomId: student.classroom_id,
+          final,
+          absentRate,
+        })
+      }
+    }
+    return out
+  }, [students, studentGradeMap, attendanceByStudent])
 
   return (
     <motion.div
@@ -233,6 +459,165 @@ export function DashboardPage() {
               title="Materials"
               detail="Keep your syllabus, lesson plans, and resources organized together."
             />
+          </CardBody>
+        </Card>
+      </motion.section>
+
+      <motion.section
+        variants={rise}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="grid gap-4 lg:grid-cols-[1fr]"
+      >
+        <Card>
+          <CardBody>
+            <p className="text-sm font-medium">At-risk students</p>
+            <p className="mt-1 text-sm text-(--color-ink-muted)">
+              Students with a weighted average below 70% or unexcused absence rate above
+              20% in the selected scope.
+            </p>
+
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div />
+              <Link
+                to="/teacher/analytics"
+                search={{ atRisk: '1' }}
+                className="text-sm text-(--color-accent-350)"
+              >
+                View all at-risk
+              </Link>
+            </div>
+
+            {atRiskStudents.length === 0 ? (
+              <p className="mt-4 text-sm text-(--color-ink-muted)">
+                No students currently at risk
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {atRiskStudents.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex items-center justify-between rounded-md p-2 hover:bg-(--color-surface-2)"
+                  >
+                    <div>
+                      <p className="text-sm font-medium truncate">
+                        {r.student.last_name}, {r.student.first_name}
+                      </p>
+                      <p className="text-xs text-(--color-ink-muted)">
+                        {r.student.student_no} ·{' '}
+                        {classrooms?.find((c) => c.id === r.classroomId)?.course_name}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs tabular-nums">
+                      <div>{r.final !== null ? `${Math.round(r.final)}%` : '—'}</div>
+                      <div className="text-(--color-ink-muted)">
+                        {r.absentRate !== null
+                          ? `${Math.round(r.absentRate * 100)}% absent`
+                          : 'No attendance'}
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate({
+                              to: '/teacher/classrooms/$classroomId/grades',
+                              params: { classroomId: r.classroomId },
+                              search: { studentId: r.id },
+                            })
+                          }
+                          className="ml-3 text-(--color-accent-350) text-sm"
+                        >
+                          Open
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-6">
+              <p className="text-sm font-medium">
+                Grade distribution (per classroom sample)
+              </p>
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
+                A simple bucketing of student finals rendered as small bars (no chart
+                library).
+              </p>
+              <div className="mt-3 space-y-3">
+                {(classrooms ?? []).slice(0, 3).map((classroom) => {
+                  const studentsInClass = students.filter(
+                    (s) => s.classroom_id === classroom.id,
+                  )
+                  const buckets: Record<string, number> = {
+                    '90+': 0,
+                    '80-89': 0,
+                    '70-79': 0,
+                    '60-69': 0,
+                    '<60': 0,
+                  }
+                  let total = 0
+                  for (const s of studentsInClass) {
+                    const final = (studentGradeMap.get(s.id) as any)?.final
+                    if (final === null || final === undefined) continue
+                    total++
+                    if (final >= 90) buckets['90+']++
+                    else if (final >= 80) buckets['80-89']++
+                    else if (final >= 70) buckets['70-79']++
+                    else if (final >= 60) buckets['60-69']++
+                    else buckets['<60']++
+                  }
+                  return (
+                    <div
+                      key={classroom.id}
+                      className="rounded-md border border-(--color-border) bg-(--color-surface-0) p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="truncate text-sm">{classroom.course_name}</div>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate({
+                                to: '/teacher/classrooms/$classroomId/grades',
+                                params: { classroomId: classroom.id },
+                              })
+                            }
+                            className="text-(--color-accent-350) text-xs"
+                          >
+                            Grades
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-2 grid grid-cols-5 gap-2 items-end h-20">
+                        {Object.entries(buckets).map(([label, count]) => {
+                          const h =
+                            total === 0
+                              ? 4
+                              : Math.max(4, Math.round((count / total) * 100))
+                          return (
+                            <div
+                              key={label}
+                              className="flex flex-col items-center text-[10px]"
+                            >
+                              <div
+                                className="w-full bg-(--color-surface-3) h-full flex items-end rounded-md overflow-hidden"
+                                style={{ height: '64px', width: '22px' }}
+                              >
+                                <div
+                                  className="w-full bg-(--color-accent-400)"
+                                  style={{ height: `${h}%` }}
+                                />
+                              </div>
+                              <div className="mt-1">{count}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </CardBody>
         </Card>
       </motion.section>

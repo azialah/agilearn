@@ -29,6 +29,8 @@ function period(id: string, weight = 1, position = 0): GradingPeriod {
     name: id,
     weight,
     position,
+    starts_on: null,
+    ends_on: null,
   }
 }
 
