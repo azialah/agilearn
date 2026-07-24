@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState, lazy } from 'react'
 import { Mail } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -18,7 +18,11 @@ import {
   shouldNotifyLowAverage,
 } from '@/features/teacher/notifications/evaluators'
 import { useToast } from '@/components/ui/toast'
-import { ExportMenu } from '@/features/teacher/io/ExportMenu'
+const ExportMenu = lazy(
+  () => import('@/features/teacher/io/ExportMenu').then((module) => ({
+    default: module.ExportMenu,
+  })),
+)
 import { StructurePanel } from './StructurePanel'
 import { PeriodDialog } from './PeriodDialog'
 import { GradeGrid } from './GradeGrid'
@@ -144,7 +148,18 @@ export function GradesPage({
           }
         />
       )}
-      <ExportMenu classroomId={classroomId} />
+      <Suspense
+        fallback={
+          <Button variant="outline" size="sm" disabled>
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
+              Export
+            </span>
+          </Button>
+        }
+      >
+        <ExportMenu classroomId={classroomId} />
+      </Suspense>
       <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
         <Mail className="size-4" /> Preview report
       </Button>

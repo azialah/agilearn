@@ -164,7 +164,7 @@ export function TopBar({
         {onOpenNavigation && (
           <IconButton
             label="Open navigation"
-            className="!hidden md:!inline-flex lg:!hidden"
+            className="hidden! md:inline-flex! lg:hidden!"
             onClick={onOpenNavigation}
           >
             <Menu className="size-4" />
@@ -276,7 +276,7 @@ export function TopBar({
               <Avatar
                 name={profile?.full_name || profile?.email}
                 color={profile?.avatar_color}
-                className="!size-7 !text-[10px]"
+                className="size-7! text-[10px]!"
               />
               <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-(--color-ink) md:block">
                 {displayName}

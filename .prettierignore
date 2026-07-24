@@ -10,3 +10,4 @@ src/types/database.ts
 AGENTS.md
 package-lock.json
 supabase/.temp
+*.md

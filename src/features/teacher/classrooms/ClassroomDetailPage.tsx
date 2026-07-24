@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Link } from '@tanstack/react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -14,8 +15,16 @@ import { useClassroom } from '@/lib/queries/classrooms'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useDeleteStudent, useStudents } from '@/lib/queries/students'
 import { studentFullName } from '@/types/domain'
-import { ImportButton } from '@/features/teacher/io/ImportButton'
-import { ExportMenu } from '@/features/teacher/io/ExportMenu'
+const ImportButton = lazy(
+  () => import('@/features/teacher/io/ImportButton').then((module) => ({
+    default: module.ImportButton,
+  })),
+)
+const ExportMenu = lazy(
+  () => import('@/features/teacher/io/ExportMenu').then((module) => ({
+    default: module.ExportMenu,
+  })),
+)
 import { ClassroomFormDialog } from './ClassroomFormDialog'
 import { StudentFormDialog } from './StudentFormDialog'
 import { MeetingSlotDialog } from '@/features/teacher/calendar/MeetingSlotDialog'
@@ -81,8 +90,30 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
         description={`${classroom.course_code} · ${classroom.year} · ${classroom.block}`}
         actions={
           <div className="flex items-center gap-2">
-            <ImportButton classroomId={classroomId} />
-            <ExportMenu classroomId={classroomId} />
+            <Suspense
+              fallback={
+                <Button variant="outline" size="sm" disabled>
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
+                    Import
+                  </span>
+                </Button>
+              }
+            >
+              <ImportButton classroomId={classroomId} />
+            </Suspense>
+            <Suspense
+              fallback={
+                <Button variant="outline" size="sm" disabled>
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
+                    Export
+                  </span>
+                </Button>
+              }
+            >
+              <ExportMenu classroomId={classroomId} />
+            </Suspense>
             {profile && (
               <ClassroomFormDialog
                 ownerId={profile.id}
