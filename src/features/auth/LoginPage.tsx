@@ -9,6 +9,7 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
 import { SquigglyText } from '@/components/ui/squiggly-text'
 import { AuthShell, StaggerGroup, StaggerItem } from './wizard-ui'
+import { ConsentSummaryLink } from './ConsentSummary'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
 
@@ -53,7 +54,7 @@ export function LoginPage() {
     <AuthShell
       rail={{ eyebrow: t('authEyebrow'), title: t('authTitle'), body: t('authBody') }}
       mobileBrandCentered
-      mobileViewportLocked={!showSignIn}
+      mobileViewportLocked
       mobileFormTypography={showSignIn}
       mobileFormCentered={showSignIn}
       mobileHeaderActionPosition="start"
@@ -209,14 +210,9 @@ function MobileWelcome({
         </Button>
         <p className="px-3 pt-2 text-xs leading-relaxed text-(--color-ink-faint)">
           {consentPrefix}
-          <span className="font-semibold underline decoration-(--color-ink-muted) underline-offset-2">
-            {termsConditions}
-          </span>
+          <ConsentSummaryLink document="terms">{termsConditions}</ConsentSummaryLink>
           {consentConjunction}
-          <span className="font-semibold underline decoration-(--color-ink-muted) underline-offset-2">
-            {privacyPolicy}
-          </span>
-          .
+          <ConsentSummaryLink document="privacy">{privacyPolicy}</ConsentSummaryLink>.
         </p>
       </div>
     </div>

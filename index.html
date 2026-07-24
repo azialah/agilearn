@@ -25,6 +25,47 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Agilearn" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      #app-boot-splash {
+        position: fixed;
+        z-index: 2147483647;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        background: #faf5ec;
+        color: #2e2118;
+        font-family: 'Stack Sans Text', ui-sans-serif, system-ui, sans-serif;
+        transition: opacity 180ms ease-out;
+      }
+      .dark #app-boot-splash {
+        background: #17110d;
+        color: #fff7ed;
+      }
+      #app-boot-splash[data-ready='true'] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #app-boot-splash img {
+        width: 4rem;
+        height: 4rem;
+      }
+      #app-boot-splash strong {
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+      }
+      #app-boot-splash span {
+        font-size: 0.875rem;
+        opacity: 0.68;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-boot-splash {
+          transition: none;
+        }
+      }
+    </style>
     <title>Agilearn</title>
     <!-- Apply the stored/system theme before first paint to avoid a flash. -->
     <script>
@@ -53,6 +94,11 @@
     </script>
   </head>
   <body>
+    <div id="app-boot-splash" role="status" aria-label="Loading Agilearn">
+      <img src="/icon-192.png" alt="" />
+      <strong>Agilearn</strong>
+      <span>Preparing your workspace</span>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

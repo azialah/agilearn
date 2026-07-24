@@ -26,6 +26,7 @@ import { signOut, useProfile } from '@/lib/queries/profiles'
 import {
   useClearUnreadNotifications,
   useMarkNotificationRead,
+  useUnreadNotificationCount,
   useUnreadNotifications,
   type NotificationPayload,
 } from '@/lib/queries/notifications'
@@ -79,9 +80,11 @@ export function TopBar({
   const { toast } = useToast()
   const [isPhone, setIsPhone] = useState(false)
   const unreadNotifications = useUnreadNotifications()
+  const unreadCountQuery = useUnreadNotificationCount()
   const markNotificationRead = useMarkNotificationRead()
   const clearUnreadNotifications = useClearUnreadNotifications()
   const unread = unreadNotifications.data ?? []
+  const unreadCount = unreadCountQuery.data ?? unread.length
   const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || ''
   // Prefer the middle_name column; fall back to the slice of full_name between
   // first and last name (older profiles never split their middle name out).
@@ -192,16 +195,16 @@ export function TopBar({
             <button
               type="button"
               aria-label={
-                unread.length === 0
+                unreadCount === 0
                   ? 'Notifications'
-                  : `Notifications, ${unread.length} unread`
+                  : `Notifications, ${unreadCount} unread`
               }
               className="order-1 relative inline-flex size-9 items-center justify-center rounded-full border border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) shadow-sm transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) lg:rounded-md lg:border-0 lg:bg-transparent lg:shadow-none"
             >
               <Bell className="size-4" aria-hidden />
-              {unread.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute right-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full bg-(--color-accent-400) px-1 text-[10px] font-bold leading-4 text-(--color-accent-fg)">
-                  {unread.length > 9 ? '9+' : unread.length}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
@@ -214,7 +217,7 @@ export function TopBar({
               <span className="text-sm font-semibold text-(--color-ink)">
                 Notifications
               </span>
-              {unread.length > 0 && (
+              {unreadCount > 0 && (
                 <button
                   type="button"
                   onClick={handleClearNotifications}

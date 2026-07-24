@@ -20,6 +20,7 @@ import {
 import type { TeachingLevel } from '@/types/domain'
 import { cn } from '@/lib/cn'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { ConsentSummaryLink } from '@/features/auth/ConsentSummary'
 import { credentialsSchema, nameSchema, schoolSchema } from './schemas'
 import { fieldErrors } from '@/features/auth/schemas'
 import { useOnboardingStore, type OnboardingStep } from './onboardingStore'
@@ -172,6 +173,7 @@ export function SignupWizard({ step }: SignupWizardProps) {
       rail={rail}
       mobileFormTypography
       mobileFormCentered
+      mobileViewportLocked
       mobileHeaderActionPosition="start"
       mobileHeaderSupplement={
         <Stepper current={STEP_INDEX[step]} total={STEP_COUNT} className="mt-3" />
@@ -377,6 +379,23 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
                 placeholder="Re-enter your password"
               />
             </Field>
+            <p className="text-xs leading-5 text-(--color-ink-faint)">
+              By continuing, you acknowledge Agilearn&apos;s{' '}
+              <ConsentSummaryLink
+                document="terms"
+                returnTo="/teacher/signup/step-1/create-your-account"
+              >
+                Terms of Use
+              </ConsentSummaryLink>{' '}
+              and{' '}
+              <ConsentSummaryLink
+                document="privacy"
+                returnTo="/teacher/signup/step-1/create-your-account"
+              >
+                Privacy Notice
+              </ConsentSummaryLink>
+              .
+            </p>
             {formError && <FormError message={formError} />}
             <StickyCta
               label="Continue"

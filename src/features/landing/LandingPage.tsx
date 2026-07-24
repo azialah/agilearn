@@ -482,7 +482,7 @@ function Footer() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.06]" />
 
       <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-(--color-ink-muted)">
@@ -497,9 +497,14 @@ function Footer() {
             </h3>
             <ul className="mt-4 space-y-3">
               <li>
-                <a href="#features" className={footerLinkClass}>
+                <Link to="/features" className={footerLinkClass}>
                   Features
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/about" className={footerLinkClass}>
+                  About Agilearn
+                </Link>
               </li>
               <li>
                 <a href="#request-access" className={footerLinkClass}>
@@ -522,6 +527,24 @@ function Footer() {
               <li>
                 <Link to="/login" className={footerLinkClass}>
                   Sign in
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          <nav aria-label="Legal">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
+              Legal
+            </h3>
+            <ul className="mt-4 space-y-3">
+              <li>
+                <Link to="/privacy" className={footerLinkClass}>
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className={footerLinkClass}>
+                  Terms
                 </Link>
               </li>
             </ul>

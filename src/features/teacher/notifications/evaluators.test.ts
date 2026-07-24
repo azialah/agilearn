@@ -40,7 +40,7 @@ describe('consecutiveUnexcusedAbsences', () => {
     ).toBe(1)
   })
 
-  it('ignores unrecorded sessions', () => {
+  it('breaks a streak at an unrecorded session', () => {
     expect(
       consecutiveUnexcusedAbsences([
         session(null, '2026-07-04'),
@@ -48,6 +48,6 @@ describe('consecutiveUnexcusedAbsences', () => {
         session('absent', '2026-07-02'),
         session('absent', '2026-07-01'),
       ]),
-    ).toBe(3)
+    ).toBe(0)
   })
 })

@@ -133,7 +133,7 @@ export function ForgotPasswordFlow() {
   }
 
   return (
-    <AuthShell rail={RECOVERY_RAIL[stage]} mobileFormTypography>
+    <AuthShell rail={RECOVERY_RAIL[stage]} mobileFormTypography mobileViewportLocked>
       <AnimatePresence mode="wait">
         <motion.div
           key={stage}

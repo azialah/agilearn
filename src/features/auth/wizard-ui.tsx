@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Label } from '@/components/ui/Label'
 import { Logo } from '@/components/ui/Logo'
+import { useViewportLock } from './useViewportLock'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { BackgroundLines } from '@/components/ui/BackgroundLines'
 import { cn } from '@/lib/cn'
@@ -218,18 +219,19 @@ export function AuthShell({
   mobileFormCentered?: boolean
 }) {
   const reduce = useReducedMotion()
+  useViewportLock(mobileViewportLocked)
   return (
     <div
       className={cn(
-        'relative grid min-h-dvh bg-(--color-surface-0) lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]',
-        mobileViewportLocked && 'max-md:h-dvh max-md:min-h-0 max-md:overflow-hidden',
+        'pwa-auth-shell relative grid min-h-dvh bg-(--color-surface-0) lg:grid-cols-[minmax(0,48fr)_minmax(0,52fr)]',
+        mobileViewportLocked && 'max-lg:h-dvh max-lg:min-h-0 max-lg:overflow-hidden',
       )}
     >
       {rail && <AuthRail {...rail} />}
       <div
         className={cn(
           'relative flex min-h-dvh justify-center bg-(--color-surface-0) md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:bg-size-[16px_16px]',
-          mobileViewportLocked && 'max-md:h-dvh max-md:min-h-0 max-md:overflow-hidden',
+          mobileViewportLocked && 'max-lg:h-dvh max-lg:min-h-0 max-lg:overflow-hidden',
         )}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
@@ -245,14 +247,14 @@ export function AuthShell({
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className={cn(
             'relative w-full md:max-w-md',
-            mobileViewportLocked && 'max-md:h-dvh max-md:overflow-hidden',
+            mobileViewportLocked && 'max-lg:h-dvh max-lg:overflow-hidden',
           )}
         >
           <Card
             className={cn(
               'max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none',
               mobileViewportLocked
-                ? 'max-md:h-dvh max-md:overflow-hidden'
+                ? 'max-lg:h-dvh max-lg:overflow-hidden'
                 : 'max-md:min-h-dvh',
             )}
           >
@@ -260,7 +262,7 @@ export function AuthShell({
               className={cn(
                 'p-6',
                 mobileViewportLocked
-                  ? 'max-md:h-full max-md:overflow-hidden max-md:pb-6'
+                  ? 'max-lg:h-full max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:pb-6'
                   : 'max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]',
               )}
             >

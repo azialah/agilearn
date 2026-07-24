@@ -223,10 +223,7 @@ export function ModulesPage() {
 
   async function handleDelete(module: ModuleWithRelations) {
     try {
-      await deleteModule.mutateAsync({
-        id: module.id,
-        storage_path: module.storage_path,
-      })
+      await deleteModule.mutateAsync(module)
       toast({ title: 'Module deleted', tone: 'success' })
     } catch (error) {
       toast({

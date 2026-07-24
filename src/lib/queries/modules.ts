@@ -107,8 +107,17 @@ export function useUploadModule() {
         .single()
 
       if (error) {
-        // Roll back the orphaned object; ignore any cleanup failure.
-        await supabase.storage.from(MODULES_BUCKET).remove([storagePath])
+        // Surface an orphaned upload explicitly: silently ignoring a failed
+        // cleanup turns a recoverable storage issue into invisible quota loss.
+        const { error: cleanupError } = await supabase.storage
+          .from(MODULES_BUCKET)
+          .remove([storagePath])
+        if (cleanupError) {
+          throw new Error(
+            `Module metadata could not be saved and the uploaded file at "${storagePath}" could not be removed: ${cleanupError.message}`,
+            { cause: error },
+          )
+        }
         throw error
       }
       return data
@@ -140,13 +149,16 @@ export function useUpdateModule() {
   })
 }
 
-/** Delete a module: remove the storage object first, then the metadata row. */
+/**
+ * Delete the object before its metadata. If the database step fails, metadata
+ * stays in place as the recovery handle: retrying deletion can safely remove
+ * the already-missing object and finish the database cleanup without losing
+ * subject links through a delete cascade.
+ */
 export function useDeleteModule() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (
-      module: Pick<TeachingModule, 'id' | 'storage_path'>,
-    ): Promise<string> => {
+    mutationFn: async (module: TeachingModule): Promise<string> => {
       const { error: storageError } = await supabase.storage
         .from(MODULES_BUCKET)
         .remove([module.storage_path])
@@ -156,6 +168,8 @@ export function useDeleteModule() {
         .from('teaching_modules')
         .delete()
         .eq('id', module.id)
+        .select('id')
+        .single()
       if (error) throw error
       return module.id
     },

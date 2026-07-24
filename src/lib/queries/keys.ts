@@ -46,6 +46,7 @@ export const keys = {
 
   notifications: {
     unread: ['notifications', 'unread'] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
   },
 
   students: {

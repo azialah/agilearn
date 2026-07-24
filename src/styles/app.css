@@ -404,6 +404,22 @@ html.custom-cursor-active .app-cursor {
   }
 }
 
+/* iOS reports dynamic viewport units unreliably during a standalone cold
+   launch. Scope the true-screen-height fallback to the PWA auth shell so the
+   regular browser and the main application layout retain their normal sizing. */
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100vh;
+  }
+
+  .pwa-auth-shell {
+    height: 100vh;
+    min-height: 100vh;
+  }
+}
+
 @layer base {
   body {
     margin: 0;
