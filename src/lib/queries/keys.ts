@@ -16,6 +16,7 @@ export const keys = {
   },
 
   allowedDomains: ['allowed-email-domains'] as const,
+  studentsAll: ['students', 'all'] as const,
   domainRequests: ['domain-requests'] as const,
 
   classrooms: {

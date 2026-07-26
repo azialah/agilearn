@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
 import type { GradebookStructure, ScoreMap } from '@/lib/grading'
@@ -173,66 +174,143 @@ export function useGradebookStructure(classroomId: string, courseSubjectId?: str
   return useQuery({
     queryKey: keys.grades.structure(classroomId, courseSubjectId),
     enabled: !!classroomId,
-    queryFn: async (): Promise<GradebookStructure> => {
-      let periodsQuery = supabase
-        .from('grading_periods')
-        .select('*')
-        .eq('classroom_id', classroomId)
-        .order('position', { ascending: true })
-        .order('name', { ascending: true })
-      if (courseSubjectId)
-        periodsQuery = periodsQuery.eq('course_subject_id', courseSubjectId)
-      let activitiesQuery = supabase
-        .from('activities')
-        .select('*, grading_periods!inner(classroom_id, course_subject_id)')
-        .eq('grading_periods.classroom_id', classroomId)
-        .order('position', { ascending: true })
-        .order('name', { ascending: true })
-      if (courseSubjectId)
-        activitiesQuery = activitiesQuery.eq(
-          'grading_periods.course_subject_id',
-          courseSubjectId,
-        )
-      const [components, periods, categories, activities] = await Promise.all([
-        supabase
-          .from('grade_components')
-          .select('*')
-          .eq('classroom_id', classroomId)
-          .eq('course_subject_id', courseSubjectId ?? '')
-          .order('position', { ascending: true })
-          .order('name', { ascending: true }),
-        periodsQuery,
-        supabase
-          .from('activity_categories')
-          .select('*')
-          .eq('classroom_id', classroomId)
-          .eq('course_subject_id', courseSubjectId ?? '')
-          .order('component', { ascending: true })
-          .order('name', { ascending: true }),
-        activitiesQuery,
-      ])
-
-      if (periods.error) throw periods.error
-      if (components.error) throw components.error
-      if (categories.error) throw categories.error
-      if (activities.error) throw activities.error
-
-      const cleanActivities: Activity[] = (activities.data ?? []).map((row) => {
-        // Strip the joined relation used only for the classroom filter.
-        const { grading_periods: _relation, ...activity } = row as Activity & {
-          grading_periods: unknown
-        }
-        return activity
-      })
-
-      return {
-        periods: (periods.data ?? []) as GradingPeriod[],
-        components: (components.data ?? []) as GradeComponentRecord[],
-        categories: (categories.data ?? []) as ActivityCategory[],
-        activities: cleanActivities,
-      }
-    },
+    queryFn: () => fetchGradebookStructure(classroomId, courseSubjectId),
   })
+}
+
+/** Shared fetcher behind both `useGradebookStructure` and `useAllGradebooks`. */
+async function fetchGradebookStructure(
+  classroomId: string,
+  courseSubjectId?: string,
+): Promise<GradebookStructure> {
+  let periodsQuery = supabase
+    .from('grading_periods')
+    .select('*')
+    .eq('classroom_id', classroomId)
+    .order('position', { ascending: true })
+    .order('name', { ascending: true })
+  if (courseSubjectId)
+    periodsQuery = periodsQuery.eq('course_subject_id', courseSubjectId)
+  let activitiesQuery = supabase
+    .from('activities')
+    .select('*, grading_periods!inner(classroom_id, course_subject_id)')
+    .eq('grading_periods.classroom_id', classroomId)
+    .order('position', { ascending: true })
+    .order('name', { ascending: true })
+  if (courseSubjectId)
+    activitiesQuery = activitiesQuery.eq(
+      'grading_periods.course_subject_id',
+      courseSubjectId,
+    )
+  // course_subject_id is a non-null uuid, so the filter has to be omitted (not
+  // sent as '') when no subject is scoped — `eq.` against a uuid column is a
+  // 22P02 invalid-input error. Callers without a subject (the dashboard and the
+  // school overview) want every subject in the classroom anyway.
+  let componentsQuery = supabase
+    .from('grade_components')
+    .select('*')
+    .eq('classroom_id', classroomId)
+    .order('position', { ascending: true })
+    .order('name', { ascending: true })
+  if (courseSubjectId)
+    componentsQuery = componentsQuery.eq('course_subject_id', courseSubjectId)
+
+  let categoriesQuery = supabase
+    .from('activity_categories')
+    .select('*')
+    .eq('classroom_id', classroomId)
+    .order('component', { ascending: true })
+    .order('name', { ascending: true })
+  if (courseSubjectId)
+    categoriesQuery = categoriesQuery.eq('course_subject_id', courseSubjectId)
+
+  const [components, periods, categories, activities] = await Promise.all([
+    componentsQuery,
+    periodsQuery,
+    categoriesQuery,
+    activitiesQuery,
+  ])
+
+  if (periods.error) throw periods.error
+  if (components.error) throw components.error
+  if (categories.error) throw categories.error
+  if (activities.error) throw activities.error
+
+  const cleanActivities: Activity[] = (activities.data ?? []).map((row) => {
+    // Strip the joined relation used only for the classroom filter.
+    const { grading_periods: _relation, ...activity } = row as Activity & {
+      grading_periods: unknown
+    }
+    return activity
+  })
+
+  return {
+    periods: (periods.data ?? []) as GradingPeriod[],
+    components: (components.data ?? []) as GradeComponentRecord[],
+    categories: (categories.data ?? []) as ActivityCategory[],
+    activities: cleanActivities,
+  }
+}
+
+export interface ClassroomGradebook {
+  classroomId: string
+  structure: GradebookStructure
+  scores: ScoreMap
+}
+
+/**
+ * Structure + scores for many classrooms at once, for the dashboard and the
+ * school-wide admin overview. RLS decides the reach: a teacher gets their own
+ * classrooms, an admin gets every one.
+ *
+ * This is a 2-per-classroom fan-out. It replaces hand-rolled `useQueries`
+ * blocks that duplicated the two hooks above with `any` types; a Postgres view
+ * would be the real fix if classroom counts ever grow large.
+ */
+export function useAllGradebooks(classroomIds: string[]) {
+  const structureQueries = useQueries({
+    queries: classroomIds.map((classroomId) => ({
+      queryKey: keys.grades.structure(classroomId),
+      enabled: !!classroomId,
+      queryFn: () => fetchGradebookStructure(classroomId),
+    })),
+  })
+
+  const scoresQueries = useQueries({
+    queries: classroomIds.map((classroomId, index) => {
+      const activityIds = (structureQueries[index]?.data?.activities ?? []).map(
+        (activity) => activity.id,
+      )
+      return {
+        queryKey: keys.grades.byClassroom(classroomId),
+        enabled: !!classroomId && activityIds.length > 0,
+        queryFn: () => fetchScores(activityIds),
+      }
+    }),
+  })
+
+  const isLoading =
+    structureQueries.some((q) => q.isLoading) || scoresQueries.some((q) => q.isLoading)
+
+  const structureData = structureQueries.map((q) => q.data)
+  const scoreData = scoresQueries.map((q) => q.data)
+
+  const gradebooks = useMemo(() => {
+    const map = new Map<string, ClassroomGradebook>()
+    classroomIds.forEach((classroomId, index) => {
+      const structure = structureData[index]
+      if (!structure) return
+      map.set(classroomId, {
+        classroomId,
+        structure,
+        scores: scoreData[index] ?? {},
+      })
+    })
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classroomIds.join(','), structureData, scoreData])
+
+  return { gradebooks, isLoading }
 }
 
 /**
@@ -244,21 +322,25 @@ export function useScores(classroomId: string, activityIds: string[]) {
   return useQuery({
     queryKey: keys.grades.byClassroom(classroomId),
     enabled: !!classroomId && activityIds.length > 0,
-    queryFn: async (): Promise<ScoreMap> => {
-      const { data, error } = await supabase
-        .from('scores')
-        .select('activity_id, student_id, score')
-        .in('activity_id', activityIds)
-      if (error) throw error
-
-      const map: ScoreMap = {}
-      for (const row of data ?? []) {
-        const bucket = (map[row.activity_id] ??= {})
-        bucket[row.student_id] = row.score
-      }
-      return map
-    },
+    queryFn: () => fetchScores(activityIds),
   })
+}
+
+/** Shared fetcher behind both `useScores` and `useAllGradebooks`. */
+async function fetchScores(activityIds: string[]): Promise<ScoreMap> {
+  if (activityIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('scores')
+    .select('activity_id, student_id, score')
+    .in('activity_id', activityIds)
+  if (error) throw error
+
+  const map: ScoreMap = {}
+  for (const row of data ?? []) {
+    const bucket = (map[row.activity_id] ??= {})
+    bucket[row.student_id] = row.score
+  }
+  return map
 }
 
 /* -------------------------------------------------------------------------- */

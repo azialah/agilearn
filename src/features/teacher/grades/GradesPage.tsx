@@ -18,8 +18,8 @@ import {
   shouldNotifyLowAverage,
 } from '@/features/teacher/notifications/evaluators'
 import { useToast } from '@/components/ui/toast'
-const ExportMenu = lazy(
-  () => import('@/features/teacher/io/ExportMenu').then((module) => ({
+const ExportMenu = lazy(() =>
+  import('@/features/teacher/io/ExportMenu').then((module) => ({
     default: module.ExportMenu,
   })),
 )

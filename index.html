@@ -4,10 +4,24 @@
     <meta charset="UTF-8" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded non-render-blocking: the boot splash must paint immediately even
+         if this cross-origin stylesheet is slow. `display=swap` keeps text
+         visible in the fallback face until it arrives. -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap"
-      rel="stylesheet"
+      onload="
+        this.rel = 'stylesheet'
+        this.onload = null
+      "
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap"
+      />
+    </noscript>
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <meta
       id="viewport-meta"
@@ -40,10 +54,10 @@
         font-family: 'Stack Sans Text', ui-sans-serif, system-ui, sans-serif;
         transition: opacity 180ms ease-out;
       }
-      .dark #app-boot-splash {
-        background: #17110d;
-        color: #fff7ed;
-      }
+      /* Intentionally NOT theme-aware: the OS-drawn splash always uses the
+         manifest's background_color (#faf5ec), so matching it here makes the
+         native→web handoff seamless. A theme-aware splash produced a hard
+         cream→dark cut at that boundary. */
       #app-boot-splash[data-ready='true'] {
         opacity: 0;
         pointer-events: none;
@@ -87,6 +101,9 @@
             t === 'dark' ||
             (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
           document.documentElement.classList.toggle('dark', dark)
+          // Keep in sync with applyTheme() in src/lib/theme.ts — without this
+          // the 'white' theme flashes the default light palette first.
+          document.documentElement.classList.toggle('calm-white', t === 'white')
           var m = document.querySelector('meta[name="theme-color"]')
           if (m) m.setAttribute('content', dark ? '#17110d' : '#faf5ec')
         } catch (e) {}

@@ -6,11 +6,11 @@ import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { useToast } from '@/components/ui/toast'
+import { useResendCooldown } from '@/lib/useResendCooldown'
 import { newPasswordSchema, fieldErrors } from './schemas'
 import {
   AuthShell,
   Field,
-  FormError,
   StaggerGroup,
   StaggerItem,
   StickyCta,
@@ -18,19 +18,6 @@ import {
 } from './wizard-ui'
 
 type Stage = 'email' | 'sent' | 'password'
-
-// Supabase's free-tier default email template can't be customized (no OTP
-// token, just a reset link) unless a custom SMTP provider is configured, so
-// the link is the only recovery path for now. Its cooldown must survive a
-// refresh or a closed PWA tab, so it's timestamped in localStorage rather
-// than component state.
-const RESEND_COOLDOWN_MS = 180_000
-const resendKey = (email: string) => `agilearn:reset-resend-at:${email.toLowerCase()}`
-
-function readResendAvailableAt(email: string): number {
-  const raw = email && localStorage.getItem(resendKey(email))
-  return raw ? Number(raw) : 0
-}
 
 const RECOVERY_RAIL: Record<Stage, AuthRailContent> = {
   email: {
@@ -58,12 +45,19 @@ export function ForgotPasswordFlow() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [resendAvailableAt, setResendAvailableAt] = useState(0)
-  const [now, setNow] = useState(() => Date.now())
-  const cooldownRemaining = Math.max(0, Math.ceil((resendAvailableAt - now) / 1000))
+  const { remaining: cooldownRemaining, markSent } = useResendCooldown('reset', email)
+
+  /** Failures surface as a toast, matching the signup wizard. */
+  function notifyProblems(messages: string[]) {
+    const real = messages.filter(Boolean)
+    if (real.length === 0) return
+    toast({
+      title: real.length === 1 ? real[0] : 'Check your details',
+      description: real.length === 1 ? undefined : real.join(' '),
+      tone: 'error',
+    })
+  }
 
   // Clicking the emailed reset link opens a fresh tab where Supabase
   // establishes a recovery session directly from the URL, with no email/sent
@@ -75,27 +69,17 @@ export function ForgotPasswordFlow() {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  useEffect(() => {
-    if (cooldownRemaining <= 0) return
-    const interval = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(interval)
-  }, [cooldownRemaining])
-
   async function requestLink() {
-    setFormError(null)
     setSubmitting(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/forgot-password`,
     })
     setSubmitting(false)
     if (error) {
-      setFormError(error.message)
+      notifyProblems([error.message])
       return false
     }
-    const availableAt = Date.now() + RESEND_COOLDOWN_MS
-    localStorage.setItem(resendKey(email.trim()), String(availableAt))
-    setResendAvailableAt(availableAt)
-    setNow(Date.now())
+    markSent()
     return true
   }
 
@@ -114,18 +98,16 @@ export function ForgotPasswordFlow() {
 
   async function setNewPassword(event: FormEvent) {
     event.preventDefault()
-    setFormError(null)
     const parsed = newPasswordSchema.safeParse({ password, confirmPassword })
     if (!parsed.success) {
-      setErrors(fieldErrors(parsed.error))
+      notifyProblems(Object.values(fieldErrors(parsed.error)))
       return
     }
-    setErrors({})
     setSubmitting(true)
     const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
     setSubmitting(false)
     if (error) {
-      setFormError(error.message)
+      notifyProblems([error.message])
       return
     }
     toast({ title: 'Password updated', tone: 'success' })
@@ -169,15 +151,10 @@ export function ForgotPasswordFlow() {
                         autoComplete="email"
                         required
                         value={email}
-                        onChange={(e) => {
-                          const next = e.target.value
-                          setEmail(next)
-                          setResendAvailableAt(readResendAvailableAt(next.trim()))
-                        }}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@school.edu"
                       />
                     </Field>
-                    {formError && <FormError message={formError} />}
                     <StickyCta
                       label={
                         cooldownRemaining > 0
@@ -214,7 +191,6 @@ export function ForgotPasswordFlow() {
               </StaggerItem>
               <StaggerItem>
                 <>
-                  {formError && <FormError message={formError} />}
                   <div className="mt-5 flex items-center justify-center gap-6">
                     <button
                       type="button"
@@ -246,11 +222,7 @@ export function ForgotPasswordFlow() {
               </StaggerItem>
               <StaggerItem>
                 <form onSubmit={setNewPassword} className="mt-5 space-y-4">
-                  <Field
-                    label="New password"
-                    htmlFor="new-password"
-                    error={errors.password}
-                  >
+                  <Field label="New password" htmlFor="new-password">
                     <PasswordInput
                       id="new-password"
                       autoComplete="new-password"
@@ -259,11 +231,7 @@ export function ForgotPasswordFlow() {
                       placeholder="At least 8 characters"
                     />
                   </Field>
-                  <Field
-                    label="Confirm password"
-                    htmlFor="confirm-new-password"
-                    error={errors.confirmPassword}
-                  >
+                  <Field label="Confirm password" htmlFor="confirm-new-password">
                     <PasswordInput
                       id="confirm-new-password"
                       autoComplete="new-password"
@@ -272,7 +240,6 @@ export function ForgotPasswordFlow() {
                       placeholder="Re-enter your password"
                     />
                   </Field>
-                  {formError && <FormError message={formError} />}
                   <StickyCta label="Update password" loading={submitting} />
                 </form>
               </StaggerItem>

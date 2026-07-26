@@ -78,3 +78,23 @@ export function useDeleteStudent() {
     },
   })
 }
+
+/**
+ * Fetch every student visible to the signed-in teacher (RLS scopes classrooms).
+ * Useful for cross-classroom dashboards where a teacher needs a single flat
+ * list of all rostered students.
+ */
+export function useAllStudents() {
+  return useQuery({
+    queryKey: keys.studentsAll,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as unknown as import('@/types/domain').Student[]
+    },
+  })
+}

@@ -45,7 +45,12 @@ async function reconcileNotificationIncidentRequest({
     p_type: type,
     p_classroom_id: classroomId,
     p_student_id: studentId,
-    p_course_subject_id: courseSubjectId ?? null,
+    // p_course_subject_id is genuinely nullable in SQL — 0018_notifications.sql
+    // sets it to null itself for absence_streak and guards with `is not null`.
+    // Supabase's type generator can't express nullable arguments, so it widens
+    // the param to a required string; the cast restores the real contract.
+    // It must be sent explicitly (not omitted) since the arg has no DEFAULT.
+    p_course_subject_id: (courseSubjectId ?? null) as string,
     p_active: active,
     p_payload: {
       studentName: payload.studentName,

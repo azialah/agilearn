@@ -30,6 +30,8 @@ export default defineConfig({
         short_name: 'Agilearn',
         description: 'School management platform for teachers and administrators.',
         display: 'standalone',
+        start_url: '/',
+        scope: '/',
         theme_color: '#faf5ec',
         background_color: '#faf5ec',
         icons: [
@@ -49,6 +51,26 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/auth/, /supabase\.co/],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // The Google Fonts stylesheet: revalidate in the background so a
+            // cold launch never waits on the network for it.
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-stylesheets' },
+          },
+          {
+            // The woff2 files themselves — immutable, so cache-first for a year.
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

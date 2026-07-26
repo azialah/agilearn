@@ -54,10 +54,13 @@ export function StaggerGroup({
   const reduce = useReducedMotion()
   if (reduce) return <div className={className}>{children}</div>
   if (!isLarge) {
+    // Fade only — no transform. A transform here would become the containing
+    // block for StickyCta's `position: fixed`, pinning the CTA to this box
+    // (mid-screen) until the animation ends, then snapping it to the bottom.
     return (
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.28, ease: 'easeOut' }}
         className={className}
       >
@@ -267,8 +270,8 @@ export function AuthShell({
               )}
             >
               <motion.div
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={reduce ? false : { opacity: 0, marginTop: 8 }}
+                animate={{ opacity: 1, marginTop: 0 }}
                 transition={{ duration: 0.4, ease: 'easeOut', delay: reduce ? 0 : 0.08 }}
                 className={cn(
                   'mb-6 flex items-center gap-2',
@@ -294,9 +297,12 @@ export function AuthShell({
                   </div>
                 )}
               </motion.div>
+              {/* opacity + margin-top (not a transform) — see the note on the
+                card wrapper above: a transform here would re-anchor
+                StickyCta's `position: fixed` to this box. */}
               <motion.div
-                initial={reduce ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={reduce ? false : { opacity: 0, marginTop: 10 }}
+                animate={{ opacity: 1, marginTop: 0 }}
                 transition={{ duration: 0.45, ease: 'easeOut', delay: reduce ? 0 : 0.14 }}
                 className={cn(
                   mobileFormTypography &&
@@ -376,6 +382,8 @@ interface StickyCtaProps {
   loading?: boolean
   disabled?: boolean
   onClick?: () => void
+  /** Submits an external <form> by id, when the CTA sits outside it. */
+  form?: string
 }
 
 /**
@@ -389,11 +397,13 @@ export function StickyCta({
   loading,
   disabled,
   onClick,
+  form,
 }: StickyCtaProps) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:px-0 md:pt-2 md:pb-0">
       <Button
         type={type}
+        form={form}
         size="lg"
         loading={loading}
         disabled={disabled}

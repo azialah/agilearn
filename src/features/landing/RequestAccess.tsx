@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
+import { useToast } from '@/components/ui/toast'
 
 // Public contact fallback (safe in the client bundle).
 const CONTACT_EMAIL = 'johnneomanuel@gmail.com'
@@ -12,11 +13,11 @@ const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])
 
 export function RequestAccess() {
   const reduce = useReducedMotion()
+  const { toast } = useToast()
   const [name, setName] = useState('')
   const [school, setSchool] = useState('')
   const [domain, setDomain] = useState('')
   const [message, setMessage] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -29,16 +30,20 @@ export function RequestAccess() {
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
   }
 
+  /** Validation and submission failures surface as a toast, not inline text. */
+  function notifyError(message: string) {
+    toast({ title: message, tone: 'error' })
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setError(null)
     const cleanDomain = domain.trim().toLowerCase()
     if (!name.trim() || !school.trim() || !cleanDomain) {
-      setError('Please fill in your name, school, and domain.')
+      notifyError('Please fill in your name, school, and domain.')
       return
     }
     if (!DOMAIN_RE.test(cleanDomain)) {
-      setError('Enter a bare domain like gordoncollege.edu.ph (no @, no name).')
+      notifyError('Enter a bare domain like gordoncollege.edu.ph (no @, no name).')
       return
     }
 
@@ -51,7 +56,7 @@ export function RequestAccess() {
     })
     setSubmitting(false)
     if (rpcError) {
-      setError(rpcError.message)
+      notifyError(rpcError.message)
       return
     }
     setSent(true)
@@ -135,15 +140,10 @@ export function RequestAccess() {
             />
           </motion.div>
 
-          {error && (
-            <p
-              role="alert"
-              className="rounded-md border border-(--color-danger)/40 bg-(--color-danger)/10 px-3 py-2 text-sm text-(--color-danger) sm:col-span-2"
-            >
-              {error}
-            </p>
-          )}
-          {sent && !error && (
+          {/* Errors are toasts; the success confirmation stays inline because
+              the form clears itself and a transient toast would be the only
+              trace that anything was submitted. */}
+          {sent && (
             <p className="rounded-md border border-(--color-success)/40 bg-(--color-success)/10 px-3 py-2 text-sm text-(--color-success) sm:col-span-2">
               Thanks! Your request has been sent. We&apos;ll review it and enable your
               school&apos;s domain soon.

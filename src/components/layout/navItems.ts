@@ -25,6 +25,12 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/teacher/analytics', labelKey: 'analytics', icon: BarChart3 },
   { to: '/teacher/usage', labelKey: 'usage', icon: HardDrive },
   { to: '/teacher/profile', labelKey: 'profile', icon: UserRound },
+  {
+    to: '/admin/overview',
+    labelKey: 'schoolOverview',
+    icon: BarChart3,
+    adminOnly: true,
+  },
   { to: '/admin/users', labelKey: 'users', icon: UsersIcon, adminOnly: true },
   {
     to: '/admin/domain-requests',

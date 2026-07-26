@@ -105,22 +105,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 key={item.id}
                 role="status"
                 layout
+                // lg+: enters and leaves through the right edge.
+                // Below lg: drops down from above on enter and retracts back up
+                // on exit. Enter and exit travel the same distance so the exit
+                // reads as a deliberate slide rather than a fade-with-a-twitch.
                 initial={
                   reduce
                     ? { opacity: 0 }
                     : isLarge
-                      ? { opacity: 0, x: 32, scale: 0.98 }
-                      : { opacity: 0, y: -16, scale: 0.96 }
+                      ? { opacity: 0, x: 48, scale: 0.98 }
+                      : { opacity: 0, y: -28, scale: 0.96 }
                 }
                 animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
                 exit={
                   reduce
                     ? { opacity: 0 }
                     : isLarge
-                      ? { opacity: 0, x: 32, scale: 0.98 }
-                      : { opacity: 0, y: -8, scale: 0.96 }
+                      ? { opacity: 0, x: 48, scale: 0.98 }
+                      : { opacity: 0, y: -28, scale: 0.96 }
                 }
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/95 shadow-(--shadow-pop) backdrop-blur-md"
               >
                 <div className="flex items-start gap-3 p-4">

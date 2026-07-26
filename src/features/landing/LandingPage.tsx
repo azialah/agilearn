@@ -1,17 +1,8 @@
-import { useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import {
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  type Variants,
-} from 'motion/react'
-import { ExternalLink, Mail, MessageCircle } from 'lucide-react'
-import { cn } from '@/lib/cn'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { Button } from '@/components/ui/Button'
-import { Logo as LogoMark } from '@/components/ui/Logo'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { PublicHeader } from '@/features/public/PublicHeader'
+import { PublicFooter } from '@/features/public/PublicFooter'
 import {
   CalendarIcon,
   ChevronRightIcon,
@@ -82,65 +73,6 @@ const FEATURES = [
     body: 'Turn any class into a polished, presentable grade slideshow in a click.',
   },
 ]
-
-function Logo({ compact }: { compact?: boolean }) {
-  return (
-    <div className="flex items-center gap-2">
-      <LogoMark />
-      {!compact && <span className="text-lg font-semibold tracking-tight">Agilearn</span>}
-    </div>
-  )
-}
-
-/** Floating pill header: large by default, shrinks on scroll-down, grows on up. */
-function Header() {
-  const reduce = useReducedMotion()
-  const { scrollY } = useScroll()
-  const [compact, setCompact] = useState(false)
-  const prev = useRef(0)
-
-  useMotionValueEvent(scrollY, 'change', (y) => {
-    if (reduce) {
-      setCompact(false)
-      return
-    }
-    if (y < 40) setCompact(false)
-    else if (Math.abs(y - prev.current) > 6) setCompact(y > prev.current)
-    prev.current = y
-  })
-
-  return (
-    <header className="sticky top-0 z-40 px-4 pt-3">
-      <div
-        className={cn(
-          'mx-auto flex items-center justify-between rounded-full border border-(--color-border) bg-(--color-surface-1)/80 backdrop-blur-md transition-all duration-300 ease-out',
-          compact
-            ? 'max-w-md gap-2 px-3 py-1.5 shadow-(--shadow-pop)'
-            : 'max-w-3xl gap-4 px-5 py-3 shadow-(--shadow-card)',
-        )}
-      >
-        <Logo compact={compact} />
-        <nav className="flex items-center gap-2">
-          <a
-            href="#features"
-            className={cn(
-              'rounded-md px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)',
-              compact ? 'hidden' : 'hidden sm:inline-block',
-            )}
-          >
-            Features
-          </a>
-          <ThemeToggle className={compact ? 'hidden' : 'hidden sm:inline-flex'} />
-          <Link to="/login">
-            <Button variant="secondary" size="sm">
-              Sign in
-            </Button>
-          </Link>
-        </nav>
-      </div>
-    </header>
-  )
-}
 
 function Hero() {
   const reduce = useReducedMotion()
@@ -472,145 +404,12 @@ function Testimonial() {
   )
 }
 
-const footerLinkClass =
-  'text-sm text-(--color-ink-muted) transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-(--color-ink)'
-
-function Footer() {
-  return (
-    <footer className="relative mt-16 border-t border-(--color-border)">
-      {/* Warm wash bleeding up from the fold for depth. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.06]" />
-
-      <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
-          <div>
-            <Logo />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-(--color-ink-muted)">
-              Named for the Philippine eagle, the Haribon: sharp-eyed and exact. Grades,
-              attendance, and modules in one calm workspace.
-            </p>
-          </div>
-
-          <nav aria-label="Product">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
-              Product
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link to="/features" className={footerLinkClass}>
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className={footerLinkClass}>
-                  About Agilearn
-                </Link>
-              </li>
-              <li>
-                <a href="#request-access" className={footerLinkClass}>
-                  Request access
-                </a>
-              </li>
-              <li>
-                <a href="#faq" className={footerLinkClass}>
-                  FAQ
-                </a>
-              </li>
-            </ul>
-          </nav>
-
-          <nav aria-label="Account">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
-              Account
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link to="/login" className={footerLinkClass}>
-                  Sign in
-                </Link>
-              </li>
-            </ul>
-          </nav>
-
-          <nav aria-label="Legal">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
-              Legal
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link to="/privacy" className={footerLinkClass}>
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className={footerLinkClass}>
-                  Terms
-                </Link>
-              </li>
-            </ul>
-          </nav>
-
-          {/* Personal contacts for now — will move to a Codexia-branded
-              email/channel once that's set up. */}
-          <nav aria-label="Developer">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-ink-faint)">
-              Developer
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <a
-                  href="mailto:johnneomanuel@gmail.com"
-                  className={cn(footerLinkClass, 'flex items-center gap-2')}
-                >
-                  <Mail className="size-4 shrink-0" aria-hidden />
-                  <span className="truncate">Email</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://wa.me/639474217919"
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(footerLinkClass, 'flex items-center gap-2')}
-                >
-                  <MessageCircle className="size-4 shrink-0" aria-hidden />
-                  <span className="truncate">WhatsApp</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.linkedin.com/in/johnneomlpz/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(footerLinkClass, 'flex items-center gap-2')}
-                >
-                  <ExternalLink className="size-4 shrink-0" aria-hidden />
-                  <span className="truncate">LinkedIn</span>
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-(--color-border) pt-6 sm:flex-row">
-          <p className="text-sm text-(--color-ink-faint)">
-            © {new Date().getFullYear()} Agilearn. Built for teachers.
-          </p>
-          <p className="font-mono text-xs text-(--color-ink-faint)">
-            Agila + Learn = Agilearn
-          </p>
-        </div>
-      </div>
-    </footer>
-  )
-}
-
 export function LandingPage() {
   return (
     <div className="relative min-h-dvh bg-(--color-surface-0) text-(--color-ink)">
       <ScrollGradient />
 
-      <Header />
+      <PublicHeader />
 
       <main className="relative">
         <Hero />
@@ -625,7 +424,7 @@ export function LandingPage() {
         <CallToAction />
       </main>
 
-      <Footer />
+      <PublicFooter />
     </div>
   )
 }
