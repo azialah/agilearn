@@ -21,6 +21,24 @@ function Icon({ children, ...props }: IconProps & { children: React.ReactNode })
   )
 }
 
+/**
+ * LinkedIn brand mark. Hand-rolled because lucide dropped brand icons and the
+ * project doesn't add dependencies — so it's a filled path rather than the
+ * stroked `Icon` wrapper the rest of this file uses.
+ */
+export const LinkedInIcon = (p: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="1em"
+    height="1em"
+    fill="currentColor"
+    aria-hidden="true"
+    {...p}
+  >
+    <path d="M6.94 5.5a1.94 1.94 0 1 1-3.88 0 1.94 1.94 0 0 1 3.88 0ZM3.4 8.9h3.1V21H3.4V8.9Zm5.55 0h2.97v1.65h.04c.42-.78 1.44-1.6 2.96-1.6 3.17 0 3.75 2.06 3.75 4.74V21h-3.1v-5.65c0-1.35-.03-3.08-1.9-3.08-1.9 0-2.2 1.47-2.2 2.98V21h-3.1V8.9Z" />
+  </svg>
+)
+
 export const DashboardIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="3" y="3" width="7" height="9" rx="1" />

@@ -31,6 +31,7 @@ import { Route as AuthSettingsProfileRouteImport } from './routes/_auth/settings
 import { Route as AuthSettingsPrivacyRouteImport } from './routes/_auth/settings.privacy'
 import { Route as AuthSettingsAboutRouteImport } from './routes/_auth/settings.about'
 import { Route as AuthAdminUsersRouteImport } from './routes/_auth/admin/users'
+import { Route as AuthAdminOverviewRouteImport } from './routes/_auth/admin/overview'
 import { Route as AuthAdminDomainRequestsRouteImport } from './routes/_auth/admin/domain-requests'
 import { Route as AuthAdminAuditLogRouteImport } from './routes/_auth/admin/audit-log'
 import { Route as AuthTeacherModulesIndexRouteImport } from './routes/_auth/teacher/modules/index'
@@ -156,6 +157,11 @@ const AuthAdminUsersRoute = AuthAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAdminOverviewRoute = AuthAdminOverviewRouteImport.update({
+  id: '/admin/overview',
+  path: '/admin/overview',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthAdminDomainRequestsRoute = AuthAdminDomainRequestsRouteImport.update({
   id: '/admin/domain-requests',
   path: '/admin/domain-requests',
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
+  '/admin/overview': typeof AuthAdminOverviewRoute
   '/admin/users': typeof AuthAdminUsersRoute
   '/settings/about': typeof AuthSettingsAboutRoute
   '/settings/privacy': typeof AuthSettingsPrivacyRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
+  '/admin/overview': typeof AuthAdminOverviewRoute
   '/admin/users': typeof AuthAdminUsersRoute
   '/settings/about': typeof AuthSettingsAboutRoute
   '/settings/privacy': typeof AuthSettingsPrivacyRoute
@@ -332,6 +340,7 @@ export interface FileRoutesById {
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
   '/_auth/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/_auth/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
+  '/_auth/admin/overview': typeof AuthAdminOverviewRoute
   '/_auth/admin/users': typeof AuthAdminUsersRoute
   '/_auth/settings/about': typeof AuthSettingsAboutRoute
   '/_auth/settings/privacy': typeof AuthSettingsPrivacyRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/teacher/signup'
     | '/admin/audit-log'
     | '/admin/domain-requests'
+    | '/admin/overview'
     | '/admin/users'
     | '/settings/about'
     | '/settings/privacy'
@@ -408,6 +418,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/audit-log'
     | '/admin/domain-requests'
+    | '/admin/overview'
     | '/admin/users'
     | '/settings/about'
     | '/settings/privacy'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/teacher/signup'
     | '/_auth/admin/audit-log'
     | '/_auth/admin/domain-requests'
+    | '/_auth/admin/overview'
     | '/_auth/admin/users'
     | '/_auth/settings/about'
     | '/_auth/settings/privacy'
@@ -642,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminUsersRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/admin/overview': {
+      id: '/_auth/admin/overview'
+      path: '/admin/overview'
+      fullPath: '/admin/overview'
+      preLoaderRoute: typeof AuthAdminOverviewRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/admin/domain-requests': {
       id: '/_auth/admin/domain-requests'
       path: '/admin/domain-requests'
@@ -774,6 +793,7 @@ interface AuthRouteChildren {
   AuthSettingsRoute: typeof AuthSettingsRouteWithChildren
   AuthAdminAuditLogRoute: typeof AuthAdminAuditLogRoute
   AuthAdminDomainRequestsRoute: typeof AuthAdminDomainRequestsRoute
+  AuthAdminOverviewRoute: typeof AuthAdminOverviewRoute
   AuthAdminUsersRoute: typeof AuthAdminUsersRoute
   AuthTeacherAnalyticsRoute: typeof AuthTeacherAnalyticsRoute
   AuthTeacherCalendarRoute: typeof AuthTeacherCalendarRoute
@@ -793,6 +813,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsRoute: AuthSettingsRouteWithChildren,
   AuthAdminAuditLogRoute: AuthAdminAuditLogRoute,
   AuthAdminDomainRequestsRoute: AuthAdminDomainRequestsRoute,
+  AuthAdminOverviewRoute: AuthAdminOverviewRoute,
   AuthAdminUsersRoute: AuthAdminUsersRoute,
   AuthTeacherAnalyticsRoute: AuthTeacherAnalyticsRoute,
   AuthTeacherCalendarRoute: AuthTeacherCalendarRoute,

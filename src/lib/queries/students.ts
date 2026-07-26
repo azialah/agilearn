@@ -86,7 +86,7 @@ export function useDeleteStudent() {
  */
 export function useAllStudents() {
   return useQuery({
-    queryKey: ['students', 'all'] as const,
+    queryKey: keys.studentsAll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('students')

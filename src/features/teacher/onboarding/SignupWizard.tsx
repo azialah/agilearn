@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
-import { PinInput } from '@/components/ui/PinInput'
+import { useResendCooldown } from '@/lib/useResendCooldown'
 import { PasswordStrengthMeter } from './PasswordStrengthMeter'
 import { Check, ChevronLeft } from 'lucide-react'
 import { ClassroomIcon, GradeIcon, ModuleIcon } from '@/components/icons'
@@ -28,7 +28,6 @@ import { Stepper } from './wizard-ui'
 import {
   AuthShell,
   Field,
-  FormError,
   Hint,
   StaggerGroup,
   StaggerItem,
@@ -47,7 +46,29 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
 
 const STEP_COUNT = 6
 
-const CODE_LENGTH = 6
+/**
+ * Where the emailed confirmation link lands. Back on the verify step, where the
+ * session established from the URL lets the resume effect move the user forward.
+ */
+function signupRedirectTo(): string {
+  return `${window.location.origin}/teacher/signup/step-2/verify-your-email`
+}
+
+type ToastFn = ReturnType<typeof useToast>['toast']
+
+/**
+ * Every wizard step reports validation and save failures as a toast rather than
+ * inline text, so the CTA never shifts down as messages appear.
+ */
+function toastProblems(toast: ToastFn, messages: string[]): void {
+  const real = messages.filter(Boolean)
+  if (real.length === 0) return
+  toast({
+    title: real.length === 1 ? real[0] : 'Check your details',
+    description: real.length === 1 ? undefined : real.join(' '),
+    tone: 'error',
+  })
+}
 
 const NAME_EXAMPLES = {
   lastName: 'Dela Cruz',
@@ -221,11 +242,7 @@ export function SignupWizard({ step }: SignupWizardProps) {
             />
           )}
           {step === 'verify' && (
-            <VerifyStep
-              email={verifyEmail}
-              onBack={() => goToStep('credentials')}
-              onVerified={() => goToStep('name')}
-            />
+            <VerifyStep email={verifyEmail} onBack={() => goToStep('credentials')} />
           )}
           {step === 'name' && <NameStep onDone={() => goToStep('school')} />}
           {step === 'school' && <SchoolStep onDone={() => goToStep('level')} />}
@@ -248,9 +265,10 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formError, setFormError] = useState<string | null>(null)
+  const [consented, setConsented] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const notifyInvalid = (messages: string[]) => toastProblems(toast, messages)
   const normalizedEmail = email.trim().toLowerCase()
   const debouncedEmail = useDebouncedValue(normalizedEmail, 3000)
   const domain = debouncedEmail.split('@')[1] ?? ''
@@ -277,36 +295,41 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setFormError(null)
     const parsed = credentialsSchema.safeParse({ email, password, confirmPassword })
     if (!parsed.success) {
-      setErrors(fieldErrors(parsed.error))
+      notifyInvalid(Object.values(fieldErrors(parsed.error)).filter(Boolean))
+      return
+    }
+    // The CTA is disabled without consent, but re-check here: a form can still
+    // be submitted by pressing Enter in a field.
+    if (!consented) {
+      notifyInvalid(['Please accept the Terms of Use and Privacy Notice.'])
       return
     }
     // Friendly pre-check; the DB trigger is the real gate.
     const domain = parsed.data.email.split('@')[1]?.toLowerCase()
     if (allowedDomains && domain && !allowedDomains.includes(domain)) {
-      setErrors({ email: "This email domain isn't approved for sign-up." })
+      notifyInvalid(["This email domain isn't approved for sign-up."])
       return
     }
-    setErrors({})
     setSubmitting(true)
     const { error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
+      options: { emailRedirectTo: signupRedirectTo() },
     })
     setSubmitting(false)
     if (error) {
-      setFormError(
+      notifyInvalid([
         /domain not allowed/i.test(error.message)
           ? "This email domain isn't approved for sign-up."
           : error.message,
-      )
+      ])
       return
     }
     toast({
       title: 'Account created',
-      description: `We sent a ${CODE_LENGTH}-digit code to ${parsed.data.email}.`,
+      description: `We sent a confirmation link to ${parsed.data.email}.`,
       tone: 'success',
       native: true,
     })
@@ -325,8 +348,12 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
           </p>
         </StaggerItem>
         <StaggerItem>
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <Field label="Email" htmlFor="email" error={errors.email}>
+          {/* noValidate: zod owns validation and reports it through a toast.
+              Without this the browser's native bubble fires first for
+              type="email", so a malformed address would never reach our
+              messaging. */}
+          <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
+            <Field label="Email" htmlFor="email">
               <Input
                 id="email"
                 type="email"
@@ -354,7 +381,7 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
                 {domainHint}
               </p>
             </Field>
-            <Field label="Password" htmlFor="password" error={errors.password}>
+            <Field label="Password" htmlFor="password">
               <PasswordInput
                 id="password"
                 autoComplete="new-password"
@@ -366,11 +393,7 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
                 <PasswordStrengthMeter password={password} />
               </div>
             </Field>
-            <Field
-              label="Confirm password"
-              htmlFor="confirm-password"
-              error={errors.confirmPassword}
-            >
+            <Field label="Confirm password" htmlFor="confirm-password">
               <PasswordInput
                 id="confirm-password"
                 autoComplete="new-password"
@@ -379,28 +402,45 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
                 placeholder="Re-enter your password"
               />
             </Field>
-            <p className="text-xs leading-5 text-(--color-ink-faint)">
-              By continuing, you acknowledge Agilearn&apos;s{' '}
-              <ConsentSummaryLink
-                document="terms"
-                returnTo="/teacher/signup/step-1/create-your-account"
+            {/* Explicit opt-in rather than a passive notice. The Terms/Privacy
+                triggers are <button>s, and per the HTML spec a label does not
+                forward activation to interactive descendants — so opening a
+                summary can't silently tick the box. */}
+            <div className="flex items-start gap-2">
+              <input
+                id="consent"
+                type="checkbox"
+                checked={consented}
+                onChange={(e) => setConsented(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 rounded border-(--color-border) accent-(--color-accent-400)"
+              />
+              <label
+                htmlFor="consent"
+                className="text-xs leading-5 text-(--color-ink-faint)"
               >
-                Terms of Use
-              </ConsentSummaryLink>{' '}
-              and{' '}
-              <ConsentSummaryLink
-                document="privacy"
-                returnTo="/teacher/signup/step-1/create-your-account"
-              >
-                Privacy Notice
-              </ConsentSummaryLink>
-              .
-            </p>
-            {formError && <FormError message={formError} />}
+                I agree to Agilearn&apos;s{' '}
+                <ConsentSummaryLink
+                  document="terms"
+                  returnTo="/teacher/signup/step-1/create-your-account"
+                >
+                  Terms of Use
+                </ConsentSummaryLink>{' '}
+                and{' '}
+                <ConsentSummaryLink
+                  document="privacy"
+                  returnTo="/teacher/signup/step-1/create-your-account"
+                >
+                  Privacy Notice
+                </ConsentSummaryLink>
+                .
+              </label>
+            </div>
             <StickyCta
               label="Continue"
               loading={submitting}
-              disabled={domainStatus === 'checking' || domainStatus === 'unapproved'}
+              disabled={
+                !consented || domainStatus === 'checking' || domainStatus === 'unapproved'
+              }
             />
           </form>
         </StaggerItem>
@@ -417,107 +457,63 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
   )
 }
 
-// Screen 2 — 6-digit email OTP ----------------------------------------------
-function VerifyStep({
-  email,
-  onBack,
-  onVerified,
-}: {
-  email: string
-  onBack: () => void
-  onVerified: () => void
-}) {
+// Screen 2 — confirm by emailed link ----------------------------------------
+// Supabase's stock "Confirm signup" template sends a link, not a 6-digit token,
+// so there is nothing for the user to type. Opening the link establishes the
+// session via detectSessionInUrl and lands back here; the wizard's resume effect
+// then carries them on to the name step.
+function VerifyStep({ email, onBack }: { email: string; onBack: () => void }) {
   const { toast } = useToast()
-  const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  async function verify(token: string) {
-    setError(null)
-    setSubmitting(true)
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'signup',
-    })
-    setSubmitting(false)
-    if (verifyError) {
-      setError(verifyError.message)
-      return
-    }
-    toast({
-      title: 'Email verified',
-      description: 'Your account is confirmed.',
-      tone: 'success',
-      native: true,
-    })
-    onVerified()
-  }
+  const { remaining, markSent } = useResendCooldown('signup', email)
 
   async function resend() {
-    setError(null)
-    setNotice(null)
+    setSubmitting(true)
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
       email,
+      options: { emailRedirectTo: signupRedirectTo() },
     })
+    setSubmitting(false)
     if (resendError) {
-      setError(resendError.message)
+      toastProblems(toast, [resendError.message])
       return
     }
-    setCode('')
-    setNotice(`We sent a new ${CODE_LENGTH}-digit code to ${email}.`)
+    markSent()
+    toast({ title: 'Link sent again', tone: 'success' })
   }
 
   return (
-    <StaggerGroup>
+    <StaggerGroup className="text-center">
       <StaggerItem>
-        <h1 className="text-lg font-semibold">Verify your email</h1>
+        <h1 className="text-lg font-semibold">Check your email</h1>
       </StaggerItem>
       <StaggerItem>
         <p className="mt-1 text-sm text-(--color-ink-muted)">
-          {notice ?? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`}
+          We sent a confirmation link to {email}. Open it on this device to continue
+          setting up your account.
         </p>
       </StaggerItem>
       <StaggerItem>
-        <div className="mt-5 space-y-4">
-          <Field label="Verification code" htmlFor="otp-code" error={error ?? undefined}>
-            <PinInput
-              label="Verification code"
-              value={code}
-              onChange={setCode}
-              length={CODE_LENGTH}
-              autoFocus
-              disabled={submitting}
-              onComplete={verify}
-            />
-          </Field>
-          <div className="flex items-center justify-between text-sm">
+        <>
+          <div className="mt-5 flex items-center justify-center gap-6">
             <button
               type="button"
               onClick={onBack}
-              className="text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
+              className="text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
             >
               Use a different email
             </button>
             <button
               type="button"
               onClick={resend}
-              disabled={submitting}
-              className="text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:opacity-50"
+              disabled={submitting || remaining > 0}
+              className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300) disabled:cursor-not-allowed disabled:text-(--color-ink-faint)"
             >
-              Resend code
+              {remaining > 0 ? `Resend in ${remaining}s` : 'Resend link'}
             </button>
           </div>
-          <StickyCta
-            label="Verify and continue"
-            type="button"
-            loading={submitting}
-            disabled={code.length !== CODE_LENGTH}
-            onClick={() => verify(code)}
-          />
-        </div>
+        </>
       </StaggerItem>
     </StaggerGroup>
   )
@@ -531,27 +527,25 @@ function NameStep({ onDone }: { onDone: () => void }) {
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [suffix, setSuffix] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formError, setFormError] = useState<string | null>(null)
   const lastNamePlaceholder = useTypingPlaceholder(NAME_EXAMPLES.lastName, 120)
   const firstNamePlaceholder = useTypingPlaceholder(NAME_EXAMPLES.firstName, 650)
   const middleNamePlaceholder = useTypingPlaceholder(NAME_EXAMPLES.middleName, 1180)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setFormError(null)
     const parsed = nameSchema.safeParse({ lastName, firstName, middleName, suffix })
     if (!parsed.success) {
-      setErrors(fieldErrors(parsed.error))
+      toastProblems(toast, Object.values(fieldErrors(parsed.error)))
       return
     }
-    setErrors({})
     try {
       await completeProfile.mutateAsync(parsed.data)
       toast({ title: 'Name saved', tone: 'success', native: true })
       onDone()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save your name.')
+      toastProblems(toast, [
+        err instanceof Error ? err.message : 'Could not save your name.',
+      ])
     }
   }
 
@@ -567,7 +561,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
       </StaggerItem>
       <StaggerItem>
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          <Field label="Last name" htmlFor="last-name" error={errors.lastName}>
+          <Field label="Last name" htmlFor="last-name">
             <Input
               id="last-name"
               autoComplete="family-name"
@@ -576,7 +570,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
               placeholder={lastNamePlaceholder}
             />
           </Field>
-          <Field label="First name" htmlFor="first-name" error={errors.firstName}>
+          <Field label="First name" htmlFor="first-name">
             <Input
               id="first-name"
               autoComplete="given-name"
@@ -609,7 +603,6 @@ function NameStep({ onDone }: { onDone: () => void }) {
               ))}
             </select>
           </Field>
-          {formError && <FormError message={formError} />}
           <StickyCta label="Continue" loading={completeProfile.isPending} />
         </form>
       </StaggerItem>
@@ -654,18 +647,13 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
   const { toast } = useToast()
   const [school, setSchool] = useState('')
   const [location, setLocation] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formError, setFormError] = useState<string | null>(null)
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setFormError(null)
     const parsed = schoolSchema.safeParse({ school, location })
     if (!parsed.success) {
-      setErrors(fieldErrors(parsed.error))
+      toastProblems(toast, Object.values(fieldErrors(parsed.error)))
       return
     }
-    setErrors({})
     try {
       await saveDetails.mutateAsync({
         school: parsed.data.school,
@@ -674,7 +662,9 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
       toast({ title: 'School saved', tone: 'success', native: true })
       onDone()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save your school.')
+      toastProblems(toast, [
+        err instanceof Error ? err.message : 'Could not save your school.',
+      ])
     }
   }
 
@@ -688,7 +678,7 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
       </StaggerItem>
       <StaggerItem>
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          <Field label="School" htmlFor="school" error={errors.school}>
+          <Field label="School" htmlFor="school">
             <Input
               id="school"
               autoComplete="organization"
@@ -707,7 +697,6 @@ function SchoolStep({ onDone }: { onDone: () => void }) {
             />
           </Field>
           <Hint>Helps us tailor Agilearn to your school.</Hint>
-          {formError && <FormError message={formError} />}
           <StickyCta label="Continue" loading={saveDetails.isPending} />
         </form>
       </StaggerItem>
@@ -730,7 +719,6 @@ function LevelStep({ onDone }: { onDone: () => void }) {
   const saveDetails = useSaveProfilingDetails()
   const { toast } = useToast()
   const [selected, setSelected] = useState<TeachingLevel[]>([])
-  const [formError, setFormError] = useState<string | null>(null)
 
   function toggle(value: TeachingLevel) {
     setSelected((prev) =>
@@ -740,13 +728,14 @@ function LevelStep({ onDone }: { onDone: () => void }) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setFormError(null)
     try {
       await saveDetails.mutateAsync({ teachingLevels: selected })
       toast({ title: 'Preferences saved', tone: 'success', native: true })
       onDone()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save your levels.')
+      toastProblems(toast, [
+        err instanceof Error ? err.message : 'Could not save your levels.',
+      ])
     }
   }
 
@@ -787,7 +776,6 @@ function LevelStep({ onDone }: { onDone: () => void }) {
             })}
           </div>
           <Hint>Helps us build the right tools for your grade levels.</Hint>
-          {formError && <FormError message={formError} />}
           <StickyCta
             label="Continue"
             loading={saveDetails.isPending}

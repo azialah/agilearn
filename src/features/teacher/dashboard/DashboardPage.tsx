@@ -21,11 +21,14 @@ import { useProfile } from '@/lib/queries/profiles'
 import { useAcademicPeriods } from '@/lib/queries/academicWorkspace'
 import { useAllStudents } from '@/lib/queries/students'
 import { useAllClassSessions } from '@/lib/queries/attendance'
-import { computeStudentGradebook } from '@/lib/grading'
+import {
+  computeStudentGradebook,
+  type GradebookStructure,
+  type ScoreMap,
+} from '@/lib/grading'
 import { computeStudentSummary } from '@/features/teacher/attendance/summary'
-import { useQueries } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { keys } from '@/lib/queries/keys'
+import { useAllGradebooks } from '@/lib/queries/grades'
+import { GradeDistribution } from './GradeDistribution'
 
 const rise = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }
 
@@ -52,105 +55,26 @@ export function DashboardPage() {
   const studentsQuery = useAllStudents()
   const allSessionsQuery = useAllClassSessions()
 
-  // Dynamically fetch each classroom's gradebook structure using useQueries so
-  // the number of hooks can vary with the teacher's number of classrooms.
-  const structureQueries = useQueries({
-    queries: (classrooms ?? []).map((classroom) => ({
-      queryKey: keys.grades.structure(classroom.id),
-      enabled: !!classroom.id,
-      queryFn: async () => {
-        const periodsQ = supabase
-          .from('grading_periods')
-          .select('*')
-          .eq('classroom_id', classroom.id)
-          .order('position', { ascending: true })
-          .order('name', { ascending: true })
-        const activitiesQ = supabase
-          .from('activities')
-          .select('*, grading_periods!inner(classroom_id, course_subject_id)')
-          .eq('grading_periods.classroom_id', classroom.id)
-          .order('position', { ascending: true })
-          .order('name', { ascending: true })
+  // Structure + scores for every classroom, in one shared hook (RLS scopes the
+  // reach). Replaces two hand-rolled `useQueries` blocks that duplicated
+  // useGradebookStructure/useScores with `any` types.
+  const classroomIds = React.useMemo(
+    () => (classrooms ?? []).map((classroom) => classroom.id),
+    [classrooms],
+  )
+  const { gradebooks } = useAllGradebooks(classroomIds)
 
-        const [components, periodsRes, categories, activitiesRes] = await Promise.all([
-          supabase
-            .from('grade_components')
-            .select('*')
-            .eq('classroom_id', classroom.id)
-            .order('position', { ascending: true })
-            .order('name', { ascending: true }),
-          periodsQ,
-          supabase
-            .from('activity_categories')
-            .select('*')
-            .eq('classroom_id', classroom.id)
-            .order('component', { ascending: true })
-            .order('name', { ascending: true }),
-          activitiesQ,
-        ])
-
-        if (periodsRes.error) throw periodsRes.error
-        if (components.error) throw components.error
-        if (categories.error) throw categories.error
-        if (activitiesRes.error) throw activitiesRes.error
-
-        const cleanActivities = (activitiesRes.data ?? []).map((row: any) => {
-          const { grading_periods: _relation, ...activity } = row
-          return activity
-        })
-
-        return {
-          periods: (periodsRes.data ?? []) as any,
-          components: (components.data ?? []) as any,
-          categories: (categories.data ?? []) as any,
-          activities: cleanActivities,
-        }
-      },
-    })),
-  })
-
-  // Fetch score maps for every classroom (activityId -> studentId -> score).
-  const scoresQueries = useQueries({
-    queries: (classrooms ?? []).map((classroom, idx) => ({
-      queryKey: keys.grades.byClassroom(classroom.id),
-      enabled: !!classroom.id,
-      queryFn: async () => {
-        const structure = structureQueries[idx]?.data
-        const activityIds: string[] = (structure?.activities ?? []).map((a: any) => a.id)
-        if (!activityIds || activityIds.length === 0) return {}
-        const { data, error } = await supabase
-          .from('scores')
-          .select('activity_id, student_id, score')
-          .in('activity_id', activityIds)
-        if (error) throw error
-        const map: Record<string, Record<string, number | null>> = {}
-        for (const row of data ?? []) {
-          const bucket = (map[row.activity_id] ??= {})
-          bucket[row.student_id] = row.score
-        }
-        return map
-      },
-    })),
-  })
-
-  // Build quick lookup maps keyed by classroom id.
   const structureByClassroom = React.useMemo(() => {
-    const m = new Map<string, any>()
-    ;(classrooms ?? []).forEach((c, i) => {
-      const q = structureQueries[i]
-      if (q?.data) m.set(c.id, q.data)
-    })
+    const m = new Map<string, GradebookStructure>()
+    gradebooks.forEach((gradebook, id) => m.set(id, gradebook.structure))
     return m
-  }, [classrooms, structureQueries.map((q) => q.data)])
+  }, [gradebooks])
 
   const scoresByClassroom = React.useMemo(() => {
-    const m = new Map<string, Record<string, Record<string, number | null>>>()
-    ;(classrooms ?? []).forEach((c, i) => {
-      const q = scoresQueries[i]
-      if (q?.data) m.set(c.id, q.data as any)
-    })
+    const m = new Map<string, ScoreMap>()
+    gradebooks.forEach((gradebook, id) => m.set(id, gradebook.scores))
     return m
-  }, [classrooms, scoresQueries.map((q) => q.data)])
+  }, [gradebooks])
 
   // Compute per-student final grade (when structure + scores exist) and
   // attendance summaries. Attendance will be scoped to each classroom's
@@ -535,89 +459,11 @@ export function DashboardPage() {
               </ul>
             )}
 
-            <div className="mt-6">
-              <p className="text-sm font-medium">
-                Grade distribution (per classroom sample)
-              </p>
-              <p className="mt-1 text-sm text-(--color-ink-muted)">
-                A simple bucketing of student finals rendered as small bars (no chart
-                library).
-              </p>
-              <div className="mt-3 space-y-3">
-                {(classrooms ?? []).slice(0, 3).map((classroom) => {
-                  const studentsInClass = students.filter(
-                    (s) => s.classroom_id === classroom.id,
-                  )
-                  const buckets: Record<string, number> = {
-                    '90+': 0,
-                    '80-89': 0,
-                    '70-79': 0,
-                    '60-69': 0,
-                    '<60': 0,
-                  }
-                  let total = 0
-                  for (const s of studentsInClass) {
-                    const final = (studentGradeMap.get(s.id) as any)?.final
-                    if (final === null || final === undefined) continue
-                    total++
-                    if (final >= 90) buckets['90+']++
-                    else if (final >= 80) buckets['80-89']++
-                    else if (final >= 70) buckets['70-79']++
-                    else if (final >= 60) buckets['60-69']++
-                    else buckets['<60']++
-                  }
-                  return (
-                    <div
-                      key={classroom.id}
-                      className="rounded-md border border-(--color-border) bg-(--color-surface-0) p-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="truncate text-sm">{classroom.course_name}</div>
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate({
-                                to: '/teacher/classrooms/$classroomId/grades',
-                                params: { classroomId: classroom.id },
-                              })
-                            }
-                            className="text-(--color-accent-350) text-xs"
-                          >
-                            Grades
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-2 grid grid-cols-5 gap-2 items-end h-20">
-                        {Object.entries(buckets).map(([label, count]) => {
-                          const h =
-                            total === 0
-                              ? 4
-                              : Math.max(4, Math.round((count / total) * 100))
-                          return (
-                            <div
-                              key={label}
-                              className="flex flex-col items-center text-[10px]"
-                            >
-                              <div
-                                className="w-full bg-(--color-surface-3) h-full flex items-end rounded-md overflow-hidden"
-                                style={{ height: '64px', width: '22px' }}
-                              >
-                                <div
-                                  className="w-full bg-(--color-accent-400)"
-                                  style={{ height: `${h}%` }}
-                                />
-                              </div>
-                              <div className="mt-1">{count}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <GradeDistribution
+              classrooms={classrooms ?? []}
+              students={students}
+              gradebooks={gradebooks}
+            />
           </CardBody>
         </Card>
       </motion.section>

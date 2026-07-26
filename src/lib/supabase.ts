@@ -7,14 +7,31 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 /** Login sets this to '1' when "remember me" is checked. */
 export const REMEMBER_KEY = 'agilearn-remember'
 
+/** True when running as an installed PWA rather than a browser tab. */
+export function isStandalone(): boolean {
+  try {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    )
+  } catch {
+    return false
+  }
+}
+
 /**
  * Session storage that honors "remember me": persists to localStorage (survives
  * browser close) when the flag is set, otherwise sessionStorage (cleared on
  * close). The flag itself lives in localStorage so the choice is read back the
  * same way on the next load.
+ *
+ * Exception: an installed PWA always persists. The OS discards a backgrounded
+ * standalone shell and relaunches it as a fresh page — sessionStorage would be
+ * gone, silently signing the user out every time they switch apps.
  */
 const rememberAwareStorage = {
   store() {
+    if (isStandalone()) return localStorage
     return localStorage.getItem(REMEMBER_KEY) === '1' ? localStorage : sessionStorage
   },
   getItem(key: string) {

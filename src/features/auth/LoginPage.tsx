@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Label } from '@/components/ui/Label'
 import { SquigglyText } from '@/components/ui/squiggly-text'
-import { AuthShell, StaggerGroup, StaggerItem } from './wizard-ui'
+import { AuthShell, StaggerGroup, StaggerItem, StickyCta } from './wizard-ui'
 import { ConsentSummaryLink } from './ConsentSummary'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
@@ -101,15 +101,7 @@ export function LoginPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">{t('password')}</Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
-                  >
-                    {t('forgotPassword')}
-                  </Link>
-                </div>
+                <Label htmlFor="password">{t('password')}</Label>
                 <PasswordInput
                   id="password"
                   autoComplete="current-password"
@@ -120,30 +112,33 @@ export function LoginPage() {
                 />
               </div>
 
-              <label className="flex select-none items-center gap-2 text-sm text-(--color-ink-muted)">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
-                />
-                {t('rememberMe')}
-              </label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <label className="flex select-none items-center gap-2 text-sm text-(--color-ink-muted)">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="size-4 rounded border-(--color-border) accent-(--color-accent-400)"
+                  />
+                  {t('rememberMe')}
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-(--color-accent-350) transition-colors hover:text-(--color-accent-300)"
+                >
+                  {t('forgotPassword')}
+                </Link>
+              </div>
             </form>
           </StaggerItem>
 
           <StaggerItem>
-            <div className="fixed inset-x-0 bottom-0 z-20 space-y-3 bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:px-0 md:pt-2 md:pb-0">
-              <Button
-                type="submit"
-                form="login-form"
-                size="lg"
-                loading={submitting}
-                className="w-full !rounded-full"
-              >
-                {t('signIn')}
-              </Button>
-            </div>
+            <StickyCta
+              label={t('signIn')}
+              type="submit"
+              form="login-form"
+              loading={submitting}
+            />
           </StaggerItem>
         </StaggerGroup>
       ) : (

@@ -404,19 +404,29 @@ html.custom-cursor-active .app-cursor {
   }
 }
 
-/* iOS reports dynamic viewport units unreliably during a standalone cold
-   launch. Scope the true-screen-height fallback to the PWA auth shell so the
-   regular browser and the main application layout retain their normal sizing. */
+/* Scoped to standalone so the regular browser and the main application layout
+   keep their normal sizing.
+
+   Each height is declared twice on purpose: `100vh` first as the floor for
+   engines without dynamic viewport units, then `100dvh`, which wins wherever
+   it's supported. In standalone there is no collapsing URL bar, so the two
+   resolve to the same box in the steady state; dvh is the more accurate of the
+   pair once iOS has settled. (Historically `100vh` alone was used here because
+   iOS can report dvh oddly during a standalone cold launch — if that flicker
+   ever resurfaces on a device, this is the block to revisit.) */
 @media (display-mode: standalone) {
   html,
   body,
   #root {
     height: 100vh;
+    height: 100dvh;
   }
 
   .pwa-auth-shell {
     height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 
