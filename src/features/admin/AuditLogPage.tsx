@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Input } from '@/components/ui/Input'
+import { DateInput } from '@/components/ui/DateInput'
 import { useProfile, useProfiles } from '@/lib/queries/profiles'
 import { useAuditLog, type AuditLogRow } from '@/lib/queries/auditLog'
 
@@ -89,8 +89,7 @@ export function AuditLogPage() {
           ))}
         </select>
 
-        <Input
-          type="date"
+        <DateInput
           aria-label="Filter from date"
           className="w-auto"
           value={from}
@@ -100,8 +99,7 @@ export function AuditLogPage() {
           }}
         />
 
-        <Input
-          type="date"
+        <DateInput
           aria-label="Filter to date"
           className="w-auto"
           value={to}

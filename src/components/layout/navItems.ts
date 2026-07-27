@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react'
-import { BarChart3, CalendarDays, HardDrive, Inbox, UserRound } from 'lucide-react'
 import {
+  AnalyticsIcon,
+  CalendarIcon,
   ClassroomIcon,
   DashboardIcon,
   HistoryIcon,
+  InboxIcon,
   ModuleIcon,
+  ProfileIcon,
+  UsageIcon,
   UsersIcon,
 } from '@/components/icons'
 import type { MessageKey } from '@/lib/locale'
@@ -21,21 +25,21 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/teacher/dashboard', labelKey: 'dashboard', icon: DashboardIcon },
   { to: '/teacher/classrooms', labelKey: 'classrooms', icon: ClassroomIcon },
   { to: '/teacher/modules', labelKey: 'modules', icon: ModuleIcon },
-  { to: '/teacher/calendar', labelKey: 'calendar', icon: CalendarDays },
-  { to: '/teacher/analytics', labelKey: 'analytics', icon: BarChart3 },
-  { to: '/teacher/usage', labelKey: 'usage', icon: HardDrive },
-  { to: '/teacher/profile', labelKey: 'profile', icon: UserRound },
+  { to: '/teacher/calendar', labelKey: 'calendar', icon: CalendarIcon },
+  { to: '/teacher/analytics', labelKey: 'analytics', icon: AnalyticsIcon },
+  { to: '/teacher/usage', labelKey: 'usage', icon: UsageIcon },
+  { to: '/teacher/profile', labelKey: 'profile', icon: ProfileIcon },
   {
     to: '/admin/overview',
     labelKey: 'schoolOverview',
-    icon: BarChart3,
+    icon: AnalyticsIcon,
     adminOnly: true,
   },
   { to: '/admin/users', labelKey: 'users', icon: UsersIcon, adminOnly: true },
   {
     to: '/admin/domain-requests',
     labelKey: 'requests',
-    icon: Inbox,
+    icon: InboxIcon,
     adminOnly: true,
   },
   {

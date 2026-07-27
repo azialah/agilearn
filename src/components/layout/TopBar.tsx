@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
+import { Bell, TriangleAlert } from 'lucide-react'
 import {
-  Bell,
-  HardDrive,
-  LogOut,
-  Menu,
-  Search,
-  Settings2,
-  TriangleAlert,
-  UserRound,
-} from 'lucide-react'
+  MenuIcon,
+  ProfileIcon,
+  SearchIcon,
+  SettingsIcon,
+  SignOutIcon,
+  UsageIcon,
+} from '@/components/icons'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -22,6 +21,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Avatar } from '@/components/ui/Avatar'
+import {
+  ResponsiveDrawer,
+  ResponsiveDrawerBody,
+  ResponsiveDrawerContent,
+  ResponsiveDrawerFooter,
+  ResponsiveDrawerHeader,
+} from '@/components/ui/ResponsiveDrawer'
+import { cn } from '@/lib/cn'
 import { signOut, useProfile } from '@/lib/queries/profiles'
 import {
   useClearUnreadNotifications,
@@ -34,6 +41,14 @@ import { useLocale } from '@/lib/locale'
 import { isMac } from '@/lib/platform'
 import { useToast } from '@/components/ui/toast'
 import type { AppNotification } from '@/types/domain'
+
+/**
+ * The three header triggers (notifications, search, account) must read as one
+ * set of controls at phone widths — same 36px circle, same border and surface.
+ * Per-button `md:`/`lg:` classes layer the intentional differences on top.
+ */
+const TRIGGER_CLASS =
+  'inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) shadow-sm transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)'
 
 /** Middle name = full_name with the first- and last-name parts trimmed off. */
 function deriveMiddleName(
@@ -99,6 +114,8 @@ export function TopBar({
   const reduce = useReducedMotion()
   const { scrollY } = useScroll()
   const [hidden, setHidden] = useState(false)
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)')
     const sync = () => setIsPhone(media.matches)
@@ -139,6 +156,23 @@ export function TopBar({
     })
   }
 
+  async function handleSignOut() {
+    setSigningOut(true)
+    try {
+      await signOut()
+      setConfirmSignOut(false)
+      navigate({ to: '/login' })
+    } catch (error) {
+      toast({
+        title: 'Could not sign out',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    } finally {
+      setSigningOut(false)
+    }
+  }
+
   function handleClearNotifications() {
     void clearUnreadNotifications.mutateAsync().catch((error: unknown) => {
       toast({
@@ -167,7 +201,7 @@ export function TopBar({
             className="hidden! md:inline-flex! lg:hidden!"
             onClick={onOpenNavigation}
           >
-            <Menu className="size-4" />
+            <MenuIcon className="size-4" />
           </IconButton>
         )}
         <div className="flex-1" />
@@ -177,19 +211,24 @@ export function TopBar({
           aria-label="Search (Ctrl+K)"
           className="order-2 hidden h-9 w-64 items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1) pl-3 pr-2 text-sm text-(--color-ink-faint) transition-colors hover:border-(--color-border-strong) hover:text-(--color-ink-muted) lg:flex"
         >
-          <Search className="size-4 shrink-0" aria-hidden />
+          <SearchIcon className="size-4 shrink-0" aria-hidden />
           <span className="flex-1 text-left">Search…</span>
           <kbd className="rounded border border-(--color-border) bg-(--color-surface-2) px-1.5 py-0.5 text-[10px] font-medium">
             {isMac ? 'Cmd K' : 'Ctrl K'}
           </kbd>
         </button>
-        <IconButton
-          label="Search (Ctrl+K)"
-          className="order-2 rounded-full border border-(--color-border) bg-(--color-surface-1) shadow-sm lg:hidden"
+        {/* A raw button, not IconButton: IconButton hardcodes `rounded-md`, and
+            cn() is clsx without tailwind-merge, so the `rounded-full` here would
+            be decided by CSS source order rather than by intent. */}
+        <button
+          type="button"
+          aria-label="Search (Ctrl+K)"
+          title="Search (Ctrl+K)"
           onClick={onOpenSearch}
+          className={cn(TRIGGER_CLASS, 'order-2 lg:hidden')}
         >
-          <Search className="size-4" />
-        </IconButton>
+          <SearchIcon className="size-4" aria-hidden />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -199,7 +238,10 @@ export function TopBar({
                   ? 'Notifications'
                   : `Notifications, ${unreadCount} unread`
               }
-              className="order-1 relative inline-flex size-9 items-center justify-center rounded-full border border-(--color-border) bg-(--color-surface-1) text-(--color-ink-muted) shadow-sm transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) lg:rounded-md lg:border-0 lg:bg-transparent lg:shadow-none"
+              className={cn(
+                TRIGGER_CLASS,
+                'order-1 relative lg:rounded-md lg:border-0 lg:bg-transparent lg:shadow-none',
+              )}
             >
               <Bell className="size-4" aria-hidden />
               {unreadCount > 0 && (
@@ -271,12 +313,16 @@ export function TopBar({
             <button
               type="button"
               aria-label={`Account menu for ${profile?.full_name || profile?.email || 'your account'}`}
-              className="order-3 inline-flex size-9 items-center justify-center rounded-md text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) md:flex md:w-auto md:justify-start md:gap-2 md:rounded-full md:border md:border-(--color-border) md:bg-(--color-surface-1) md:pl-1 md:pr-3 md:shadow-sm"
+              className={cn(
+                TRIGGER_CLASS,
+                'order-3 md:w-auto md:justify-start md:gap-2 md:pl-1 md:pr-3',
+              )}
             >
               <Avatar
                 name={profile?.full_name || profile?.email}
                 color={profile?.avatar_color}
-                className="size-7! text-[10px]!"
+                src={profile?.avatar_url}
+                className="size-6! text-[10px]!"
               />
               <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-(--color-ink) md:block">
                 {displayName}
@@ -289,6 +335,7 @@ export function TopBar({
                 <Avatar
                   name={profile?.full_name || profile?.email}
                   color={profile?.avatar_color}
+                  src={profile?.avatar_url}
                 />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-(--color-ink)">
@@ -307,21 +354,52 @@ export function TopBar({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate({ to: '/teacher/profile' })}>
-              <UserRound className="size-4" /> Profile
+              <ProfileIcon className="size-4" /> Profile
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate({ to: '/settings' })}>
-              <Settings2 className="size-4" /> {t('settings')}
+              <SettingsIcon className="size-4" /> {t('settings')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate({ to: '/teacher/usage' })}>
-              <HardDrive className="size-4" /> Usage
+              <UsageIcon className="size-4" /> Usage
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => void signOut()}>
-              <LogOut className="size-4" /> {t('signOut')}
+            <DropdownMenuItem onSelect={() => setConfirmSignOut(true)}>
+              <SignOutIcon className="size-4" /> {t('signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </motion.header>
+
+      {/* Bottom sheet on phones, centred modal at md+ — one component covers
+          both, so there is no separate mobile confirmation to keep in sync. */}
+      <ResponsiveDrawer
+        open={confirmSignOut}
+        onOpenChange={(next) => !signingOut && setConfirmSignOut(next)}
+      >
+        {/* A two-line confirmation doesn't need the sheet's `max-md:min-h-[60dvh]`.
+            `!` because cn() is clsx without tailwind-merge, so a plain `min-h-0`
+            would be decided by CSS source order rather than by intent. */}
+        <ResponsiveDrawerContent className="!min-h-0 md:max-w-md">
+          <ResponsiveDrawerHeader
+            title={t('signOut')}
+            description="You'll need to sign in again to get back to your classes."
+          />
+          <ResponsiveDrawerBody>
+            <p className="text-sm text-(--color-ink-muted)">
+              Your classrooms, grades, and attendance stay saved — signing out only clears
+              the copy held on this device.
+            </p>
+          </ResponsiveDrawerBody>
+          <ResponsiveDrawerFooter
+            primaryLabel={t('signOut')}
+            primaryVariant="danger"
+            primaryLoading={signingOut}
+            onPrimary={() => void handleSignOut()}
+            secondaryLabel="Stay signed in"
+            onSecondary={() => setConfirmSignOut(false)}
+          />
+        </ResponsiveDrawerContent>
+      </ResponsiveDrawer>
     </>
   )
 }

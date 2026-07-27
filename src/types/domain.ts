@@ -10,6 +10,7 @@ import type {
 export type Profile = Tables<'profiles'>
 export type AcademicPeriod = Tables<'academic_periods'>
 export type Classroom = Tables<'classrooms'>
+export type ClassroomTemplate = Tables<'classroom_templates'>
 export type CourseSubject = Tables<'course_subjects'>
 export type SubjectMeetingSlot = Tables<'subject_meeting_slots'>
 export type CalendarEvent = Tables<'calendar_events'>
@@ -32,6 +33,7 @@ export type ClassRosterRow = Database['public']['Views']['v_class_roster']['Row'
 export type ProfileInsert = TablesInsert<'profiles'>
 export type AcademicPeriodInsert = TablesInsert<'academic_periods'>
 export type ClassroomInsert = TablesInsert<'classrooms'>
+export type ClassroomTemplateInsert = TablesInsert<'classroom_templates'>
 export type CourseSubjectInsert = TablesInsert<'course_subjects'>
 export type SubjectMeetingSlotInsert = TablesInsert<'subject_meeting_slots'>
 export type CalendarEventInsert = TablesInsert<'calendar_events'>

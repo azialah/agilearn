@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DateInput } from '@/components/ui/DateInput'
 import { Label } from '@/components/ui/Label'
 import {
   Select,
@@ -183,9 +184,8 @@ export function ActivityDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="activity-date">Date</Label>
-                <Input
+                <DateInput
                   id="activity-date"
-                  type="date"
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                 />

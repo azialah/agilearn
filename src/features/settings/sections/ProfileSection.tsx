@@ -92,8 +92,8 @@ export function ProfileSection() {
         <CardHeader>
           <CardTitle>{t('profile')}</CardTitle>
           <p className="text-sm text-(--color-ink-muted)">
-            Your generated avatar keeps your workspace personal without needing an image
-            upload.
+            Upload a photo on your profile page, or pick an accent color for the generated
+            initials avatar.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -101,6 +101,7 @@ export function ProfileSection() {
             <Avatar
               name={profile?.full_name || profile?.email}
               color={profile?.avatar_color}
+              src={profile?.avatar_url}
               className="size-14 text-base"
             />
             <div>

@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { Camera } from 'lucide-react'
+import { AvatarUploadDrawer } from './AvatarUploadDrawer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, type AvatarColor } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -27,6 +29,7 @@ export function ProfilePage() {
   const [school, setSchool] = useState('')
   const [location, setLocation] = useState('')
   const [loadedId, setLoadedId] = useState('')
+  const [avatarOpen, setAvatarOpen] = useState(false)
   if (profile && loadedId !== profile.id) {
     setLoadedId(profile.id)
     setFirstName(profile.first_name ?? '')
@@ -60,6 +63,11 @@ export function ProfilePage() {
   }
   return (
     <div className="space-y-6">
+      <AvatarUploadDrawer
+        open={avatarOpen}
+        onOpenChange={setAvatarOpen}
+        hasPhoto={!!profile?.avatar_url}
+      />
       <PageHeader
         title="Profile"
         description="The teaching details you shared during onboarding, kept ready for your workspace."
@@ -71,17 +79,40 @@ export function ProfilePage() {
           <div className="pointer-events-none absolute inset-0 rounded-4xl shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
           <div className="relative flex flex-wrap items-center gap-3">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/30 bg-(--color-surface-1)/75 p-2 pr-5 shadow-(--shadow-card) backdrop-blur">
-              <Avatar
-                name={profile?.full_name || profile?.email}
-                color={profile?.avatar_color}
-                className="size-12 text-base"
-              />
+              <button
+                type="button"
+                onClick={() => setAvatarOpen(true)}
+                aria-label={
+                  profile?.avatar_url
+                    ? 'Change your profile photo'
+                    : 'Add a profile photo'
+                }
+                className="group relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+              >
+                <Avatar
+                  name={profile?.full_name || profile?.email}
+                  color={profile?.avatar_color}
+                  src={profile?.avatar_url}
+                  className="size-12 text-base"
+                />
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <Camera className="size-4" />
+                </span>
+              </button>
               <div>
                 <p className="font-semibold">
                   {profile?.full_name || 'Your teaching profile'}
                 </p>
                 <p className="text-xs text-(--color-ink-muted)">{profile?.email}</p>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAvatarOpen(true)}
+              >
+                {profile?.avatar_url ? 'Edit photo' : 'Add photo'}
+              </Button>
             </div>
             {(profile?.school || profile?.location) && (
               <div className="flex flex-wrap gap-2">

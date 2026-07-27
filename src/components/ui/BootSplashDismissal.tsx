@@ -16,7 +16,7 @@ function dismiss() {
 /**
  * Removes the HTML boot splash once the first route has actually resolved —
  * not merely when the root commits. Dismissing on root commit handed off to
- * `PageLoader` while the lazy route chunk was still in flight, so cold boot
+ * the route skeleton while the lazy route chunk was still in flight, so cold boot
  * showed two different loading screens back to back.
  */
 export function BootSplashDismissal() {

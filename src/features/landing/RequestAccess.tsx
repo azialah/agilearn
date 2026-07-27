@@ -151,12 +151,7 @@ export function RequestAccess() {
           )}
 
           <motion.div variants={item} className="sm:col-span-2">
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full !rounded-full"
-              loading={submitting}
-            >
+            <Button type="submit" size="lg" className="w-full" loading={submitting}>
               Send request
             </Button>
             <p className="mt-3 text-center text-xs text-(--color-ink-faint)">

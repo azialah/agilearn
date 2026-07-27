@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useMemo, useState, lazy } from 'react'
 import { Mail } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
+import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
+import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -168,15 +170,20 @@ export function GradesPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Grade sheet"
-        description={
-          activeSubject
-            ? `${activeSubject.name} · Record scores and compute configured grades.`
-            : 'Record activity scores and compute configured grades.'
-        }
-        actions={!loading && structure ? toolbar : undefined}
-      />
+      <ClassroomHeader classroomId={classroomId} />
+      <ClassroomMeta classroomId={classroomId} />
+      <ClassroomTabs classroomId={classroomId} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-medium text-(--color-ink-muted)">Grade sheet</h2>
+          <p className="text-sm text-(--color-ink-faint)">
+            {activeSubject
+              ? `${activeSubject.name} · Record scores and compute configured grades.`
+              : 'Record activity scores and compute configured grades.'}
+          </p>
+        </div>
+        {!loading && structure ? toolbar : null}
+      </div>
 
       {(subjectsQuery.data?.length ?? 0) > 1 && (
         <div className="max-w-sm">
@@ -188,7 +195,7 @@ export function GradesPage({
             aria-label="Course subject"
             value={activeSubjectId}
             onChange={(event) => setSubjectId(event.target.value)}
-            className="h-10 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-4 text-sm"
+            className="h-9 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-4 text-sm"
           >
             {subjectsQuery.data?.map((subject) => (
               <option key={subject.id} value={subject.id}>

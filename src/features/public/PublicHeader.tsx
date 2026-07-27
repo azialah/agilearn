@@ -84,9 +84,7 @@ export function PublicHeader() {
             <ThemeToggle />
           </span>
           <Link to="/login">
-            <Button size="sm" className="!rounded-full">
-              Sign in
-            </Button>
+            <Button size="sm">Sign in</Button>
           </Link>
         </nav>
       </div>

@@ -38,7 +38,7 @@ export function AboutPage() {
             layer rather than left to interface decisions alone.
           </p>
           <Link to="/privacy" className="mt-7 inline-flex">
-            <Button variant="outline" className="!rounded-full">
+            <Button variant="outline">
               Read the privacy draft <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
           </Link>

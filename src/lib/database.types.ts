@@ -428,6 +428,7 @@ export type Database = {
           academic_year: string
           block: string
           cohort_name: string
+          color: string | null
           course_code: string
           course_name: string
           created_at: string
@@ -448,6 +449,7 @@ export type Database = {
           academic_year?: string
           block?: string
           cohort_name?: string
+          color?: string | null
           course_code: string
           course_name: string
           created_at?: string
@@ -468,6 +470,7 @@ export type Database = {
           academic_year?: string
           block?: string
           cohort_name?: string
+          color?: string | null
           course_code?: string
           course_name?: string
           created_at?: string
@@ -493,6 +496,41 @@ export type Database = {
           },
           {
             foreignKeyName: 'classrooms_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      classroom_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'classroom_templates_owner_id_fkey'
             columns: ['owner_id']
             isOneToOne: false
             referencedRelation: 'profiles'
@@ -838,6 +876,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_color: string
+          avatar_url: string | null
           created_at: string
           email: string
           first_name: string
@@ -855,6 +894,7 @@ export type Database = {
         }
         Insert: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email: string
           first_name?: string
@@ -872,6 +912,7 @@ export type Database = {
         }
         Update: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
           first_name?: string

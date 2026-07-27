@@ -165,3 +165,54 @@ export const MonitorIcon = (p: IconProps) => (
     <path d="M8 20h8M12 16v4" />
   </Icon>
 )
+
+export const SearchIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m16.2 16.2 4.3 4.3" />
+  </Icon>
+)
+
+export const AnalyticsIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 20V4" />
+    <path d="M8.5 20v-6M13 20V8M17.5 20v-9" />
+  </Icon>
+)
+
+export const UsageIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 13h18" />
+    <path d="M6.3 5.9A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.8 1.4L21 13v4.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V13Z" />
+    <path d="M6.5 16.3h.01M10 16.3h.01" />
+  </Icon>
+)
+
+export const ProfileIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </Icon>
+)
+
+export const SettingsIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+    <circle cx="15" cy="7" r="2" />
+    <circle cx="9" cy="17" r="2" />
+  </Icon>
+)
+
+export const InboxIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 13h5l1.5 2.5h5L16 13h5" />
+    <path d="M5.4 5.3A2 2 0 0 1 7.2 4h9.6a2 2 0 0 1 1.8 1.3L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z" />
+  </Icon>
+)
+
+export const SubjectIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 8v11" />
+    <path d="M4 17.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4a4 4 0 0 1 4 4 4 4 0 0 1 4-4h4a1 1 0 0 1 1 1v11.5a1 1 0 0 1-1 1h-5a3 3 0 0 0-3 2.5 3 3 0 0 0-3-2.5Z" />
+  </Icon>
+)

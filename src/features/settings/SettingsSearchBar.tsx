@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
+import { SearchIcon } from '@/components/icons'
 import { SETTINGS_SECTIONS } from '@/components/layout/settingsSections'
 
 /**
@@ -50,7 +50,7 @@ export function SettingsSearchBar() {
         </ul>
       )}
       <div className="flex items-center gap-2 rounded-full border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_65%,transparent)] px-4 py-3 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150">
-        <Search className="size-5 shrink-0 text-(--color-ink-faint)" aria-hidden />
+        <SearchIcon className="size-5 shrink-0 text-(--color-ink-faint)" aria-hidden />
         <input
           type="search"
           aria-label="Search settings"

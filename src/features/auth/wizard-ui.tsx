@@ -408,7 +408,7 @@ export function StickyCta({
         loading={loading}
         disabled={disabled}
         onClick={onClick}
-        className="w-full !rounded-full"
+        className="w-full"
       >
         {label}
       </Button>

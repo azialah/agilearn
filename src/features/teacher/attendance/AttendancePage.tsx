@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
+import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
+import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Card, CardBody } from '@/components/ui/Card'
@@ -133,11 +135,18 @@ export function AttendancePage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Attendance"
-        description="Track class sessions and per-student attendance."
-        actions={newSessionButton}
-      />
+      <ClassroomHeader classroomId={classroomId} />
+      <ClassroomMeta classroomId={classroomId} />
+      <ClassroomTabs classroomId={classroomId} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-medium text-(--color-ink-muted)">Attendance</h2>
+          <p className="text-sm text-(--color-ink-faint)">
+            Track class sessions and per-student attendance.
+          </p>
+        </div>
+        {newSessionButton}
+      </div>
 
       {subjects.length > 1 && (
         <label className="block max-w-sm text-sm font-medium">
@@ -146,7 +155,7 @@ export function AttendancePage({
             aria-label="Course subject"
             value={subjectId}
             onChange={(event) => setSubjectId(event.target.value)}
-            className="mt-1.5 h-10 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-3"
+            className="mt-1.5 h-9 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-3"
           >
             {subjects.map((subject) => (
               <option key={subject.id} value={subject.id}>

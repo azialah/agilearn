@@ -74,7 +74,7 @@ export function MeetingSlotDialog({
               Day
               <select
                 aria-label="Meeting day"
-                className="mt-1.5 h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
+                className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
                 value={weekday}
                 onChange={(event) => setWeekday(event.target.value)}
               >
@@ -117,7 +117,7 @@ export function MeetingSlotDialog({
               Class mode
               <select
                 aria-label="Class mode"
-                className="mt-1.5 h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
+                className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
                 value={modality}
                 onChange={(event) => setModality(event.target.value as typeof modality)}
               >

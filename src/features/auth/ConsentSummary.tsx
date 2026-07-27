@@ -69,7 +69,7 @@ export function ConsentSummaryLink({
           <Button
             type="button"
             variant="ghost"
-            className="mt-3 w-full !rounded-full sm:w-auto sm:ml-2"
+            className="mt-3 w-full sm:w-auto sm:ml-2"
             onClick={() => setOpen(false)}
           >
             <X className="size-4" aria-hidden="true" /> Close

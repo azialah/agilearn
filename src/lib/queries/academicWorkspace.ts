@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import type {
   AcademicPeriod,
   AcademicPeriodInsert,
+  ClassroomTemplate,
+  ClassroomTemplateInsert,
   CourseSubject,
   CourseSubjectInsert,
   CourseSubjectUpdate,
@@ -38,6 +40,58 @@ export function useCreateAcademicPeriod() {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: keys.academicPeriods.all }),
+  })
+}
+
+export function useClassroomTemplates() {
+  return useQuery({
+    queryKey: keys.classroomTemplates.all,
+    queryFn: async (): Promise<ClassroomTemplate[]> => {
+      const { data, error } = await supabase
+        .from('classroom_templates')
+        .select('*')
+        .order('name')
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
+/** Upserts on (owner_id, name) so re-saving a name overwrites that template. */
+export function useSaveClassroomTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      owner_id: string
+      name: string
+      payload: ClassroomTemplateInsert['payload']
+    }) => {
+      const { data, error } = await supabase
+        .from('classroom_templates')
+        .upsert(
+          { ...input, updated_at: new Date().toISOString() },
+          { onConflict: 'owner_id,name' },
+        )
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: keys.classroomTemplates.all }),
+  })
+}
+
+export function useDeleteClassroomTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('classroom_templates').delete().eq('id', id)
+      if (error) throw error
+      return id
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: keys.classroomTemplates.all }),
   })
 }
 

@@ -199,7 +199,7 @@ function MobileWelcome({
           variant="outline"
           size="lg"
           onClick={onSignIn}
-          className="w-full !rounded-full !font-semibold"
+          className="w-full !font-semibold"
         >
           {signIn}
         </Button>

@@ -20,6 +20,32 @@ export function useStudents(classroomId: string) {
   })
 }
 
+export const STUDENTS_PAGE_SIZE = 15
+
+/**
+ * One page of the roster table. Separate from `useStudents` on purpose — grades,
+ * attendance and export all need the whole roster, so paging that hook would
+ * quietly truncate them.
+ */
+export function useStudentsPage(classroomId: string, page: number) {
+  return useQuery({
+    queryKey: keys.students.page(classroomId, page),
+    enabled: !!classroomId,
+    queryFn: async (): Promise<{ rows: Student[]; total: number }> => {
+      const from = page * STUDENTS_PAGE_SIZE
+      const { data, error, count } = await supabase
+        .from('students')
+        .select('*', { count: 'exact' })
+        .eq('classroom_id', classroomId)
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+        .range(from, from + STUDENTS_PAGE_SIZE - 1)
+      if (error) throw error
+      return { rows: data ?? [], total: count ?? 0 }
+    },
+  })
+}
+
 export function useCreateStudent() {
   const queryClient = useQueryClient()
   return useMutation({

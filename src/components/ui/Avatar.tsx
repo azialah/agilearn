@@ -22,10 +22,12 @@ function initialsFromName(name?: string | null) {
 interface AvatarProps {
   name?: string | null
   color?: string | null
+  /** Uploaded photo; falls back to the colored initials when absent. */
+  src?: string | null
   className?: string
 }
 
-export function Avatar({ name, color, className }: AvatarProps) {
+export function Avatar({ name, color, src, className }: AvatarProps) {
   const avatarColor: AvatarColor =
     color === 'plum' || color === 'teal' || color === 'blue' ? color : 'orange'
 
@@ -33,12 +35,16 @@ export function Avatar({ name, color, className }: AvatarProps) {
     <span
       aria-hidden="true"
       className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold shadow-sm',
+        'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold shadow-sm',
         colors[avatarColor],
         className,
       )}
     >
-      {initialsFromName(name)}
+      {src ? (
+        <img src={src} alt="" className="size-full object-cover" />
+      ) : (
+        initialsFromName(name)
+      )}
     </span>
   )
 }

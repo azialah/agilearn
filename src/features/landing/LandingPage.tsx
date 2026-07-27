@@ -170,7 +170,7 @@ function Hero() {
             <MagneticButton className="inline-block">
               <Button
                 size="lg"
-                className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
               >
                 Get started
                 <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
@@ -180,7 +180,7 @@ function Hero() {
             </MagneticButton>
           </Link>
           <a href="#features">
-            <Button size="lg" variant="outline" className="!rounded-full">
+            <Button size="lg" variant="outline">
               Explore features
             </Button>
           </a>
@@ -362,7 +362,7 @@ function CallToAction() {
               <MagneticButton className="inline-block">
                 <Button
                   size="lg"
-                  className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                  className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
                 >
                   Sign in to Agilearn
                   <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">

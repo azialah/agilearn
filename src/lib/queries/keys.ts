@@ -24,6 +24,10 @@ export const keys = {
     detail: (id: string) => ['classrooms', 'detail', id] as const,
   },
 
+  classroomTemplates: {
+    all: ['classroom-templates', 'list'] as const,
+  },
+
   academicPeriods: {
     all: ['academic-periods', 'list'] as const,
     detail: (id: string) => ['academic-periods', 'detail', id] as const,
@@ -53,6 +57,9 @@ export const keys = {
   students: {
     byClassroom: (classroomId: string) =>
       ['students', 'byClassroom', classroomId] as const,
+    // Nested under byClassroom so the existing invalidations also drop pages.
+    page: (classroomId: string, page: number) =>
+      ['students', 'byClassroom', classroomId, 'page', page] as const,
   },
 
   grades: {
