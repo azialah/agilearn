@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { z } from 'zod'
 import { BookmarkPlus } from 'lucide-react'
@@ -28,9 +28,11 @@ import {
   useCourseSubjects,
   useCreateCourseSubject,
   useSaveClassroomTemplate,
+  useUpdateAcademicPeriod,
   useUpdateCourseSubject,
 } from '@/lib/queries/academicWorkspace'
 import { useCreateMeetingSlot } from '@/lib/queries/calendar'
+import { addHours, DEFAULT_DURATION_HOURS } from '@/features/teacher/calendar/calendar'
 import { cn } from '@/lib/cn'
 import { useTypewriter } from '@/lib/useTypewriter'
 import { CLASSROOM_COLORS, CLASSROOM_COLOR_CLASSES } from '@/lib/classroomColor'
@@ -289,7 +291,9 @@ function initialState(classroom?: Classroom): FormState {
     subjectName: classroom?.course_name ?? '',
     courseCode: classroom?.course_code ?? '',
     subjectCode: classroom?.subject_code ?? '',
-    kind: 'other',
+    // The near-universal first subject for a new COLLEGE classroom is a
+    // lecture; elementary/high-school subjects aren't lecture/lab pairs.
+    kind: classroom?.school_level === 'college' ? 'lecture' : 'other',
     description: classroom?.description ?? '',
     schedule: classroom?.schedule ?? '',
     scheduleDay: '',
@@ -317,6 +321,7 @@ export function ClassroomFormDialog({
   const reducedMotion = useReducedMotion()
   const [form, setForm] = useState<FormState>(initialState(classroom))
   const [nudge, setNudge] = useState(0)
+  const [duplicateAcknowledged, setDuplicateAcknowledged] = useState(false)
   const [templateId, setTemplateId] = useState('')
   const [namingTemplate, setNamingTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
@@ -325,14 +330,19 @@ export function ClassroomFormDialog({
   const [addMeeting, setAddMeeting] = useState(true)
   const [weekday, setWeekday] = useState('1')
   const [startsAt, setStartsAt] = useState('08:00')
-  const [endsAt, setEndsAt] = useState('09:00')
+  // '' = not yet touched by hand — effectiveEndsAt below fills it from the
+  // subject's kind until the teacher overrides it.
+  const [endsAt, setEndsAt] = useState('')
   const [modality, setModality] = useState<'face_to_face' | 'online' | 'hybrid'>(
     'face_to_face',
   )
   const [meetingLocation, setMeetingLocation] = useState('')
   // Renames for the classroom's existing subjects, applied on save.
   const [subjectNames, setSubjectNames] = useState<Record<string, string>>({})
-  const meetingValid = !addMeeting || startsAt < endsAt
+  // Defaults from the subject's kind (2h lecture, 3h lab) until endsAt is set
+  // by hand — same pattern as SubjectFormDialog's own schedule fields.
+  const effectiveEndsAt = endsAt || addHours(startsAt, DEFAULT_DURATION_HOURS[form.kind])
+  const meetingValid = !addMeeting || startsAt < effectiveEndsAt
   // The row stores the school year as one text field ("2026–2027"); the two
   // selects are just a friendlier way to type it.
   const [startYear = String(CURRENT_YEAR), endYear = String(CURRENT_YEAR + 1)] =
@@ -345,8 +355,15 @@ export function ClassroomFormDialog({
   const isCollege = form.schoolLevel === 'college'
   const courses =
     FIELDS_OF_STUDY.find((field) => field.name === form.fieldOfStudy)?.courses ?? []
-  // Editing an older classroom keeps its stored name until the pickers are used.
-  const cohortName = composeCohortName(form) || form.cohortName
+  // Field of study/Course/Block have nowhere to be restored from on an
+  // existing classroom (they aren't stored columns — only the composed name
+  // is), so composeCohortName always falls back to just the year digit here.
+  // Recomputing it on every edit-save silently overwrote the real cohort
+  // name (e.g. "BSCS 3B" -> "3") the moment ANY field changed, even the
+  // semester dates. Editing keeps the stored name; only creation composes one.
+  const cohortName = classroom
+    ? form.cohortName
+    : composeCohortName(form) || form.cohortName
   // Falls back to whatever text the classroom already had until a day and both
   // times are picked.
   const schedule = formatSchedule(form.scheduleDay, form.scheduleStart, form.scheduleEnd)
@@ -354,6 +371,7 @@ export function ClassroomFormDialog({
   const { data: periods } = useAcademicPeriods()
   const { data: templates } = useClassroomTemplates()
   const createPeriod = useCreateAcademicPeriod()
+  const updatePeriod = useUpdateAcademicPeriod()
   const createClassroom = useCreateClassroom()
   const updateClassroom = useUpdateClassroom()
   const createSubject = useCreateCourseSubject()
@@ -361,6 +379,7 @@ export function ClassroomFormDialog({
   const createMeetingSlot = useCreateMeetingSlot()
   const saveTemplate = useSaveClassroomTemplate()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const isEditing = !!classroom
   const { data: existingSubjects = [] } = useCourseSubjects(isEditing ? classroom.id : '')
   const { data: classrooms = [] } = useClassrooms()
@@ -379,6 +398,12 @@ export function ClassroomFormDialog({
   // codes are reachable from the Edit button rather than a second edit affordance.
   const lastStep: Step = isEditing ? 2 : 3
 
+  // Re-editing the cohort/term fields to point at a *different* existing
+  // classroom re-blocks Continue until acknowledged again.
+  useEffect(() => {
+    setDuplicateAcknowledged(false)
+  }, [duplicate?.id])
+
   useEffect(() => {
     if (open) {
       setStep(1)
@@ -386,20 +411,37 @@ export function ClassroomFormDialog({
       setForm(initialState(classroom))
       setTemplateId('')
       setNudge(0)
+      setDuplicateAcknowledged(false)
       setNamingTemplate(false)
       setTemplateName('')
       setAddMeeting(true)
       setWeekday('1')
       setStartsAt('08:00')
-      setEndsAt('09:00')
+      setEndsAt('')
       setModality('face_to_face')
       setMeetingLocation('')
       setSubjectNames({})
     }
   }, [open, classroom])
 
+  // The dropdown above already shows the classroom's existing period selected
+  // (initialState sets periodId straight from the classroom), but the date
+  // fields still need their own values pulled in — those only otherwise get
+  // set by hand-picking a period from that dropdown.
+  useEffect(() => {
+    if (!open || !classroom?.academic_period_id) return
+    const period = periods?.find((item) => item.id === classroom.academic_period_id)
+    if (!period) return
+    setForm((current) => ({
+      ...current,
+      startsOn: period.starts_on ?? '',
+      endsOn: period.ends_on ?? '',
+    }))
+  }, [open, classroom, periods])
+
   const pending =
     createPeriod.isPending ||
+    updatePeriod.isPending ||
     createClassroom.isPending ||
     updateClassroom.isPending ||
     createSubject.isPending ||
@@ -492,6 +534,14 @@ export function ClassroomFormDialog({
           ends_on: form.endsOn || null,
         })
         periodId = period.id
+      } else {
+        // Editing the date range of an already-selected period — school year
+        // and semester are re-picked as a new period instead (see
+        // setSchoolYear/the Semester select, which both clear periodId).
+        await updatePeriod.mutateAsync({
+          id: periodId,
+          patch: { starts_on: form.startsOn || null, ends_on: form.endsOn || null },
+        })
       }
       const classroomPayload = {
         owner_id: ownerId,
@@ -532,7 +582,7 @@ export function ClassroomFormDialog({
             course_subject_id: subject.id,
             weekday: Number(weekday),
             starts_at: startsAt,
-            ends_at: endsAt,
+            ends_at: effectiveEndsAt,
             modality,
             location_label: meetingLocation.trim(),
           })
@@ -558,6 +608,15 @@ export function ClassroomFormDialog({
         tone: 'success',
       })
       setOpen(false)
+      // Lands the teacher where the "Add laboratory" quick-add lives, instead
+      // of leaving them on the list where it's easy to forget the classroom
+      // needs a second subject.
+      if (!isEditing) {
+        navigate({
+          to: '/teacher/classrooms/$classroomId',
+          params: { classroomId: savedClassroom.id },
+        })
+      }
     } catch (error) {
       toast({
         title: isEditing ? 'Could not update classroom' : 'Could not create classroom',
@@ -633,7 +692,7 @@ export function ClassroomFormDialog({
                       </select>
                     </Field>
                   )}
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <Field label="School year starts" htmlFor="school-year-start">
                       <select
                         id="school-year-start"
@@ -686,7 +745,7 @@ export function ClassroomFormDialog({
                       </select>
                     </Field>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="Semester starts (optional)" htmlFor="semester-start">
                       <DateInput
                         id="semester-start"
@@ -764,18 +823,29 @@ export function ClassroomFormDialog({
                       id="school-level"
                       aria-label="School level"
                       value={form.schoolLevel}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const schoolLevel = event.target.value as TeachingLevel | ''
                         // The class details below depend on the level, so switching
-                        // it clears the answers that no longer apply.
+                        // it clears the answers that no longer apply. Subject type
+                        // only auto-follows the level while it's still sitting at
+                        // one of the two defaults — an explicit "Laboratory" pick
+                        // is never overwritten by a level change.
+                        const kind =
+                          schoolLevel === 'college' && form.kind === 'other'
+                            ? 'lecture'
+                            : schoolLevel !== 'college' && form.kind === 'lecture'
+                              ? 'other'
+                              : form.kind
                         setForm({
                           ...form,
-                          schoolLevel: event.target.value as TeachingLevel | '',
+                          schoolLevel,
+                          kind,
                           fieldOfStudy: '',
                           course: '',
                           year: '',
                           block: '',
                         })
-                      }
+                      }}
                       className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                     >
                       <option value="">Choose level</option>
@@ -791,7 +861,7 @@ export function ClassroomFormDialog({
                       <motion.div
                         key="college-fields"
                         {...expand(reducedMotion)}
-                        className="grid gap-3 overflow-hidden sm:grid-cols-2"
+                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
                       >
                         <Field label="Field of study" htmlFor="field-of-study">
                           <select
@@ -853,7 +923,7 @@ export function ClassroomFormDialog({
                       <motion.div
                         key="level-fields"
                         {...expand(reducedMotion)}
-                        className="grid gap-3 overflow-hidden sm:grid-cols-2"
+                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
                       >
                         <Field
                           label={isCollege ? 'Year level' : 'Grade level'}
@@ -914,11 +984,29 @@ export function ClassroomFormDialog({
                             to="/teacher/classrooms/$classroomId"
                             params={{ classroomId: duplicate.id }}
                             onClick={() => setOpen(false)}
+                            className="block w-full sm:w-auto"
                           >
-                            <Button type="button" size="sm" variant="outline">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                            >
                               Open {cohortName} to add a subject
                             </Button>
                           </Link>
+                          <label className="-mx-1 flex cursor-pointer items-start gap-2 rounded-lg border-t border-(--color-warning)/30 px-1 pt-3 text-sm text-(--color-ink) transition-colors hover:bg-(--color-warning)/10">
+                            <input
+                              type="checkbox"
+                              checked={duplicateAcknowledged}
+                              onChange={(event) =>
+                                setDuplicateAcknowledged(event.target.checked)
+                              }
+                              className="mt-0.5 size-4 shrink-0 rounded border-(--color-border) accent-(--color-accent-400)"
+                            />
+                            Yes, create a separate classroom for the same course/term
+                            anyway.
+                          </label>
                         </div>
                       </motion.div>
                     ) : cohortName ? (
@@ -954,7 +1042,7 @@ export function ClassroomFormDialog({
                       }
                     />
                   </Field>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label="Course code" htmlFor="course-code">
                       <Input
                         id="course-code"
@@ -976,81 +1064,97 @@ export function ClassroomFormDialog({
                       />
                     </Field>
                   </div>
-                  <Field label="Subject type" htmlFor="subject-kind">
-                    <select
-                      id="subject-kind"
-                      aria-label="Subject type"
-                      value={form.kind}
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          kind: event.target.value as CourseSubjectKind,
-                        })
-                      }
-                      className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                    >
-                      <option value="other">Other</option>
-                      <option value="lecture">Lecture</option>
-                      <option value="laboratory">Laboratory</option>
-                    </select>
-                  </Field>
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <Field label="Day" htmlFor="schedule-day">
+                  {/* Lecture/Laboratory is a college concept — an elementary
+                      or high-school subject is never split that way, so the
+                      choice doesn't exist for them at all (kind just stays
+                      'other', set by initialState/the school-level handler). */}
+                  {isCollege && (
+                    <Field label="Subject type" htmlFor="subject-kind">
                       <select
-                        id="schedule-day"
-                        aria-label="Day"
-                        value={form.scheduleDay}
+                        id="subject-kind"
+                        aria-label="Subject type"
+                        value={form.kind}
                         onChange={(event) =>
-                          setForm({ ...form, scheduleDay: event.target.value })
+                          setForm({
+                            ...form,
+                            kind: event.target.value as CourseSubjectKind,
+                          })
                         }
                         className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                       >
-                        <option value="">Choose a day</option>
-                        {SHORT_DAYS.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
+                        <option value="other">Other</option>
+                        <option value="lecture">Lecture</option>
+                        <option value="laboratory">Laboratory</option>
                       </select>
                     </Field>
-                    <Field label="Starts" htmlFor="schedule-start">
-                      <Input
-                        id="schedule-start"
-                        type="time"
-                        value={form.scheduleStart}
-                        onChange={(event) =>
-                          setForm({ ...form, scheduleStart: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Ends" htmlFor="schedule-end">
-                      <Input
-                        id="schedule-end"
-                        type="time"
-                        value={form.scheduleEnd}
-                        onChange={(event) =>
-                          setForm({ ...form, scheduleEnd: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Room" htmlFor="subject-room">
-                      <Input
-                        id="subject-room"
-                        value={form.room}
-                        placeholder="Room 505"
-                        onChange={(event) =>
-                          setForm({ ...form, room: event.target.value })
-                        }
-                      />
-                    </Field>
-                  </div>
-                  {(schedule || form.schedule) && (
-                    <p className="text-sm text-(--color-ink-muted)">
-                      Schedule:{' '}
-                      <span className="font-medium text-(--color-ink)">
-                        {schedule || form.schedule}
-                      </span>
-                    </p>
+                  )}
+                  {/* Only for a brand-new classroom, where it seeds the first
+                      subject's own meeting slot on save (see `save()` below).
+                      An existing classroom's subjects each carry their own
+                      day/start/end/room now — edit those from the subject's
+                      own badge instead, since lecture and laboratory usually
+                      run on different days at different times. */}
+                  {!isEditing && (
+                    <>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                        <Field label="Day" htmlFor="schedule-day">
+                          <select
+                            id="schedule-day"
+                            aria-label="Day"
+                            value={form.scheduleDay}
+                            onChange={(event) =>
+                              setForm({ ...form, scheduleDay: event.target.value })
+                            }
+                            className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
+                          >
+                            <option value="">Choose a day</option>
+                            {SHORT_DAYS.map((day) => (
+                              <option key={day} value={day}>
+                                {day}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Starts" htmlFor="schedule-start">
+                          <Input
+                            id="schedule-start"
+                            type="time"
+                            value={form.scheduleStart}
+                            onChange={(event) =>
+                              setForm({ ...form, scheduleStart: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field label="Ends" htmlFor="schedule-end">
+                          <Input
+                            id="schedule-end"
+                            type="time"
+                            value={form.scheduleEnd}
+                            onChange={(event) =>
+                              setForm({ ...form, scheduleEnd: event.target.value })
+                            }
+                          />
+                        </Field>
+                        <Field label="Room" htmlFor="subject-room">
+                          <Input
+                            id="subject-room"
+                            value={form.room}
+                            placeholder="Room 505"
+                            onChange={(event) =>
+                              setForm({ ...form, room: event.target.value })
+                            }
+                          />
+                        </Field>
+                      </div>
+                      {(schedule || form.schedule) && (
+                        <p className="text-sm text-(--color-ink-muted)">
+                          Schedule:{' '}
+                          <span className="font-medium text-(--color-ink)">
+                            {schedule || form.schedule}
+                          </span>
+                        </p>
+                      )}
+                    </>
                   )}
                   <Field label="Description" htmlFor="subject-description">
                     <textarea
@@ -1068,6 +1172,10 @@ export function ClassroomFormDialog({
                     <div className="space-y-3 rounded-xl border border-(--color-border) p-3">
                       <p className="text-xs font-medium text-(--color-ink-faint)">
                         Course subjects — these share the classroom’s roster
+                      </p>
+                      <p className="text-xs text-(--color-ink-faint)">
+                        Rename here. Each subject’s own day, time, and room are set from
+                        its badge on the classroom page.
                       </p>
                       {existingSubjects.map((subject) => (
                         <Field
@@ -1186,7 +1294,7 @@ export function ClassroomFormDialog({
                         ))}
                       </select>
                     </Field>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <Field label="Starts" htmlFor="meeting-starts">
                         <Input
                           id="meeting-starts"
@@ -1199,7 +1307,7 @@ export function ClassroomFormDialog({
                         <Input
                           id="meeting-ends"
                           type="time"
-                          value={endsAt}
+                          value={effectiveEndsAt}
                           onChange={(event) => setEndsAt(event.target.value)}
                         />
                       </Field>
@@ -1246,7 +1354,10 @@ export function ClassroomFormDialog({
                 ? 'Save classroom'
                 : 'Create classroom'
           }
-          primaryDisabled={step === 3 && !meetingValid}
+          primaryDisabled={
+            (step === 3 && !meetingValid) ||
+            (step === 1 && !!duplicate && !duplicateAcknowledged)
+          }
           // ponytail: validation intentionally ungated for now — restore the
           // contextValid/subjectValid gate before shipping. A rejected insert
           // surfaces through the catch/toast in save() rather than silently

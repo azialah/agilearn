@@ -316,7 +316,7 @@ export function ModulesPage() {
       )}
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-52" />
           <Skeleton className="h-52" />
           <Skeleton className="h-52" />
@@ -327,7 +327,7 @@ export function ModulesPage() {
           title="No modules yet"
           description="Upload a lesson plan, activity story, or resource, then link it to the course subjects that need it."
           preview={
-            <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((index) => (
                 <div
                   key={index}
@@ -365,7 +365,10 @@ export function ModulesPage() {
           description="No modules match the current filters. Try clearing the search or changing the kind."
         />
       ) : (
-        <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          layout
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {visible.map((module) => (
             <ModuleCard
               key={module.id}

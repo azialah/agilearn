@@ -4,7 +4,9 @@ import {
   computeComponentGrade,
   computeConfiguredPeriodFinalGrade,
   computeConfiguredStudentGradebook,
+  computeCombinedFinalGrade,
   computeFinalGrade,
+  hasExactWeightTotal,
   isConfiguredGradeComplete,
   computePeriodComponentGrade,
   computeStudentGradebook,
@@ -129,6 +131,36 @@ describe('computeFinalGrade', () => {
   it('supports non 40/60 weights', () => {
     expect(computeFinalGrade(80, 90, 0.5, 0.5)).toBe(85)
     expect(computeFinalGrade(70, 100, 0.7, 0.3)).toBe(79)
+  })
+})
+
+describe('combined subject finals', () => {
+  it('combines separate lecture and laboratory subject grades at 40/60', () => {
+    expect(
+      computeCombinedFinalGrade([
+        { grade: 80, weight: 0.4 },
+        { grade: 90, weight: 0.6 },
+      ]),
+    ).toBe(86)
+  })
+
+  it('requires two complete subject grades and an exact 100% total', () => {
+    expect(hasExactWeightTotal([0.2, 0.4, 0.4])).toBe(true)
+    expect(hasExactWeightTotal([0.2, 0.4, 0.39])).toBe(false)
+    expect(hasExactWeightTotal([0.3333, 0.3333, 0.3333])).toBe(false)
+    expect(hasExactWeightTotal([0.1, 0.2, 0.7])).toBe(true)
+    expect(
+      computeCombinedFinalGrade([
+        { grade: 80, weight: 0.4 },
+        { grade: null, weight: 0.6 },
+      ]),
+    ).toBeNull()
+    expect(
+      computeCombinedFinalGrade([
+        { grade: 80, weight: 0.5 },
+        { grade: 90, weight: 0.6 },
+      ]),
+    ).toBeNull()
   })
 })
 

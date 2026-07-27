@@ -1,4 +1,24 @@
+import type { CourseSubjectKind } from '@/types/domain'
+
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+/** A lecture and its laboratory run at different lengths by convention. */
+export const DEFAULT_DURATION_HOURS: Record<CourseSubjectKind, number> = {
+  lecture: 2,
+  laboratory: 3,
+  other: 1,
+}
+
+/** "08:00" + 2 -> "10:00". Clamps to 23:59 so a late start never wraps past
+ * midnight into a time that would fail the ends_at > starts_at DB check. */
+export function addHours(time: string, hours: number): string {
+  const [hour, minute] = time.slice(0, 5).split(':').map(Number)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return time
+  const total = Math.min(hour * 60 + minute + hours * 60, 23 * 60 + 59)
+  const nextHour = Math.floor(total / 60)
+  const nextMinute = total % 60
+  return `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}`
+}
 
 export function startOfSundayWeek(date: Date) {
   const next = new Date(date)

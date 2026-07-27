@@ -44,6 +44,41 @@ export interface ConfiguredStudentGradebook {
   final: number | null
 }
 
+export interface WeightedFinalInput {
+  grade: number | null
+  weight: number
+}
+
+/** Grade structures are expressed as decimal weights: 0.4 means 40%. */
+export function hasExactWeightTotal(weights: readonly number[]): boolean {
+  return (
+    weights.length > 0 &&
+    weights.every((weight) => Number.isFinite(weight) && weight >= 0 && weight <= 1) &&
+    weights.reduce((total, weight) => total + Math.round(weight * 10_000), 0) === 10_000
+  )
+}
+
+/**
+ * Combines final grades from separate subjects, such as Lecture and Laboratory.
+ * A combined result is intentionally unavailable until every selected subject
+ * has a grade and its configured weights total exactly 100%.
+ */
+export function computeCombinedFinalGrade(
+  inputs: readonly WeightedFinalInput[],
+): number | null {
+  if (
+    inputs.length < 2 ||
+    !hasExactWeightTotal(inputs.map((input) => input.weight)) ||
+    inputs.some((input) => input.grade === null)
+  ) {
+    return null
+  }
+
+  return round2(
+    inputs.reduce((total, input) => total + (input.grade ?? 0) * input.weight, 0),
+  )
+}
+
 /** Existing classrooms have no persisted component rows. Keep their historical
  * lecture/laboratory categories readable until a teacher explicitly adopts the
  * new component structure. */
@@ -70,6 +105,7 @@ export function computeConfiguredPeriodComponentGrade(
       categoryUsesComponent(category, componentId) &&
       (category.grading_period_id === null || category.grading_period_id === periodId),
   )
+  if (!hasExactWeightTotal(categories.map((category) => category.weight))) return null
   let weighted = 0
   let totalWeight = 0
   for (const category of categories) {
@@ -113,7 +149,11 @@ export function computeConfiguredStudentGradebook(
       weighted += grade * period.weight
       totalWeight += period.weight
     }
-    components[component.id] = totalWeight > 0 ? weighted / totalWeight : null
+    components[component.id] =
+      totalWeight > 0 &&
+      hasExactWeightTotal(structure.periods.map((period) => period.weight))
+        ? weighted / totalWeight
+        : null
   }
   let total = 0
   let totalWeight = 0
@@ -126,7 +166,11 @@ export function computeConfiguredStudentGradebook(
   return {
     perPeriod,
     components,
-    final: totalWeight > 0 ? round2(total / totalWeight) : null,
+    final:
+      totalWeight > 0 &&
+      hasExactWeightTotal(structure.components.map((component) => component.weight))
+        ? round2(total / totalWeight)
+        : null,
   }
 }
 
@@ -137,6 +181,9 @@ export function computeConfiguredPeriodFinalGrade(
   studentId: string,
   periodId: string,
 ): number | null {
+  if (!hasExactWeightTotal(structure.components.map((component) => component.weight))) {
+    return null
+  }
   let total = 0
   let totalWeight = 0
   for (const component of structure.components) {

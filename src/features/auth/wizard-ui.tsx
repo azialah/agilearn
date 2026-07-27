@@ -127,7 +127,7 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
         >
           <motion.p
             variants={staggerItem}
-            className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-(--color-rail-fg-muted)"
+            className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-(--color-rail-fg-muted)"
           >
             {eyebrow}
           </motion.p>
@@ -233,12 +233,16 @@ export function AuthShell({
       {rail && <AuthRail {...rail} />}
       <div
         className={cn(
-          'relative flex min-h-dvh justify-center bg-(--color-surface-0) md:items-center md:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] md:px-4 md:py-10 md:bg-size-[16px_16px]',
+          // Everything in this shell switches at lg — the rail, the viewport
+          // lock, the mobile typography. The desktop card treatment has to
+          // match, or md–lg gets a shrunken desktop card inside a locked
+          // mobile viewport.
+          'relative flex min-h-dvh justify-center bg-(--color-surface-0) lg:items-center lg:bg-[radial-gradient(var(--color-border-strong)_1.5px,transparent_1.5px)] lg:px-4 lg:py-10 lg:bg-size-[16px_16px]',
           mobileViewportLocked && 'max-lg:h-dvh max-lg:min-h-0 max-lg:overflow-hidden',
         )}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(50%_100%_at_50%_0%,var(--color-accent-500),transparent)] opacity-[0.14]" />
-        <div className="absolute right-4 top-4 z-30 hidden md:block">
+        <div className="absolute right-4 top-4 z-30 hidden lg:block">
           <ThemeToggle />
         </div>
         {/* opacity + margin-top (not a transform) so the card eases in on
@@ -249,24 +253,27 @@ export function AuthShell({
           animate={{ opacity: 1, marginTop: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className={cn(
-            'relative w-full md:max-w-md',
+            'relative w-full lg:max-w-md',
             mobileViewportLocked && 'max-lg:h-dvh max-lg:overflow-hidden',
           )}
         >
           <Card
             className={cn(
-              'max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none',
+              'max-lg:rounded-none max-lg:border-0 max-lg:bg-transparent max-lg:shadow-none',
               mobileViewportLocked
                 ? 'max-lg:h-dvh max-lg:overflow-hidden'
-                : 'max-md:min-h-dvh',
+                : 'max-lg:min-h-dvh',
             )}
           >
             <div
               className={cn(
-                'p-6',
+                // Controls hold 16px at every width here. The shared Input drops
+                // to 14px at md+ for table density, which auth forms don't want —
+                // scoped so the rest of the app keeps its density.
+                'p-6 [&_input]:text-base [&_select]:text-base',
                 mobileViewportLocked
                   ? 'max-lg:h-full max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:pb-6'
-                  : 'max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]',
+                  : 'max-lg:pb-[calc(7rem+env(safe-area-inset-bottom))]',
               )}
             >
               <motion.div
@@ -305,8 +312,11 @@ export function AuthShell({
                 animate={{ opacity: 1, marginTop: 0 }}
                 transition={{ duration: 0.45, ease: 'easeOut', delay: reduce ? 0 : 0.14 }}
                 className={cn(
+                  // Only the h1 scales up on mobile. Bumping every p/label/a to
+                  // 16px too would flatten the 12/14/16 hierarchy — supporting
+                  // text stays sm/xs at every width.
                   mobileFormTypography &&
-                    'max-lg:[&_h1]:text-3xl max-lg:[&_h1]:leading-[1.06] max-lg:[&_h1]:tracking-tight sm:max-lg:[&_h1]:text-4xl max-lg:[&_p]:text-base max-lg:[&_label]:text-base max-lg:[&_button]:text-base max-lg:[&_a]:text-base',
+                    'max-md:[&_h1]:text-xl max-md:[&_h1]:leading-snug md:max-lg:[&_h1]:text-4xl md:max-lg:[&_h1]:leading-[1.06] md:max-lg:[&_h1]:tracking-tight',
                   mobileFormCentered &&
                     'max-lg:mx-auto max-lg:w-full max-lg:max-w-md max-lg:pt-[clamp(2rem,calc(50dvh-22rem),10rem)]',
                 )}
@@ -400,7 +410,10 @@ export function StickyCta({
   form,
 }: StickyCtaProps) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:z-auto md:px-0 md:pt-2 md:pb-0">
+    // md–lg has room to spare, so the CTA flows under the form like it does
+    // at lg instead of being pinned to the viewport bottom. Only xs/sm — where
+    // thumb reach actually matters — keep the fixed bar.
+    <div className="fixed inset-x-0 bottom-0 z-20 bg-transparent px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:max-lg:static md:max-lg:z-auto md:max-lg:mx-auto md:max-lg:max-w-md md:max-lg:px-0 md:max-lg:pt-8 md:max-lg:pb-0 lg:static lg:z-auto lg:px-0 lg:pt-2 lg:pb-0">
       <Button
         type={type}
         form={form}

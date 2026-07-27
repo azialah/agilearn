@@ -44,6 +44,7 @@ const fmt = (value: number | null | undefined) =>
 
 export function GradeGrid({
   classroomId,
+  courseSubjectId,
   structure,
   scores,
   students,
@@ -51,6 +52,7 @@ export function GradeGrid({
   focusStudentId,
 }: {
   classroomId: string
+  courseSubjectId?: string
   structure: GradebookStructure
   scores: ScoreMap
   students: Student[]
@@ -187,7 +189,13 @@ export function GradeGrid({
   ) => {
     if ((scores[activityId]?.[student.id] ?? null) !== value)
       upsertScore.mutate(
-        { classroomId, activityId, studentId: student.id, score: value },
+        {
+          classroomId,
+          courseSubjectId,
+          activityId,
+          studentId: student.id,
+          score: value,
+        },
         {
           onError: (error) =>
             toast({

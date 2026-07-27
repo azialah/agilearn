@@ -100,7 +100,7 @@ export function AnalyticsPage() {
         title="Analytics"
         description="Teaching signals from your real schedules, attendance sessions, and materials."
       />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="rounded-[1.75rem] p-5">
           <BarChart3 className="size-5 text-(--color-accent-350)" />
           <p className="mt-4 text-3xl font-semibold">
@@ -125,7 +125,7 @@ export function AnalyticsPage() {
           </p>
         </Card>
       </div>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Weekly teaching load</h2>
           <p className="mt-1 text-sm text-(--color-ink-muted)">

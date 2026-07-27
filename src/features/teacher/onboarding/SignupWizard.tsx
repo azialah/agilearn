@@ -447,7 +447,7 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
         <StaggerItem>
           <Link
             to="/login"
-            className="mt-4 hidden h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) text-sm font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3) lg:flex"
+            className="mt-4 hidden h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) text-sm font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3) md:flex"
           >
             Back to sign in
           </Link>
@@ -593,7 +593,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
               id="suffix"
               value={suffix}
               onChange={(e) => setSuffix(e.target.value)}
-              className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base text-(--color-ink) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none md:text-sm"
+              className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base text-(--color-ink) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none"
             >
               <option value="">Select a suffix</option>
               {SUFFIXES.map((option) => (

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import type {
   AcademicPeriod,
   AcademicPeriodInsert,
+  AcademicPeriodUpdate,
   ClassroomTemplate,
   ClassroomTemplateInsert,
   CourseSubject,
@@ -33,6 +34,24 @@ export function useCreateAcademicPeriod() {
       const { data, error } = await supabase
         .from('academic_periods')
         .insert(input)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: keys.academicPeriods.all }),
+  })
+}
+
+export function useUpdateAcademicPeriod() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: AcademicPeriodUpdate }) => {
+      const { data, error } = await supabase
+        .from('academic_periods')
+        .update(patch)
+        .eq('id', id)
         .select()
         .single()
       if (error) throw error
@@ -166,6 +185,35 @@ export function useUpdateCourseSubject() {
         queryKey: keys.courseSubjects.byClassroom(subject.classroom_id),
       })
       queryClient.invalidateQueries({ queryKey: keys.courseSubjects.detail(subject.id) })
+    },
+  })
+}
+
+// Meeting slots have `on delete cascade` to course_subject_id, so removing a
+// subject clears its schedule with it — no separate cleanup needed here.
+export function useDeleteCourseSubject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; classroomId: string }) => {
+      const { error } = await supabase.from('course_subjects').delete().eq('id', id)
+      if (error) throw error
+      return id
+    },
+    onSuccess: (_id, variables) => {
+      queryClient.invalidateQueries({ queryKey: keys.courseSubjects.all })
+      queryClient.invalidateQueries({
+        queryKey: keys.courseSubjects.byClassroom(variables.classroomId),
+      })
+      queryClient.invalidateQueries({ queryKey: keys.calendar.allSlots })
+      queryClient.invalidateQueries({
+        queryKey: keys.grades.combinations(variables.classroomId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: keys.grades.structureBase(variables.classroomId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: keys.grades.scoresBase(variables.classroomId),
+      })
     },
   })
 }

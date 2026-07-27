@@ -49,7 +49,7 @@ export function FeaturesPage() {
       description="Agilearn brings the routines around classrooms, student progress, and teaching materials into a calmer place to work."
     >
       <section className="mx-auto max-w-5xl px-6 pb-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon
             return (

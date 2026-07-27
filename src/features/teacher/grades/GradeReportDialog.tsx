@@ -99,7 +99,7 @@ export function GradeReportDialog({
               ))}
             </select>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="report-period">Report period</Label>
               <select

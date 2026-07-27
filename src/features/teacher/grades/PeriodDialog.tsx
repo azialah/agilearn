@@ -23,7 +23,7 @@ interface PeriodForm {
 function initialState(period?: GradingPeriod, nextPosition = 0): PeriodForm {
   return {
     name: period?.name ?? '',
-    weight: String(period?.weight ?? 1),
+    weight: String((period?.weight ?? 1) * 100),
     position: String(period?.position ?? nextPosition),
   }
 }
@@ -52,12 +52,14 @@ export function PeriodDialog({
     if (open) setForm(initialState(period, nextPosition))
   }, [open, period, nextPosition])
 
-  const weight = Number(form.weight)
+  const percentWeight = Number(form.weight)
+  const weight = percentWeight / 100
   const position = Number(form.position)
   const valid =
     form.name.trim().length > 0 &&
-    Number.isFinite(weight) &&
-    weight > 0 &&
+    Number.isFinite(percentWeight) &&
+    percentWeight > 0 &&
+    percentWeight <= 100 &&
     Number.isFinite(position)
 
   async function handleSubmit(event: FormEvent) {
@@ -111,12 +113,13 @@ export function PeriodDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="period-weight">Weight</Label>
+              <Label htmlFor="period-weight">Weight (%)</Label>
               <Input
                 id="period-weight"
                 type="number"
-                min={0}
-                step={0.01}
+                min={1}
+                max={100}
+                step={1}
                 required
                 value={form.weight}
                 onChange={(e) => setForm({ ...form, weight: e.target.value })}
@@ -136,8 +139,8 @@ export function PeriodDialog({
             </div>
           </div>
           <p className="text-xs text-(--color-ink-faint)">
-            Weights are relative — periods that have no graded work are dropped and the
-            rest renormalize automatically.
+            All grading periods together must total 100% before Agilearn can calculate a
+            final grade.
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

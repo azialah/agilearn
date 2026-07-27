@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/Select'
 import {
   computeConfiguredPeriodFinalGrade,
-  computeStudentGradebook,
+  computeConfiguredStudentGradebook,
   type GradebookStructure,
   type ScoreMap,
 } from '@/lib/grading'
@@ -90,8 +90,11 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
                   student.id,
                   period.id,
                 )
-              : computeStudentGradebook(gradebook.structure, gradebook.scores, student.id)
-                  .final
+              : computeConfiguredStudentGradebook(
+                  gradebook.structure,
+                  gradebook.scores,
+                  student.id,
+                ).final
           } catch {
             final = null
           }
@@ -102,7 +105,7 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
         }
       }
 
-      return { classroom, counts, graded, missingPeriod }
+      return { classroom, counts, graded, missingPeriod, hasGradebook: !!gradebook }
     })
   }, [classrooms, students, gradebooks, periodName])
 
@@ -135,7 +138,7 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
       </div>
 
       <div className="mt-3 space-y-3">
-        {visible.map(({ classroom, counts, graded, missingPeriod }) => (
+        {visible.map(({ classroom, counts, graded, missingPeriod, hasGradebook }) => (
           <div
             key={classroom.id}
             className="rounded-md border border-(--color-border) bg-(--color-surface-0) p-3"
@@ -156,7 +159,11 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
               </Button>
             </div>
 
-            {missingPeriod ? (
+            {!hasGradebook ? (
+              <p className="mt-2 text-xs text-(--color-ink-faint)">
+                Open this classroom&apos;s grade sheet to view subject-specific grades.
+              </p>
+            ) : missingPeriod ? (
               <p className="mt-2 text-xs text-(--color-ink-faint)">
                 No {periodName} period in this class.
               </p>

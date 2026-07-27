@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import { EditIcon } from '@/components/icons'
 import { useProfile } from '@/lib/queries/profiles'
 import { useClassroom } from '@/lib/queries/classrooms'
-import { classroomColorClasses } from '@/lib/classroomColor'
 import { ClassroomFormDialog } from './ClassroomFormDialog'
 
 const ImportButton = lazy(() =>
@@ -40,15 +39,7 @@ export function ClassroomHeader({ classroomId }: { classroomId: string }) {
   if (!classroom) return null
   return (
     <PageHeader
-      title={
-        <span className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={`size-3 shrink-0 rounded-full ${classroomColorClasses(classroom).dot}`}
-          />
-          {classroom.course_name}
-        </span>
-      }
+      title={classroom.course_name}
       description={`${classroom.course_code} · ${classroom.year} · ${classroom.block}`}
       actions={
         <div className="flex items-center gap-2">

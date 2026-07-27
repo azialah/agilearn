@@ -94,7 +94,7 @@ export function RequestAccess() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
-          className="mx-auto mt-8 grid max-w-xl gap-4 sm:grid-cols-2"
+          className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2"
         >
           <motion.div variants={item} className="space-y-1.5">
             <Label htmlFor="ra-name">Full name</Label>
