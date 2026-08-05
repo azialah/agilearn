@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   createColumnHelper,
   flexRender,
@@ -6,20 +7,26 @@ import {
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import {
   computeCategoryPercent,
+  computeChedFinalGrade,
   computeConfiguredPeriodComponentGrade,
   computeConfiguredStudentGradebook,
+  computeTransmutedStudentGradebook,
   round2,
   type GradebookStructure,
   type ScoreMap,
+  type TransmutationTable,
 } from '@/lib/grading'
-import { studentFullName, type Student } from '@/types/domain'
+import { studentFullName, type GradingTemplate, type Student } from '@/types/domain'
+import { StudentFormDialog } from '@/features/teacher/classrooms/StudentFormDialog'
+import { finalColumnLabel } from './SummaryTable'
 import { useUpsertScore } from '@/lib/queries/grades'
 import { useToast } from '@/components/ui/toast'
 import { ScoreCell } from './ScoreCell'
-import { nextCell, type CellPos, type NavDirection } from './navigation'
+import { nextCell, parseScoreInput, type CellPos, type NavDirection } from './navigation'
 
 interface LeafInfo {
   kind: 'student' | 'score' | 'catpct' | 'periodgrade' | 'component' | 'final'
@@ -50,6 +57,9 @@ export function GradeGrid({
   students,
   periodId,
   focusStudentId,
+  gradingTemplate,
+  transmutationTable,
+  chedIncrement,
 }: {
   classroomId: string
   courseSubjectId?: string
@@ -58,12 +68,30 @@ export function GradeGrid({
   students: Student[]
   periodId: string
   focusStudentId?: string
+  /** Undefined/'custom' shows the raw computed percentage, unchanged. */
+  gradingTemplate?: GradingTemplate
+  /** Only consulted for 'basic_education'/'senior_high'. */
+  transmutationTable?: TransmutationTable
+  /** Only consulted for 'higher_education'. */
+  chedIncrement?: number
 }) {
   const upsertScore = useUpsertScore()
   const { toast } = useToast()
   const [selected, setSelected] = useState<CellPos>({ row: 0, col: 0 })
   const [editing, setEditing] = useState<CellPos | null>(null)
   const [editSeed, setEditSeed] = useState<string>()
+  const [fullScreen, setFullScreen] = useState(false)
+
+  // Escape exits full-screen from anywhere in the grid, matching every other
+  // full-screen/overlay surface in the app.
+  useEffect(() => {
+    if (!fullScreen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFullScreen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [fullScreen])
   const { editableActivities, leafInfo, columns } = useMemo(() => {
     const helper = createColumnHelper<Student>()
     const info = new Map<string, LeafInfo>()
@@ -149,7 +177,10 @@ export function GradeGrid({
     )
     info.set('final', { kind: 'final' })
     summary.push(
-      helper.display({ id: 'final', header: 'Final' }) as ColumnDef<Student, unknown>,
+      helper.display({
+        id: 'final',
+        header: finalColumnLabel(gradingTemplate),
+      }) as ColumnDef<Student, unknown>,
     )
     cols.push(
       helper.group({ id: 'overall', header: 'Overall', columns: summary }) as ColumnDef<
@@ -158,7 +189,7 @@ export function GradeGrid({
       >,
     )
     return { editableActivities: editable, leafInfo: info, columns: cols }
-  }, [structure, periodId])
+  }, [structure, periodId, gradingTemplate])
   const gradebooks = useMemo(
     () =>
       new Map(
@@ -168,6 +199,38 @@ export function GradeGrid({
         ]),
       ),
     [students, structure, scores],
+  )
+  // Same "Final" concept as the raw percentage above, converted for display
+  // when the subject reports DepEd-transmuted or CHED grades instead.
+  const reportedFinals = useMemo(
+    () =>
+      new Map(
+        students.map((student) => {
+          const value =
+            (gradingTemplate === 'basic_education' ||
+              gradingTemplate === 'senior_high') &&
+            transmutationTable
+              ? computeTransmutedStudentGradebook(
+                  structure,
+                  scores,
+                  student.id,
+                  transmutationTable,
+                ).final
+              : gradingTemplate === 'higher_education'
+                ? computeChedFinalGrade(structure, scores, student.id, chedIncrement)
+                : (gradebooks.get(student.id)?.final ?? null)
+          return [student.id, value]
+        }),
+      ),
+    [
+      students,
+      structure,
+      scores,
+      gradingTemplate,
+      transmutationTable,
+      chedIncrement,
+      gradebooks,
+    ],
   )
   const table = useReactTable({
     data: students,
@@ -187,7 +250,8 @@ export function GradeGrid({
     value: number | null,
     direction: NavDirection | null,
   ) => {
-    if ((scores[activityId]?.[student.id] ?? null) !== value)
+    const previous = scores[activityId]?.[student.id] ?? null
+    if (previous !== value) {
       upsertScore.mutate(
         {
           classroomId,
@@ -205,13 +269,108 @@ export function GradeGrid({
             }),
         },
       )
+      toast({
+        title: `${studentFullName(student)}: score saved`,
+        tone: 'success',
+        durationMs: 10_000,
+        action: {
+          label: 'Undo',
+          onClick: () =>
+            upsertScore.mutate(
+              {
+                classroomId,
+                courseSubjectId,
+                activityId,
+                studentId: student.id,
+                score: previous,
+              },
+              {
+                onSuccess: () =>
+                  toast({
+                    title: `${studentFullName(student)}: score restored`,
+                    tone: 'success',
+                  }),
+                onError: (error) =>
+                  toast({
+                    title: 'Could not undo',
+                    description: error instanceof Error ? error.message : undefined,
+                    tone: 'error',
+                  }),
+              },
+            ),
+        },
+      })
+    }
     setEditing(null)
     setEditSeed(undefined)
     if (direction) move(direction)
   }
+  /** A range paste from an actual spreadsheet (TSV, tab-separated cells,
+   * newline-separated rows), filling from the selected cell. Only fires
+   * while a cell is selected but not mid-edit — a single value pasted into
+   * an open editor already works via the browser's native input paste. */
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    if (editing) return
+    const text = event.clipboardData.getData('text/plain')
+    if (!text) return
+    event.preventDefault()
+    const rows = text
+      .replace(/\r/g, '')
+      .split('\n')
+      .filter((row) => row.length > 0)
+      .map((row) => row.split('\t'))
+    let applied = 0
+    let skipped = 0
+    rows.forEach((row, rowOffset) => {
+      const student = students[selected.row + rowOffset]
+      if (!student) {
+        skipped += row.length
+        return
+      }
+      row.forEach((raw, colOffset) => {
+        const activity = editableActivities[selected.col + colOffset]
+        if (!activity) {
+          skipped += 1
+          return
+        }
+        const result = parseScoreInput(raw, activity.maxScore)
+        if (!result.ok) {
+          skipped += 1
+          return
+        }
+        if ((scores[activity.activityId]?.[student.id] ?? null) !== result.value) {
+          upsertScore.mutate({
+            classroomId,
+            courseSubjectId,
+            activityId: activity.activityId,
+            studentId: student.id,
+            score: result.value,
+          })
+        }
+        applied += 1
+      })
+    })
+    toast({
+      title:
+        skipped > 0
+          ? `Pasted ${applied} scores, skipped ${skipped}`
+          : `Pasted ${applied} scores`,
+      description:
+        skipped > 0
+          ? 'Skipped cells were out of range or not a valid score for that activity.'
+          : undefined,
+      tone: skipped > 0 ? 'error' : 'success',
+    })
+  }
   const leaves = table.getAllLeafColumns()
-  return (
-    <div className="scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)">
+  const grid = (
+    <div
+      className={cn(
+        'scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)',
+        fullScreen && 'max-h-[calc(100vh-8rem)]',
+      )}
+      onPaste={handlePaste}
+    >
       <table className="border-collapse text-sm">
         <thead className="bg-(--color-surface-2) text-xs text-(--color-ink-faint)">
           {table.getHeaderGroups().map((group) => (
@@ -255,14 +414,26 @@ export function GradeGrid({
                   if (!info) return null
                   if (info.kind === 'student')
                     return (
-                      <td
-                        key={column.id}
-                        className={cn(
-                          STICKY,
-                          'whitespace-nowrap px-3 py-1.5 font-medium',
-                        )}
-                      >
-                        {studentFullName(student)}
+                      <td key={column.id} className={cn(STICKY, 'whitespace-nowrap p-0')}>
+                        <StudentFormDialog
+                          classroomId={classroomId}
+                          student={student}
+                          trigger={
+                            <button
+                              type="button"
+                              className="flex w-full flex-col items-start px-3 py-1.5 text-left hover:bg-(--color-surface-2)"
+                            >
+                              <span className="font-medium">
+                                {studentFullName(student)}
+                              </span>
+                              {student.student_no && (
+                                <span className="text-xs text-(--color-ink-faint)">
+                                  {student.student_no}
+                                </span>
+                              )}
+                            </button>
+                          }
+                        />
                       </td>
                     )
                   if (info.kind === 'score') {
@@ -328,7 +499,7 @@ export function GradeGrid({
                     emphasize = true
                   }
                   if (info.kind === 'final') {
-                    value = book?.final ?? null
+                    value = reportedFinals.get(student.id) ?? null
                     emphasize = true
                   }
                   return (
@@ -352,6 +523,38 @@ export function GradeGrid({
           })}
         </tbody>
       </table>
+    </div>
+  )
+
+  const toggleButton = (
+    <button
+      type="button"
+      onClick={() => setFullScreen((current) => !current)}
+      className="inline-flex items-center gap-1.5 rounded-full border border-(--color-border) bg-(--color-surface-1) px-3 py-1.5 text-xs font-medium text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)"
+    >
+      {fullScreen ? (
+        <Minimize2 className="size-3.5" aria-hidden />
+      ) : (
+        <Maximize2 className="size-3.5" aria-hidden />
+      )}
+      {fullScreen ? 'Exit full screen' : 'Full screen'}
+    </button>
+  )
+
+  if (fullScreen) {
+    return createPortal(
+      <div className="fixed inset-0 z-100 flex flex-col gap-3 overflow-auto bg-(--color-surface-0) p-4">
+        <div className="flex justify-end">{toggleButton}</div>
+        {grid}
+      </div>,
+      document.body,
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">{toggleButton}</div>
+      {grid}
     </div>
   )
 }

@@ -29,6 +29,11 @@ export type AllowedDomain = Tables<'allowed_email_domains'>
 export type DomainRequest = Tables<'domain_requests'>
 export type AuditLog = Tables<'audit_log'>
 export type AppNotification = Tables<'notifications'>
+// "Row" suffix distinguishes the DB row from grading.ts's plain-object
+// TransmutationTable/TransmutationBand shapes (same pattern as GradeComponent
+// (legacy enum) vs GradeComponentRecord (table row) already coexisting).
+export type TransmutationTableRow = Tables<'transmutation_tables'>
+export type TransmutationBandRow = Tables<'transmutation_bands'>
 export type ClassRosterRow = Database['public']['Views']['v_class_roster']['Row']
 
 // Insert aliases

@@ -16,11 +16,12 @@ import {
   useScores,
   useSubjectGradeCombinations,
   useSubjectGradebooks,
+  useTransmutationTable,
 } from '@/lib/queries/grades'
 import { reconcileNotificationIncident } from '@/lib/queries/notifications'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { computeConfiguredStudentGradebook } from '@/lib/grading'
-import { studentFullName } from '@/types/domain'
+import { studentFullName, type GradingTemplate } from '@/types/domain'
 import {
   LOW_AVERAGE_THRESHOLD,
   shouldNotifyLowAverage,
@@ -78,6 +79,13 @@ export function GradesPage({
   const { toast } = useToast()
   const activeSubject = subjectsQuery.data?.find(
     (subject) => subject.id === activeSubjectId,
+  )
+  const gradingTemplate = activeSubject?.grading_template as GradingTemplate | undefined
+  const needsTransmutation =
+    gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high'
+  const transmutationQuery = useTransmutationTable(
+    activeSubject?.transmutation_table_id ?? undefined,
+    needsTransmutation,
   )
   const combinationsQuery = useSubjectGradeCombinations(classroomId)
   const subjectGradebooks = useSubjectGradebooks(
@@ -275,6 +283,11 @@ export function GradesPage({
                   structure={structure!}
                   scores={scores}
                   students={students}
+                  gradingTemplate={gradingTemplate}
+                  transmutationTable={
+                    needsTransmutation ? transmutationQuery.data : undefined
+                  }
+                  chedIncrement={activeSubject?.ched_increment}
                 />
               ) : (
                 <GradeGrid
@@ -285,6 +298,11 @@ export function GradesPage({
                   students={students}
                   periodId={view.periodId}
                   focusStudentId={focusStudentId}
+                  gradingTemplate={gradingTemplate}
+                  transmutationTable={
+                    needsTransmutation ? transmutationQuery.data : undefined
+                  }
+                  chedIncrement={activeSubject?.ched_increment}
                 />
               )}
             </motion.div>

@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { BookmarkPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { DateInput } from '@/components/ui/DateInput'
+import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
 import {
   ResponsiveDrawer,
   ResponsiveDrawerBody,
@@ -15,6 +15,15 @@ import {
   ResponsiveDrawerHeader,
   ResponsiveDrawerTrigger,
 } from '@/components/ui/ResponsiveDrawer'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
 import {
   useClassrooms,
@@ -57,12 +66,17 @@ import type {
 
 type Step = 1 | 2 | 3
 
+/** Radix Select.Item rejects value="" — every select with a real "nothing
+ *  chosen yet" option translates through this sentinel at the edges; the
+ *  form's own state keeps '' as its canonical unset value throughout. */
+const UNSET = '__unset__'
+
 const STEP_COPY: Record<Step, { title: string; description: string; label: string }> = {
   1: {
-    title: 'Which term and class is this for?',
+    title: 'Which class is this, and for which term?',
     description:
-      'Pick the school year and semester, then name the cohort you teach it to.',
-    label: 'Term and cohort',
+      'Start with the school level and class details, then the school year and semester.',
+    label: 'Class and term',
   },
   2: {
     title: 'Add the first course subject',
@@ -153,12 +167,24 @@ const FIELDS_OF_STUDY = [
   { name: 'Other', courses: [] },
 ] as const
 
-const LEVELS: Record<TeachingLevel | '', readonly string[]> = {
+export const LEVELS: Record<TeachingLevel | '', readonly string[]> = {
   '': [],
   preschool: ['Nursery', 'Kinder 1', 'Kinder 2'],
   elementary: Array.from({ length: 6 }, (_, i) => `Grade ${i + 1}`),
   high_school: Array.from({ length: 6 }, (_, i) => `Grade ${i + 7}`),
   college: ['1st year', '2nd year', '3rd year', '4th year', '5th year'],
+}
+
+/** Only high_school splits into labeled subgroups today; every other level
+ *  renders as one flat list. UI-only — the stored grade string, the enum,
+ *  and composeCohortName are all unaffected by the grouping. */
+export const LEVEL_GROUPS: Partial<
+  Record<TeachingLevel, Array<{ label: string; options: readonly string[] }>>
+> = {
+  high_school: [
+    { label: 'Junior High (Grade 7–10)', options: LEVELS.high_school.slice(0, 4) },
+    { label: 'Senior High (Grade 11–12)', options: LEVELS.high_school.slice(4) },
+  ],
 }
 
 /** "BSCS" + "3rd year" + "B" reads as "BSCS 3B"; basic ed keeps its wording. */
@@ -300,6 +326,8 @@ export function ClassroomFormDialog({
   const [templateId, setTemplateId] = useState('')
   const [namingTemplate, setNamingTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
+  const [showQuickStart, setShowQuickStart] = useState(false)
+  const [showSemesterDates, setShowSemesterDates] = useState(false)
   // Meeting fields sit outside FormState: a saved template describes the
   // subject, not a point-in-time timetable slot.
   const [addMeeting, setAddMeeting] = useState(true)
@@ -375,6 +403,8 @@ export function ClassroomFormDialog({
       setDuplicateAcknowledged(false)
       setNamingTemplate(false)
       setTemplateName('')
+      setShowQuickStart(false)
+      setShowSemesterDates(false)
       setAddMeeting(true)
       setMeetingDraft(EMPTY_MEETING_DRAFT)
       // An existing classroom whose name does not match the pattern was renamed
@@ -634,116 +664,345 @@ export function ClassroomFormDialog({
             >
               {step === 1 && (
                 <div className="space-y-4">
-                  {!isEditing && (templates?.length ?? 0) > 0 && (
-                    <Field label="Start from a template" htmlFor="classroom-template">
-                      <select
-                        id="classroom-template"
-                        aria-label="Start from a template"
-                        value={templateId}
-                        onChange={(event) => applyTemplate(event.target.value)}
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                      >
-                        <option value="">Start from a blank classroom</option>
-                        {templates?.map((template) => (
-                          <option key={template.id} value={template.id}>
-                            {template.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                  )}
+                  {/* Not collapsed: skipping this and typing a school
+                      year/semester that already has a period silently tries
+                      to create a second one, which the database rejects. */}
                   {(periods?.length ?? 0) > 0 && (
                     <Field label="Use an existing semester" htmlFor="academic-period">
-                      <select
-                        id="academic-period"
-                        aria-label="Use an existing semester"
-                        value={form.periodId}
-                        onChange={(event) => applyPeriod(event.target.value)}
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
+                      <Select
+                        value={form.periodId || UNSET}
+                        onValueChange={(value) =>
+                          applyPeriod(value === UNSET ? '' : value)
+                        }
                       >
-                        <option value="">Set up a new semester below</option>
-                        {periods?.map((period) => (
-                          <option key={period.id} value={period.id}>
-                            {period.semester_name} — SY {period.school_year}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id="academic-period">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={UNSET}>
+                            Set up a new semester below
+                          </SelectItem>
+                          {periods?.map((period) => (
+                            <SelectItem key={period.id} value={period.id}>
+                              {period.semester_name} — SY {period.school_year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                   )}
+                  {!isEditing && (templates?.length ?? 0) > 0 && (
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickStart((current) => !current)}
+                        className="text-xs font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
+                      >
+                        {showQuickStart
+                          ? 'Hide templates'
+                          : '+ Start from a saved template'}
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {showQuickStart && (
+                          <motion.div
+                            key="quick-start"
+                            {...expand(reducedMotion)}
+                            className="overflow-hidden"
+                          >
+                            <Field
+                              label="Start from a template"
+                              htmlFor="classroom-template"
+                            >
+                              <Select
+                                value={templateId || UNSET}
+                                onValueChange={(value) =>
+                                  applyTemplate(value === UNSET ? '' : value)
+                                }
+                              >
+                                <SelectTrigger id="classroom-template">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={UNSET}>
+                                    Start from a blank classroom
+                                  </SelectItem>
+                                  {templates?.map((template) => (
+                                    <SelectItem key={template.id} value={template.id}>
+                                      {template.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  <Field label="School level" htmlFor="school-level">
+                    <Select
+                      value={form.schoolLevel || UNSET}
+                      onValueChange={(value) => {
+                        // The class details below depend on the level, so switching
+                        // it clears the answers that no longer apply. Course code is
+                        // a college-only field in step 2 — cleared too, so a value
+                        // typed while College was selected can't survive hidden and
+                        // get silently saved once the level moves off College.
+                        const schoolLevel =
+                          value === UNSET ? '' : (value as TeachingLevel)
+                        setForm({
+                          ...form,
+                          schoolLevel,
+                          fieldOfStudy: '',
+                          course: '',
+                          year: '',
+                          block: '',
+                          courseCode: schoolLevel === 'college' ? form.courseCode : '',
+                        })
+                      }}
+                    >
+                      <SelectTrigger id="school-level">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNSET}>Choose level</SelectItem>
+                        <SelectItem value="preschool">Preschool</SelectItem>
+                        <SelectItem value="elementary">Elementary</SelectItem>
+                        <SelectItem value="high_school">High school</SelectItem>
+                        <SelectItem value="college">College</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <AnimatePresence initial={false}>
+                    {isCollege && (
+                      <motion.div
+                        key="college-fields"
+                        {...expand(reducedMotion)}
+                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
+                      >
+                        <Field label="Field of study" htmlFor="field-of-study">
+                          <Select
+                            value={form.fieldOfStudy || UNSET}
+                            onValueChange={(value) =>
+                              setForm({
+                                ...form,
+                                fieldOfStudy: value === UNSET ? '' : value,
+                                course: '',
+                              })
+                            }
+                          >
+                            <SelectTrigger id="field-of-study">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={UNSET}>Choose a field</SelectItem>
+                              {FIELDS_OF_STUDY.map((field) => (
+                                <SelectItem key={field.name} value={field.name}>
+                                  {field.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field label="Course" htmlFor="course">
+                          {courses.length > 0 ? (
+                            <Select
+                              value={form.course || UNSET}
+                              onValueChange={(value) =>
+                                setForm({
+                                  ...form,
+                                  course: value === UNSET ? '' : value,
+                                })
+                              }
+                            >
+                              <SelectTrigger id="course">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={UNSET}>Choose a course</SelectItem>
+                                {courses.map((course) => (
+                                  <SelectItem key={course.code} value={course.code}>
+                                    {course.code} ({course.name})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="course"
+                              value={form.course}
+                              placeholder="e.g. BSCS"
+                              onChange={(event) =>
+                                setForm({ ...form, course: event.target.value })
+                              }
+                            />
+                          )}
+                        </Field>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence initial={false}>
+                    {form.schoolLevel && (
+                      <motion.div
+                        key="level-fields"
+                        {...expand(reducedMotion)}
+                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
+                      >
+                        <Field
+                          label={isCollege ? 'Year level' : 'Grade level'}
+                          htmlFor="year-level"
+                        >
+                          <Select
+                            value={form.year || UNSET}
+                            onValueChange={(value) =>
+                              setForm({ ...form, year: value === UNSET ? '' : value })
+                            }
+                          >
+                            <SelectTrigger id="year-level">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={UNSET}>Choose level</SelectItem>
+                              {(() => {
+                                const groups = LEVEL_GROUPS[form.schoolLevel]
+                                if (!groups) {
+                                  return LEVELS[form.schoolLevel].map((level) => (
+                                    <SelectItem key={level} value={level}>
+                                      {level}
+                                    </SelectItem>
+                                  ))
+                                }
+                                return groups.map((group) => (
+                                  <SelectGroup key={group.label}>
+                                    <SelectLabel>{group.label}</SelectLabel>
+                                    {group.options.map((level) => (
+                                      <SelectItem key={level} value={level}>
+                                        {level}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                ))
+                              })()}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field
+                          label={isCollege ? 'Block (optional)' : 'Section (optional)'}
+                          htmlFor="block"
+                        >
+                          <Input
+                            id="block"
+                            value={form.block}
+                            placeholder={isCollege ? 'e.g. B' : 'e.g. Rizal'}
+                            onChange={(event) =>
+                              setForm({ ...form, block: event.target.value })
+                            }
+                          />
+                        </Field>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <Field label="School year starts" htmlFor="school-year-start">
-                      <select
-                        id="school-year-start"
-                        aria-label="School year starts"
+                      <Select
                         value={startYear}
-                        onChange={(event) => setSchoolYear(event.target.value, endYear)}
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
+                        onValueChange={(value) => setSchoolYear(value, endYear)}
                       >
-                        {YEAR_OPTIONS.map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id="school-year-start">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEAR_OPTIONS.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                     <Field label="School year ends" htmlFor="school-year-end">
-                      <select
-                        id="school-year-end"
-                        aria-label="School year ends"
+                      <Select
                         value={endYear}
-                        onChange={(event) => setSchoolYear(startYear, event.target.value)}
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
+                        onValueChange={(value) => setSchoolYear(startYear, value)}
                       >
-                        {YEAR_OPTIONS.map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id="school-year-end">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEAR_OPTIONS.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                     <Field label="Semester" htmlFor="semester">
-                      <select
-                        id="semester"
-                        aria-label="Semester"
+                      <Select
                         value={form.semesterName}
-                        onChange={(event) =>
-                          setForm({
-                            ...form,
-                            semesterName: event.target.value,
-                            periodId: '',
-                          })
+                        onValueChange={(value) =>
+                          setForm({ ...form, semesterName: value, periodId: '' })
                         }
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
                       >
-                        {SEMESTERS.map((semester) => (
-                          <option key={semester} value={semester}>
-                            {semester}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger id="semester">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SEMESTERS.map((semester) => (
+                            <SelectItem key={semester} value={semester}>
+                              {semester}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Field label="Semester starts (optional)" htmlFor="semester-start">
-                      <DateInput
-                        id="semester-start"
-                        value={form.startsOn}
-                        onChange={(event) =>
-                          setForm({ ...form, startsOn: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Semester ends (optional)" htmlFor="semester-end">
-                      <DateInput
-                        id="semester-end"
-                        min={form.startsOn || undefined}
-                        value={form.endsOn}
-                        onChange={(event) =>
-                          setForm({ ...form, endsOn: event.target.value })
-                        }
-                      />
-                    </Field>
+
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowSemesterDates((current) => !current)}
+                      className="text-xs font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
+                    >
+                      {showSemesterDates || form.startsOn || form.endsOn
+                        ? 'Hide semester dates'
+                        : '+ Add semester start and end dates (optional)'}
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {(showSemesterDates || form.startsOn || form.endsOn) && (
+                        <motion.div
+                          key="semester-dates"
+                          {...expand(reducedMotion)}
+                          className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
+                        >
+                          <Field label="Semester starts" htmlFor="semester-start">
+                            <DateInput
+                              id="semester-start"
+                              value={form.startsOn}
+                              onChange={(event) =>
+                                setForm({ ...form, startsOn: event.target.value })
+                              }
+                            />
+                          </Field>
+                          <Field label="Semester ends" htmlFor="semester-end">
+                            <DateInput
+                              id="semester-end"
+                              min={form.startsOn || undefined}
+                              value={form.endsOn}
+                              onChange={(event) =>
+                                setForm({ ...form, endsOn: event.target.value })
+                              }
+                            />
+                          </Field>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
+
                   {renaming ? (
                     <Field label="Class name" htmlFor="class-name">
                       <Input
@@ -824,140 +1083,6 @@ export function ClassroomFormDialog({
                     </p>
                   </div>
 
-                  <Field label="School level" htmlFor="school-level">
-                    <select
-                      id="school-level"
-                      aria-label="School level"
-                      value={form.schoolLevel}
-                      onChange={(event) =>
-                        // The class details below depend on the level, so switching
-                        // it clears the answers that no longer apply.
-                        setForm({
-                          ...form,
-                          schoolLevel: event.target.value as TeachingLevel | '',
-                          fieldOfStudy: '',
-                          course: '',
-                          year: '',
-                          block: '',
-                        })
-                      }
-                      className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                    >
-                      <option value="">Choose level</option>
-                      <option value="preschool">Preschool</option>
-                      <option value="elementary">Elementary</option>
-                      <option value="high_school">High school</option>
-                      <option value="college">College</option>
-                    </select>
-                  </Field>
-
-                  <AnimatePresence initial={false}>
-                    {isCollege && (
-                      <motion.div
-                        key="college-fields"
-                        {...expand(reducedMotion)}
-                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
-                      >
-                        <Field label="Field of study" htmlFor="field-of-study">
-                          <select
-                            id="field-of-study"
-                            aria-label="Field of study"
-                            value={form.fieldOfStudy}
-                            onChange={(event) =>
-                              setForm({
-                                ...form,
-                                fieldOfStudy: event.target.value,
-                                course: '',
-                              })
-                            }
-                            className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                          >
-                            <option value="">Choose a field</option>
-                            {FIELDS_OF_STUDY.map((field) => (
-                              <option key={field.name} value={field.name}>
-                                {field.name}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Course" htmlFor="course">
-                          {courses.length > 0 ? (
-                            <select
-                              id="course"
-                              aria-label="Course"
-                              value={form.course}
-                              onChange={(event) =>
-                                setForm({ ...form, course: event.target.value })
-                              }
-                              className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                            >
-                              <option value="">Choose a course</option>
-                              {courses.map((course) => (
-                                <option key={course.code} value={course.code}>
-                                  {course.code} ({course.name})
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <Input
-                              id="course"
-                              value={form.course}
-                              placeholder="e.g. BSCS"
-                              onChange={(event) =>
-                                setForm({ ...form, course: event.target.value })
-                              }
-                            />
-                          )}
-                        </Field>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <AnimatePresence initial={false}>
-                    {form.schoolLevel && (
-                      <motion.div
-                        key="level-fields"
-                        {...expand(reducedMotion)}
-                        className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
-                      >
-                        <Field
-                          label={isCollege ? 'Year level' : 'Grade level'}
-                          htmlFor="year-level"
-                        >
-                          <select
-                            id="year-level"
-                            aria-label={isCollege ? 'Year level' : 'Grade level'}
-                            value={form.year}
-                            onChange={(event) =>
-                              setForm({ ...form, year: event.target.value })
-                            }
-                            className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                          >
-                            <option value="">Choose level</option>
-                            {LEVELS[form.schoolLevel].map((level) => (
-                              <option key={level} value={level}>
-                                {level}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field
-                          label={isCollege ? 'Block (optional)' : 'Section (optional)'}
-                          htmlFor="block"
-                        >
-                          <Input
-                            id="block"
-                            value={form.block}
-                            placeholder={isCollege ? 'e.g. B' : 'e.g. Rizal'}
-                            onChange={(event) =>
-                              setForm({ ...form, block: event.target.value })
-                            }
-                          />
-                        </Field>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
                   <AnimatePresence initial={false} mode="wait">
                     {duplicate ? (
                       <motion.div
@@ -1016,6 +1141,7 @@ export function ClassroomFormDialog({
                       courseCode: form.courseCode,
                       subjectCode: form.subjectCode,
                       sessionType: form.sessionType,
+                      gradingTemplate: form.gradingTemplate,
                       description: form.description,
                       room: form.room,
                     }}
@@ -1026,6 +1152,7 @@ export function ClassroomFormDialog({
                         courseCode: next.courseCode,
                         subjectCode: next.subjectCode,
                         sessionType: next.sessionType,
+                        gradingTemplate: next.gradingTemplate,
                         description: next.description,
                         room: next.room,
                       })
@@ -1149,22 +1276,5 @@ export function ClassroomFormDialog({
         />
       </ResponsiveDrawerContent>
     </ResponsiveDrawer>
-  )
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string
-  htmlFor: string
-  children: ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
   )
 }

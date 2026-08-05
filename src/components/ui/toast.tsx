@@ -14,11 +14,18 @@ import { maybeNotifyNative } from '@/lib/nativeNotify'
 
 export type ToastTone = 'default' | 'success' | 'error'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastItem {
   id: number
   title: string
   description?: string
   tone: ToastTone
+  action?: ToastAction
+  durationMs: number
 }
 
 interface ToastInput {
@@ -27,6 +34,11 @@ interface ToastInput {
   tone?: ToastTone
   /** Also fire a native OS notification (Notification API) alongside the in-app toast. */
   native?: boolean
+  /** A single action button (e.g. "Undo"). Clicking it also dismisses the toast. */
+  action?: ToastAction
+  /** Overrides the default 4.5s auto-dismiss — an undoable action needs more
+   *  time to actually be undoable. */
+  durationMs?: number
 }
 
 interface ToastContextValue {
@@ -75,10 +87,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const toast = useCallback<ToastContextValue['toast']>(
-    ({ title, description, tone = 'default', native }) => {
+    ({
+      title,
+      description,
+      tone = 'default',
+      native,
+      action,
+      durationMs = DURATION_MS,
+    }) => {
       const id = ++counter
-      setItems((current) => [...current, { id, title, description, tone }])
-      setTimeout(() => dismiss(id), DURATION_MS)
+      setItems((current) => [
+        ...current,
+        { id, title, description, tone, action, durationMs },
+      ])
+      setTimeout(() => dismiss(id), durationMs)
       if (native) maybeNotifyNative(title, description)
     },
     [dismiss],
@@ -147,6 +169,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         {item.description}
                       </p>
                     )}
+                    {item.action && (
+                      <button
+                        onClick={() => {
+                          item.action?.onClick()
+                          dismiss(item.id)
+                        }}
+                        className="mt-1.5 text-sm font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
+                      >
+                        {item.action.label}
+                      </button>
+                    )}
                   </div>
                   <button
                     aria-label="Dismiss"
@@ -162,7 +195,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     className="h-[3px] origin-left bg-(--color-accent-400)/50"
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
-                    transition={{ duration: DURATION_MS / 1000, ease: 'linear' }}
+                    transition={{ duration: item.durationMs / 1000, ease: 'linear' }}
                   />
                 )}
               </motion.div>

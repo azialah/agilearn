@@ -558,6 +558,7 @@ export type Database = {
       }
       course_subjects: {
         Row: {
+          ched_increment: number
           classroom_id: string
           course_code: string
           created_at: string
@@ -571,9 +572,11 @@ export type Database = {
           room: string
           schedule: string
           subject_code: string
+          transmutation_table_id: string | null
           updated_at: string
         }
         Insert: {
+          ched_increment?: number
           classroom_id: string
           course_code?: string
           created_at?: string
@@ -587,9 +590,11 @@ export type Database = {
           room?: string
           schedule?: string
           subject_code?: string
+          transmutation_table_id?: string | null
           updated_at?: string
         }
         Update: {
+          ched_increment?: number
           classroom_id?: string
           course_code?: string
           created_at?: string
@@ -603,6 +608,7 @@ export type Database = {
           room?: string
           schedule?: string
           subject_code?: string
+          transmutation_table_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -619,6 +625,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'v_class_roster'
             referencedColumns: ['classroom_id']
+          },
+          {
+            foreignKeyName: 'course_subjects_transmutation_table_id_fkey'
+            columns: ['transmutation_table_id']
+            isOneToOne: false
+            referencedRelation: 'transmutation_tables'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -783,6 +796,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'v_class_roster'
             referencedColumns: ['classroom_id']
+          },
+        ]
+      }
+      transmutation_tables: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      transmutation_bands: {
+        Row: {
+          id: string
+          max_percent: number
+          min_percent: number
+          table_id: string
+          transmuted_grade: number
+        }
+        Insert: {
+          id?: string
+          max_percent: number
+          min_percent: number
+          table_id: string
+          transmuted_grade: number
+        }
+        Update: {
+          id?: string
+          max_percent?: number
+          min_percent?: number
+          table_id?: string
+          transmuted_grade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transmutation_bands_table_id_fkey'
+            columns: ['table_id']
+            isOneToOne: false
+            referencedRelation: 'transmutation_tables'
+            referencedColumns: ['id']
           },
         ]
       }

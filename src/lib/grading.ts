@@ -417,3 +417,155 @@ export function computeStudentGradebook(
 
   return { perPeriod, lecture, laboratory, final }
 }
+
+/**
+ * DepEd-style report-card conversion (Order 8, s. 2015), layered on top of
+ * the existing 0-100% engine above rather than inside it —
+ * `computeConfiguredPeriodFinalGrade`/`computeConfiguredStudentGradebook`
+ * stay untouched; these functions only ever consume their `number | null`
+ * output.
+ */
+
+/** One inclusive percentage band. A table may leave gaps (e.g. nothing below
+ * its lowest band) — that is a valid shape, not a data error; see
+ * {@link transmuteGrade}. */
+export interface TransmutationBand {
+  minPercent: number
+  maxPercent: number
+  transmutedGrade: number
+}
+
+export type TransmutationTable = readonly TransmutationBand[]
+
+/** Every band internally consistent (0 <= min <= max <= 100) and no two
+ * bands overlap. Does NOT require full 0-100 coverage. */
+export function hasValidTransmutationTable(table: TransmutationTable): boolean {
+  if (table.length === 0) return false
+  const sorted = [...table].sort((a, b) => a.minPercent - b.minPercent)
+  return sorted.every((band, index) => {
+    if (
+      !Number.isFinite(band.minPercent) ||
+      !Number.isFinite(band.maxPercent) ||
+      band.minPercent < 0 ||
+      band.maxPercent > 100 ||
+      band.minPercent > band.maxPercent
+    ) {
+      return false
+    }
+    const previous = sorted[index - 1]
+    return !previous || previous.maxPercent < band.minPercent
+  })
+}
+
+/**
+ * A 0-100 percentage (a period's "Initial Grade") transmuted through the
+ * given table. Null when `percent` is null, the table is malformed, or no
+ * band covers the percentage (e.g. below the lowest band) — every case
+ * propagates as "no grade yet," matching the rest of this module's null rules.
+ */
+export function transmuteGrade(
+  percent: number | null,
+  table: TransmutationTable,
+): number | null {
+  if (percent === null || !hasValidTransmutationTable(table)) return null
+  const band = table.find((b) => percent >= b.minPercent && percent <= b.maxPercent)
+  return band ? band.transmutedGrade : null
+}
+
+/** One grading period's transmuted Quarterly Grade. */
+export function computeTransmutedPeriodGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId: string,
+  table: TransmutationTable,
+): number | null {
+  return transmuteGrade(
+    computeConfiguredPeriodFinalGrade(structure, scores, studentId, periodId),
+    table,
+  )
+}
+
+export interface TransmutedStudentGradebook {
+  perPeriod: Record<string, number | null>
+  final: number | null
+}
+
+/**
+ * DepEd's General Average: each period is transmuted FIRST into its own
+ * Quarterly Grade, and periods are then weight-combined — the combination is
+ * NOT re-transmuted. This is the only mapping that matches how DepEd actually
+ * reports: a 74%/76% split and a flat 75%/75% split must not transmute
+ * identically just because they average to the same blended percentage.
+ */
+export function computeTransmutedStudentGradebook(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  table: TransmutationTable,
+): TransmutedStudentGradebook {
+  const perPeriod: TransmutedStudentGradebook['perPeriod'] = {}
+  for (const period of structure.periods) {
+    perPeriod[period.id] = computeTransmutedPeriodGrade(
+      structure,
+      scores,
+      studentId,
+      period.id,
+      table,
+    )
+  }
+  let weighted = 0
+  let totalWeight = 0
+  for (const period of structure.periods) {
+    const grade = perPeriod[period.id]
+    if (grade === null) continue
+    weighted += grade * period.weight
+    totalWeight += period.weight
+  }
+  const final =
+    totalWeight > 0 && hasExactWeightTotal(structure.periods.map((p) => p.weight))
+      ? round2(weighted / totalWeight)
+      : null
+  return { perPeriod, final }
+}
+
+/**
+ * CHED-style numeric equivalent. Linear from 100% (best) to the passing mark
+ * (worst passing grade); anything below the passing mark floors to the
+ * failing grade. Snaps to the nearest `increment` without float drift.
+ */
+export const CHED_HIGHEST_GRADE = 1.0
+export const CHED_PASSING_GRADE = 3.0
+export const CHED_FAILING_GRADE = 5.0
+export const CHED_PASSING_PERCENT = 75
+export const CHED_DEFAULT_INCREMENT = 0.25
+
+export function bandChedGrade(
+  percent: number | null,
+  increment: number = CHED_DEFAULT_INCREMENT,
+): number | null {
+  if (percent === null || !Number.isFinite(percent) || increment <= 0) return null
+  if (percent < CHED_PASSING_PERCENT) return CHED_FAILING_GRADE
+  // Linear: 100% -> CHED_HIGHEST_GRADE, CHED_PASSING_PERCENT -> CHED_PASSING_GRADE.
+  const span = 100 - CHED_PASSING_PERCENT
+  const raw =
+    CHED_PASSING_GRADE -
+    ((percent - CHED_PASSING_PERCENT) / span) * (CHED_PASSING_GRADE - CHED_HIGHEST_GRADE)
+  const snapped = Math.round(raw / increment) * increment
+  const clamped = Math.min(CHED_FAILING_GRADE, Math.max(CHED_HIGHEST_GRADE, snapped))
+  return round2(clamped)
+}
+
+/** Convenience wrapper composing with `computeConfiguredStudentGradebook`'s
+ * existing `final`, not replacing it. */
+export function computeChedFinalGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  increment: number = CHED_DEFAULT_INCREMENT,
+): number | null {
+  return bandChedGrade(
+    computeConfiguredStudentGradebook(structure, scores, studentId).final,
+    increment,
+  )
+}

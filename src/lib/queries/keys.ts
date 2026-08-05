@@ -71,6 +71,9 @@ export const keys = {
       [...keys.grades.scoresBase(classroomId), courseSubjectId] as const,
     combinations: (classroomId: string) =>
       ['grades', 'subject-combinations', classroomId] as const,
+    // Not classroom-scoped — transmutation tables are shared reference data.
+    transmutationTable: (tableId: string = 'default') =>
+      ['grades', 'transmutation-table', tableId] as const,
   },
 
   attendance: {

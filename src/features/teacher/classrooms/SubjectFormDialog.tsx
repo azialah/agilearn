@@ -16,7 +16,7 @@ import {
 } from '@/lib/queries/academicWorkspace'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { meetingSlotErrorMessage } from '@/features/teacher/calendar/slotErrors'
-import type { CourseSubject } from '@/types/domain'
+import type { CourseSubject, GradingTemplate } from '@/types/domain'
 import {
   EMPTY_SUBJECT_DRAFT,
   kindsFor,
@@ -31,6 +31,7 @@ function draftFromSubject(subject?: CourseSubject): SubjectDraft {
     courseCode: subject.course_code ?? '',
     subjectCode: subject.subject_code ?? '',
     sessionType: subject.session_type,
+    gradingTemplate: subject.grading_template as GradingTemplate,
     description: subject.description ?? '',
     room: subject.room ?? '',
   }
@@ -88,6 +89,7 @@ export function SubjectFormDialog({
       course_code: draft.courseCode.trim(),
       subject_code: draft.subjectCode.trim(),
       session_type: draft.sessionType,
+      grading_template: draft.gradingTemplate,
       description: draft.description.trim(),
       room: draft.room.trim(),
     }

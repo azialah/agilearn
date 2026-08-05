@@ -8,10 +8,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
+import { ChoiceButton } from '@/components/ui/ChoiceButton'
+import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
-import { cn } from '@/lib/cn'
 import { useCreatePeriod, useUpdatePeriod } from '@/lib/queries/grades'
 import type { GradingPeriod } from '@/types/domain'
 
@@ -129,8 +129,7 @@ export function PeriodDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="period-name">Name</Label>
+          <Field label="Name" htmlFor="period-name">
             <Input
               id="period-name"
               required
@@ -146,34 +145,36 @@ export function PeriodDialog({
                     key={name}
                     type="button"
                     onClick={() => setForm({ ...form, name })}
-                    className="rounded-full border border-(--color-border) px-2.5 py-1 text-xs text-(--color-ink-muted) transition-colors hover:border-(--color-accent-400) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+                    className="rounded-full border border-(--color-border) px-2.5 py-1 text-xs text-(--color-ink-muted) transition-colors hover:border-(--color-accent-400) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-350)"
                   >
                     {name}
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </Field>
 
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-(--color-ink-muted)">
               How much does it count?
             </legend>
             <div className="flex gap-2">
-              <ShareChoice
+              <ChoiceButton
                 selected={!custom}
                 onSelect={() => setForm({ ...form, sharePercent: '' })}
+                className="flex-1"
               >
                 Equal share
-              </ShareChoice>
-              <ShareChoice
+              </ChoiceButton>
+              <ChoiceButton
                 selected={custom}
                 onSelect={() =>
                   setForm({ ...form, sharePercent: String(resultingShare || 30) })
                 }
+                className="flex-1"
               >
                 Set a percentage
-              </ShareChoice>
+              </ChoiceButton>
             </div>
             {custom && (
               <div className="flex items-center gap-2">
@@ -232,31 +233,5 @@ export function PeriodDialog({
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function ShareChoice({
-  selected,
-  onSelect,
-  children,
-}: {
-  selected: boolean
-  onSelect: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onSelect}
-      className={cn(
-        'flex-1 rounded-xl border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)',
-        selected
-          ? 'border-(--color-accent-400) bg-(--color-accent-400)/10 font-medium text-(--color-ink)'
-          : 'border-(--color-border) text-(--color-ink-muted) hover:text-(--color-ink)',
-      )}
-    >
-      {children}
-    </button>
   )
 }

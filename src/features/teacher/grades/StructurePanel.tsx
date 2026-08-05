@@ -175,7 +175,9 @@ export function StructurePanel({
     }
   }
 
-  async function applyPreset(template: 'higher_education' | 'basic_education') {
+  async function applyPreset(
+    template: 'higher_education' | 'basic_education' | 'senior_high',
+  ) {
     try {
       await seedTemplate.mutateAsync({ classroomId, courseSubjectId, template })
       toast({ title: 'Grade preset applied', tone: 'success' })
@@ -236,6 +238,14 @@ export function StructurePanel({
                 >
                   School quarters
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void applyPreset('senior_high')}
+                  disabled={seedTemplate.isPending}
+                >
+                  Senior high semesters
+                </Button>
               </div>
             </section>
           )}
@@ -295,7 +305,14 @@ export function StructurePanel({
                       <ConfirmDialog
                         title="Delete grading period?"
                         confirmLabel="Confirm delete"
-                        description={`"${period.name}" and all its activities and scores will be permanently removed.`}
+                        description={(() => {
+                          const count = structure.activities.filter(
+                            (a) => a.grading_period_id === period.id,
+                          ).length
+                          return count > 0
+                            ? `"${period.name}" and its ${count} ${count === 1 ? 'activity' : 'activities'} — and every student's scores for them — will be permanently removed.`
+                            : `"${period.name}" will be permanently removed.`
+                        })()}
                         onConfirm={() => removePeriod(period.id)}
                         trigger={
                           <IconButton label="Delete period" size="sm" variant="danger">
@@ -461,7 +478,14 @@ export function StructurePanel({
                               <ConfirmDialog
                                 title="Delete category?"
                                 confirmLabel="Confirm delete"
-                                description={`"${category.name}" and its activities and scores will be permanently removed.`}
+                                description={(() => {
+                                  const count = structure.activities.filter(
+                                    (a) => a.category_id === category.id,
+                                  ).length
+                                  return count > 0
+                                    ? `"${category.name}" and its ${count} ${count === 1 ? 'activity' : 'activities'} — and every student's scores for them — will be permanently removed.`
+                                    : `"${category.name}" will be permanently removed.`
+                                })()}
                                 onConfirm={() => removeCategory(category.id)}
                                 trigger={
                                   <IconButton
@@ -620,7 +644,7 @@ export function StructurePanel({
                                 <ConfirmDialog
                                   title="Delete activity?"
                                   confirmLabel="Confirm delete"
-                                  description={`"${activity.name}" and its scores will be permanently removed.`}
+                                  description={`"${activity.name}" and every student's score for it will be permanently removed.`}
                                   onConfirm={() => removeActivity(activity.id)}
                                   trigger={
                                     <IconButton

@@ -15,7 +15,8 @@ export const SelectTrigger = forwardRef<
     className={cn(
       'inline-flex h-9 w-full items-center justify-between gap-2 rounded-md',
       'border border-(--color-border) bg-(--color-surface-1) px-3 text-sm',
-      'text-(--color-ink) focus-visible:border-(--color-accent-400) focus-visible:outline-none',
+      // accent-350, not accent-400: see Input.tsx's focus-visible comment.
+      'text-(--color-ink) focus-visible:border-(--color-accent-350) focus-visible:outline-none',
       'data-placeholder:text-(--color-ink-faint) disabled:opacity-50',
       className,
     )}
@@ -72,3 +73,15 @@ export const SelectItem = forwardRef<
   </SelectPrimitive.Item>
 ))
 SelectItem.displayName = 'SelectItem'
+
+export const SelectLabel = forwardRef<
+  React.ComponentRef<typeof SelectPrimitive.Label>,
+  ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn('px-2 py-1.5 text-xs font-medium text-(--color-ink-faint)', className)}
+    {...props}
+  />
+))
+SelectLabel.displayName = 'SelectLabel'

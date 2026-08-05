@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
-import type { GradebookStructure, ScoreMap } from '@/lib/grading'
+import type { GradebookStructure, ScoreMap, TransmutationTable } from '@/lib/grading'
 import type {
   Activity,
   ActivityCategory,
@@ -477,6 +477,49 @@ async function fetchScores(activityIds: string[]): Promise<ScoreMap> {
     bucket[row.student_id] = row.score
   }
   return map
+}
+
+/* -------------------------------------------------------------------------- */
+/* Transmutation tables                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Resolves an explicit table id, or the `is_default = true` table when
+ * `tableId` is undefined (a subject with `transmutation_table_id: null`).
+ * Reshapes rows into the plain band-array shape `grading.ts`'s pure
+ * `transmuteGrade`/`computeTransmutedStudentGradebook` expect — the same
+ * "assemble a plain structure from separate queries" pattern
+ * `fetchGradebookStructure` already uses.
+ */
+export function useTransmutationTable(tableId?: string, enabled = true) {
+  return useQuery({
+    queryKey: keys.grades.transmutationTable(tableId),
+    enabled,
+    queryFn: async (): Promise<TransmutationTable> => {
+      const tableQuery = tableId
+        ? supabase.from('transmutation_tables').select('id').eq('id', tableId).single()
+        : supabase
+            .from('transmutation_tables')
+            .select('id')
+            .eq('is_default', true)
+            .single()
+      const { data: table, error: tableError } = await tableQuery
+      if (tableError) throw tableError
+
+      const { data: bands, error: bandsError } = await supabase
+        .from('transmutation_bands')
+        .select('min_percent, max_percent, transmuted_grade')
+        .eq('table_id', table.id)
+        .order('min_percent', { ascending: true })
+      if (bandsError) throw bandsError
+
+      return (bands ?? []).map((band) => ({
+        minPercent: band.min_percent,
+        maxPercent: band.max_percent,
+        transmutedGrade: band.transmuted_grade,
+      }))
+    },
+  })
 }
 
 /* -------------------------------------------------------------------------- */
