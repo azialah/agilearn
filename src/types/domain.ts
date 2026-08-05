@@ -10,12 +10,15 @@ import type {
 export type Profile = Tables<'profiles'>
 export type AcademicPeriod = Tables<'academic_periods'>
 export type Classroom = Tables<'classrooms'>
+export type ClassroomTemplate = Tables<'classroom_templates'>
 export type CourseSubject = Tables<'course_subjects'>
 export type SubjectMeetingSlot = Tables<'subject_meeting_slots'>
 export type CalendarEvent = Tables<'calendar_events'>
 export type Student = Tables<'students'>
 export type GradingPeriod = Tables<'grading_periods'>
 export type GradeComponentRecord = Tables<'grade_components'>
+export type SubjectGradeCombination = Tables<'subject_grade_combinations'>
+export type SubjectGradeCombinationItem = Tables<'subject_grade_combination_items'>
 export type ActivityCategory = Tables<'activity_categories'>
 export type Activity = Tables<'activities'>
 export type Score = Tables<'scores'>
@@ -26,18 +29,27 @@ export type AllowedDomain = Tables<'allowed_email_domains'>
 export type DomainRequest = Tables<'domain_requests'>
 export type AuditLog = Tables<'audit_log'>
 export type AppNotification = Tables<'notifications'>
+// "Row" suffix distinguishes the DB row from grading.ts's plain-object
+// TransmutationTable/TransmutationBand shapes (same pattern as GradeComponent
+// (legacy enum) vs GradeComponentRecord (table row) already coexisting).
+export type TransmutationTableRow = Tables<'transmutation_tables'>
+export type TransmutationBandRow = Tables<'transmutation_bands'>
 export type ClassRosterRow = Database['public']['Views']['v_class_roster']['Row']
 
 // Insert aliases
 export type ProfileInsert = TablesInsert<'profiles'>
 export type AcademicPeriodInsert = TablesInsert<'academic_periods'>
 export type ClassroomInsert = TablesInsert<'classrooms'>
+export type ClassroomTemplateInsert = TablesInsert<'classroom_templates'>
 export type CourseSubjectInsert = TablesInsert<'course_subjects'>
 export type SubjectMeetingSlotInsert = TablesInsert<'subject_meeting_slots'>
 export type CalendarEventInsert = TablesInsert<'calendar_events'>
 export type StudentInsert = TablesInsert<'students'>
 export type GradingPeriodInsert = TablesInsert<'grading_periods'>
 export type GradeComponentInsert = TablesInsert<'grade_components'>
+export type SubjectGradeCombinationInsert = TablesInsert<'subject_grade_combinations'>
+export type SubjectGradeCombinationItemInsert =
+  TablesInsert<'subject_grade_combination_items'>
 export type ActivityCategoryInsert = TablesInsert<'activity_categories'>
 export type ActivityInsert = TablesInsert<'activities'>
 export type ScoreInsert = TablesInsert<'scores'>
@@ -55,6 +67,9 @@ export type CalendarEventUpdate = TablesUpdate<'calendar_events'>
 export type StudentUpdate = TablesUpdate<'students'>
 export type GradingPeriodUpdate = TablesUpdate<'grading_periods'>
 export type GradeComponentUpdate = TablesUpdate<'grade_components'>
+export type SubjectGradeCombinationUpdate = TablesUpdate<'subject_grade_combinations'>
+export type SubjectGradeCombinationItemUpdate =
+  TablesUpdate<'subject_grade_combination_items'>
 export type ActivityCategoryUpdate = TablesUpdate<'activity_categories'>
 export type ActivityUpdate = TablesUpdate<'activities'>
 export type ScoreUpdate = TablesUpdate<'scores'>
@@ -66,6 +81,7 @@ export type TeachingModuleUpdate = TablesUpdate<'teaching_modules'>
 export type AppRole = Enums<'app_role'>
 export type AcademicPeriodStatus = Enums<'academic_period_status'>
 export type CourseSubjectKind = Enums<'course_subject_kind'>
+export type CourseSubjectSession = Enums<'course_subject_session'>
 export type ClassModality = Enums<'class_modality'>
 export type CalendarEventKind = Enums<'calendar_event_kind'>
 export type CalendarEventVisibility = Enums<'calendar_event_visibility'>

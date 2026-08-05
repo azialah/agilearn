@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DateInput } from '@/components/ui/DateInput'
 import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
 import { useCreateSession, useUpdateSession } from '@/lib/queries/attendance'
@@ -96,9 +97,8 @@ export function SessionFormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="session_date">Date</Label>
-            <Input
+            <DateInput
               id="session_date"
-              type="date"
               required
               value={form.session_date}
               onChange={(e) => setForm({ ...form, session_date: e.target.value })}

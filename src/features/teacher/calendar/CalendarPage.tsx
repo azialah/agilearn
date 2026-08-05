@@ -12,18 +12,106 @@ import {
   ResponsiveDrawerHeader,
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/cn'
 import { useProfile } from '@/lib/queries/profiles'
-import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useAcademicPeriods, useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useClassrooms } from '@/lib/queries/classrooms'
 import {
   useCalendarEvents,
   useCreateCalendarEvent,
   useMeetingSlots,
 } from '@/lib/queries/calendar'
-import { addDays, startOfSundayWeek, toDateKey, WEEKDAY_LABELS } from './calendar'
+import type { CalendarEvent, SubjectMeetingSlot } from '@/types/domain'
+import {
+  addDays,
+  findSlotConflicts,
+  startOfSundayWeek,
+  toDateKey,
+  WEEKDAY_LABELS,
+} from './calendar'
 
 const MONTHS = Array.from({ length: 12 }, (_value, index) =>
   new Date(2026, index).toLocaleString(undefined, { month: 'long' }),
 )
+
+const MODALITY_LABEL = {
+  online: 'Online',
+  hybrid: 'Hybrid',
+} as const
+
+/**
+ * One scheduled class. `compact` is the lg+ week grid, where a 10px type size
+ * is what keeps a slot readable inside a single column; the stacked mobile
+ * list has the width to use the normal 12px scale.
+ *
+ * `hasConflict` flags rows that overlap another meeting on the same day —
+ * 0025's EXCLUDE constraint makes new overlaps impossible, but rows that
+ * predate it are still readable, so we surface the clash rather than
+ * silently stacking two boxes that hide each other.
+ */
+function SlotCard({
+  slot,
+  subjectName,
+  kindLabel,
+  hasConflict = false,
+  compact = false,
+}: {
+  slot: SubjectMeetingSlot
+  subjectName: string
+  kindLabel?: string
+  hasConflict?: boolean
+  compact?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-2',
+        hasConflict
+          ? 'border-(--color-danger)/50 bg-(--color-danger)/10'
+          : 'border-(--color-border) bg-(--color-surface-2)',
+        compact ? 'mb-2 text-[10px]' : 'text-xs',
+      )}
+    >
+      <p className="truncate font-semibold text-(--color-ink)">{subjectName}</p>
+      {kindLabel && (
+        <p className="mt-0.5 uppercase tracking-wide text-(--color-accent-350)">
+          {kindLabel}
+        </p>
+      )}
+      {hasConflict && (
+        <p className="mt-0.5 font-medium text-(--color-danger)">Overlaps another class</p>
+      )}
+      <p className="mt-1 text-(--color-ink-muted)">
+        {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
+      </p>
+      <p className="mt-1 truncate text-(--color-accent-350)">
+        {MODALITY_LABEL[slot.modality as keyof typeof MODALITY_LABEL] ?? 'Face-to-face'}
+      </p>
+    </div>
+  )
+}
+
+function EventCard({
+  event,
+  compact = false,
+}: {
+  event: CalendarEvent
+  compact?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl bg-(--color-accent-400)/12 p-2 text-(--color-ink)',
+        compact ? 'mb-2 text-[10px]' : 'text-xs',
+      )}
+    >
+      <p className="truncate font-medium">{event.title}</p>
+      <p className="mt-1 text-(--color-ink-muted)">
+        {event.kind === 'holiday' ? 'Holiday' : event.kind === 'note' ? 'Note' : 'Event'}
+      </p>
+    </div>
+  )
+}
 
 export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
@@ -32,7 +120,31 @@ export function CalendarPage() {
   const [notes, setNotes] = useState('')
   const { data: profile } = useProfile()
   const { data: subjects = [] } = useAllCourseSubjects()
-  const { data: slots = [] } = useMeetingSlots()
+  const { data: allSlots = [] } = useMeetingSlots()
+  const { data: classrooms = [] } = useClassrooms()
+  const { data: periods = [] } = useAcademicPeriods()
+
+  // Slots from archived semesters would otherwise keep showing on every week.
+  const slots = useMemo(() => {
+    const activePeriods = new Set(
+      periods.filter((period) => period.status === 'active').map((period) => period.id),
+    )
+    const activeClassrooms = new Set(
+      classrooms
+        .filter(
+          (classroom) =>
+            !classroom.academic_period_id ||
+            activePeriods.has(classroom.academic_period_id),
+        )
+        .map((classroom) => classroom.id),
+    )
+    const activeSubjectIds = new Set(
+      subjects
+        .filter((subject) => activeClassrooms.has(subject.classroom_id))
+        .map((subject) => subject.id),
+    )
+    return allSlots.filter((slot) => activeSubjectIds.has(slot.course_subject_id))
+  }, [allSlots, subjects, classrooms, periods])
   const weekStart = startOfSundayWeek(selectedDate)
   const weekEnd = addDays(weekStart, 7)
   const events = useCalendarEvents(weekStart.toISOString(), weekEnd.toISOString())
@@ -87,8 +199,11 @@ export function CalendarPage() {
           </Button>
         }
       />
+      {/* Below lg the three groups don't fit on one line, so the week label
+          takes its own row and nav + pickers share the next. `lg:order-*`
+          restores the original single-row order untouched. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-(--color-border) bg-(--color-surface-1) p-3">
-        <div className="flex items-center gap-2">
+        <div className="order-2 flex items-center gap-2 lg:order-1">
           <Button
             size="sm"
             variant="ghost"
@@ -109,7 +224,7 @@ export function CalendarPage() {
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-sm font-semibold text-(--color-ink)">
+        <p className="order-1 w-full text-sm font-semibold text-(--color-ink) lg:order-2 lg:w-auto">
           {weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
           {addDays(weekStart, 6).toLocaleDateString(undefined, {
             month: 'short',
@@ -117,7 +232,7 @@ export function CalendarPage() {
             year: 'numeric',
           })}
         </p>
-        <div className="flex gap-2">
+        <div className="order-3 flex gap-2">
           <select
             aria-label="Calendar month"
             value={selectedDate.getMonth()}
@@ -151,97 +266,176 @@ export function CalendarPage() {
           </select>
         </div>
       </div>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="overflow-hidden rounded-4xl p-0">
-          <div className="grid grid-cols-7 border-b border-(--color-border)">
-            {days.map((day, index) => {
-              const key = toDateKey(day)
-              const active = key === selectedKey
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedDate(day)}
-                  className={
-                    'min-h-20 border-r border-(--color-border) p-3 text-left last:border-r-0 ' +
-                    (active
-                      ? 'bg-(--color-accent-400)/12'
-                      : 'hover:bg-(--color-surface-2)')
-                  }
-                >
-                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-(--color-ink-faint)">
-                    {WEEKDAY_LABELS[index]}
-                  </span>
-                  <span
+          {/* Seven columns only work once there is room for them. Below lg the
+              same week renders as a stacked day list (see below) — squeezing
+              7 columns into a phone gave ~50px cells that wrapped one word
+              per line. */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-7 border-b border-(--color-border)">
+              {days.map((day, index) => {
+                const key = toDateKey(day)
+                const active = key === selectedKey
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDate(day)}
                     className={
-                      'mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm ' +
-                      (key === today
-                        ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
-                        : 'text-(--color-ink)')
+                      'min-h-20 border-r border-(--color-border) p-3 text-left last:border-r-0 ' +
+                      (active
+                        ? 'bg-(--color-accent-400)/12'
+                        : 'hover:bg-(--color-surface-2)')
                     }
                   >
-                    {day.getDate()}
-                  </span>
-                </button>
-              )
-            })}
+                    <span className="block text-[10px] font-semibold uppercase tracking-wide text-(--color-ink-faint)">
+                      {WEEKDAY_LABELS[index]}
+                    </span>
+                    <span
+                      className={
+                        'mt-1 inline-flex size-7 items-center justify-center rounded-full text-sm ' +
+                        (key === today
+                          ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                          : 'text-(--color-ink)')
+                      }
+                    >
+                      {day.getDate()}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="grid min-h-104 grid-cols-7">
+              {days.map((day) => {
+                const daySlots = slots.filter((slot) => slot.weekday === day.getDay())
+                const dayEvents = (events.data ?? []).filter(
+                  (event) => toDateKey(new Date(event.starts_at)) === toDateKey(day),
+                )
+                return (
+                  <div
+                    key={toDateKey(day)}
+                    className="min-w-0 border-r border-(--color-border) p-2 last:border-r-0"
+                  >
+                    {daySlots.map((slot) => {
+                      const subject = subjects.find(
+                        (item) => item.id === slot.course_subject_id,
+                      )
+                      // 0025 makes overlaps impossible going forward, but rows
+                      // predating it are still readable — show them rather than
+                      // stacking two boxes that silently hide each other.
+                      const clashes = findSlotConflicts(
+                        slot,
+                        daySlots.filter((other) => other.id !== slot.id),
+                      )
+                      return (
+                        <SlotCard
+                          key={slot.id}
+                          slot={slot}
+                          subjectName={subject?.name ?? 'Course subject'}
+                          kindLabel={
+                            subject && subject.kind !== 'other'
+                              ? subject.kind === 'lecture'
+                                ? 'Lecture'
+                                : 'Laboratory'
+                              : undefined
+                          }
+                          hasConflict={clashes.length > 0}
+                          compact
+                        />
+                      )
+                    })}
+                    {dayEvents.map((event) => (
+                      <EventCard key={event.id} event={event} compact />
+                    ))}
+                    {daySlots.length === 0 && dayEvents.length === 0 && (
+                      <p className="p-1 text-[10px] leading-relaxed text-(--color-ink-faint)">
+                        Example slots and events appear here after you add a subject
+                        schedule or note.
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="grid min-h-104 grid-cols-7">
+
+          {/* Below lg: one full-width row per day. Days with nothing on them
+              collapse to a single line instead of repeating a three-line
+              placeholder seven times. */}
+          <div className="lg:hidden">
             {days.map((day) => {
+              const key = toDateKey(day)
+              const active = key === selectedKey
               const daySlots = slots.filter((slot) => slot.weekday === day.getDay())
               const dayEvents = (events.data ?? []).filter(
-                (event) => toDateKey(new Date(event.starts_at)) === toDateKey(day),
+                (event) => toDateKey(new Date(event.starts_at)) === key,
               )
+              const count = daySlots.length + dayEvents.length
               return (
                 <div
-                  key={toDateKey(day)}
-                  className="min-w-0 border-r border-(--color-border) p-2 last:border-r-0"
+                  key={key}
+                  className={cn(
+                    'border-b border-(--color-border) last:border-b-0',
+                    active && 'bg-(--color-accent-400)/8',
+                  )}
                 >
-                  {daySlots.map((slot) => {
-                    const subject = subjects.find(
-                      (item) => item.id === slot.course_subject_id,
-                    )
-                    return (
-                      <div
-                        key={slot.id}
-                        className="mb-2 rounded-xl border border-(--color-border) bg-(--color-surface-2) p-2 text-[10px]"
-                      >
-                        <p className="truncate font-semibold text-(--color-ink)">
-                          {subject?.name ?? 'Course subject'}
-                        </p>
-                        <p className="mt-1 text-(--color-ink-muted)">
-                          {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
-                        </p>
-                        <p className="mt-1 truncate text-(--color-accent-350)">
-                          {slot.modality === 'online'
-                            ? 'Online'
-                            : slot.modality === 'hybrid'
-                              ? 'Hybrid'
-                              : 'Face-to-face'}
-                        </p>
-                      </div>
-                    )
-                  })}
-                  {dayEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="mb-2 rounded-xl bg-(--color-accent-400)/12 p-2 text-[10px] text-(--color-ink)"
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(day)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <span
+                      className={cn(
+                        'inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-medium',
+                        key === today
+                          ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
+                          : 'bg-(--color-surface-2) text-(--color-ink)',
+                      )}
                     >
-                      <p className="truncate font-medium">{event.title}</p>
-                      <p className="mt-1 text-(--color-ink-muted)">
-                        {event.kind === 'holiday'
-                          ? 'Holiday'
-                          : event.kind === 'note'
-                            ? 'Note'
-                            : 'Event'}
-                      </p>
+                      {day.getDate()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-(--color-ink)">
+                        {day.toLocaleDateString(undefined, { weekday: 'long' })}
+                      </span>
+                      <span className="block text-xs text-(--color-ink-faint)">
+                        {count === 0
+                          ? 'Nothing scheduled'
+                          : `${count} ${count === 1 ? 'entry' : 'entries'}`}
+                      </span>
+                    </span>
+                  </button>
+                  {count > 0 && (
+                    <div className="space-y-2 px-4 pb-3">
+                      {daySlots.map((slot) => {
+                        const subject = subjects.find(
+                          (item) => item.id === slot.course_subject_id,
+                        )
+                        const clashes = findSlotConflicts(
+                          slot,
+                          daySlots.filter((other) => other.id !== slot.id),
+                        )
+                        return (
+                          <SlotCard
+                            key={slot.id}
+                            slot={slot}
+                            subjectName={subject?.name ?? 'Course subject'}
+                            kindLabel={
+                              subject && subject.kind !== 'other'
+                                ? subject.kind === 'lecture'
+                                  ? 'Lecture'
+                                  : 'Laboratory'
+                                : undefined
+                            }
+                            hasConflict={clashes.length > 0}
+                          />
+                        )
+                      })}
+                      {dayEvents.map((event) => (
+                        <EventCard key={event.id} event={event} />
+                      ))}
                     </div>
-                  ))}
-                  {daySlots.length === 0 && dayEvents.length === 0 && (
-                    <p className="p-1 text-[10px] leading-relaxed text-(--color-ink-faint)">
-                      Example slots and events appear here after you add a subject
-                      schedule or note.
-                    </p>
                   )}
                 </div>
               )

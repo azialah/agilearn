@@ -67,12 +67,18 @@
   --color-surface-1: #fffcf5;
   --color-surface-2: #f3ebdb;
   --color-surface-3: #eadfca;
-  --color-border: #e6d9c2;
-  --color-border-strong: #d4c3a4;
+  /* Darkened from the original #e6d9c2/#d4c3a4 — those measured ~1.3:1 and
+     ~1.7:1 against surface-1, well under the 3:1 floor for UI-component
+     boundaries (WCAG 1.4.11). Softened twice since: first pass cleared 3:1
+     with more margin than needed (~3.5:1/~4.5:1), this pass sits right at
+     the floor (~3.03:1/~3.22:1) with just enough margin for rendering
+     variance, on the same warm hue. */
+  --color-border: #a09079;
+  --color-border-strong: #9b8b78;
 
   --color-ink: #33291f;
   --color-ink-muted: #7c6a54;
-  --color-ink-faint: #a8967c;
+  --color-ink-faint: #806e54;
 
   /* Accent scale. 300/350 double as on-surface text, so they are kept dark
      enough for AA contrast on cream; 400/500 are solid/tint oranges. */
@@ -93,6 +99,11 @@
 
   --shadow-card: 0 1px 2px rgba(74, 48, 20, 0.1), 0 8px 24px rgba(74, 48, 20, 0.1);
   --shadow-pop: 0 12px 40px rgba(74, 48, 20, 0.18);
+  /* Tinted with the accent hue rather than neutral brown — used on the
+     primary button, so the app's one call-to-action color carries its own
+     shadow instead of a generic gray drop shadow. */
+  --shadow-accent:
+    0 1px 2px rgba(208, 103, 15, 0.18), 0 6px 16px rgba(208, 103, 15, 0.18);
 }
 
 /* DARK — warm espresso surfaces, light-orange accent. */
@@ -103,12 +114,13 @@
   --color-surface-1: #1f1712;
   --color-surface-2: #291f18;
   --color-surface-3: #342820;
-  --color-border: #3a2c22;
-  --color-border-strong: #4c3a2c;
+  /* See the :root comment — same 3:1 fix, softened twice, warm-dark side. */
+  --color-border: #736352;
+  --color-border-strong: #766657;
 
   --color-ink: #f1e7d9;
   --color-ink-muted: #c0ae98;
-  --color-ink-faint: #8b7863;
+  --color-ink-faint: #917e69;
 
   --color-accent-50: #2a1608;
   --color-accent-100: #3d2109;
@@ -127,6 +139,9 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
   --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+  /* Black for the near layer (depth reads on a dark surface), accent glow
+     for the far layer — see the :root comment. */
+  --shadow-accent: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(219, 108, 21, 0.25);
 }
 
 /* CALM WHITE — paper-white teacher workspace, deliberately quieter than Warm Light. */
@@ -136,11 +151,12 @@
   --color-surface-1: #ffffff;
   --color-surface-2: #f1f5f9;
   --color-surface-3: #e8edf3;
-  --color-border: #dce3ea;
-  --color-border-strong: #c7d1dc;
+  /* See the :root comment — same 3:1 fix, softened twice, cool-neutral side. */
+  --color-border: #8b95a1;
+  --color-border-strong: #87919c;
   --color-ink: #1f2933;
   --color-ink-muted: #65717e;
-  --color-ink-faint: #8b98a5;
+  --color-ink-faint: #687582;
   --color-accent-50: #fff7ed;
   --color-accent-100: #ffedd5;
   --color-accent-200: #fed7aa;
@@ -153,6 +169,9 @@
   --color-accent-fg: #fffaf2;
   --shadow-card: 0 1px 2px rgba(31, 41, 51, 0.04), 0 10px 28px rgba(31, 41, 51, 0.06);
   --shadow-pop: 0 18px 48px rgba(31, 41, 51, 0.12);
+  /* Quieter than the warm themes' — see the :root comment — matching how
+     much lighter this theme's other shadows already sit. */
+  --shadow-accent: 0 1px 2px rgba(180, 83, 9, 0.1), 0 6px 16px rgba(180, 83, 9, 0.08);
 }
 
 /* Splash-only token for PageLoader, resolved from the RAW media query, not
@@ -185,6 +204,37 @@
 }
 .stagger-enter > *:nth-child(4) {
   animation-delay: 165ms;
+}
+
+/* Route-level stagger. Every page renders one wrapper element inside <main>,
+   so the sections to animate are one level further down than .stagger-enter
+   reaches. Delay only — the content is mounted and interactive immediately,
+   never held back waiting for an animation. */
+.page-stagger > * > * {
+  animation: card-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.page-stagger > * > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.page-stagger > * > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.page-stagger > * > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.page-stagger > * > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+/* Capped: past the sixth section the wait would be felt, not noticed. */
+.page-stagger > * > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .stagger-enter > *,
+  .page-stagger > * > * {
+    animation: none;
+  }
 }
 @keyframes page-enter {
   from {
@@ -434,6 +484,7 @@ html.custom-cursor-active .app-cursor {
   body {
     margin: 0;
     min-height: 100dvh;
+    overflow-x: hidden;
     background-color: var(--color-surface-0);
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -445,8 +496,12 @@ html.custom-cursor-active .app-cursor {
     border-color: var(--color-border);
   }
 
+  /* accent-350, not accent-400: in the light theme, accent-400 only reaches
+     ~2.5:1 against surface-1, under the 3:1 floor for focus indicators
+     (WCAG 2.4.11 / 1.4.11). accent-350 clears 3:1 in every theme. Matches
+     the same swap in Input.tsx / Select.tsx's focus-visible border. */
   :focus-visible {
-    outline: 2px solid var(--color-accent-400);
+    outline: 2px solid var(--color-accent-350);
     outline-offset: 2px;
   }
 
@@ -498,7 +553,7 @@ html.custom-cursor-active .app-cursor {
   height: 52px;
   text-align: center;
   transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.2s ease;
 }
 .pin-box.filled,

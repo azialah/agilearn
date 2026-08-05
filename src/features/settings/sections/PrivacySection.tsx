@@ -26,7 +26,7 @@ export function PrivacySection() {
             Set the defaults you return to when organizing a new course.
           </p>
         </CardHeader>
-        <CardBody className="grid gap-3 sm:grid-cols-3">
+        <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <SettingHint
             title="Class setup"
             detail="Choose an academic year, term, and editable template when creating a class."
@@ -72,7 +72,7 @@ export function PrivacySection() {
             updates on supported browsers.
           </p>
         </CardHeader>
-        <CardBody className="grid gap-3 sm:grid-cols-2">
+        <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <SettingHint
             title="Install status"
             detail={

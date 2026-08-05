@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
+import { clearQueue } from '@/lib/offlineQueue'
 import {
   composeFullName,
   type AppRole,
@@ -27,10 +28,20 @@ export function useSession() {
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      queryClient.setQueryData(keys.session, session)
+      // Sign-out is the one place every caller routes through, so the whole
+      // cache is dropped here rather than per call site — otherwise classrooms,
+      // grades and attendance survive the sign-out and the next account on this
+      // tab sees the previous teacher's rows until each query refetches.
+      // clear() runs first: it would otherwise wipe the session we just wrote.
       if (!session) {
-        queryClient.removeQueries({ queryKey: keys.profiles.current })
+        queryClient.clear()
+        // The offline queue outlives the cache, so it must be dropped too. It
+        // holds one teacher's unsent attendance keyed by student; replaying it
+        // under the next account on this device would fail RLS anyway, but the
+        // pending list would still expose the previous teacher's rows.
+        void clearQueue()
       }
+      queryClient.setQueryData(keys.session, session)
     })
     return () => data.subscription.unsubscribe()
   }, [queryClient])
@@ -161,6 +172,67 @@ export function useUpdateProfilePreferences() {
         .single()
       if (error) throw error
       return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.profiles.current })
+    },
+  })
+}
+
+/** Upload a cropped avatar to the public bucket and point the profile at it. */
+export function useUploadAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: Blob) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in.')
+
+      // Fixed path per user, so an old photo is replaced rather than orphaned.
+      const path = `${user.id}/avatar.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(path)
+      // The path never changes, so bust the CDN/browser cache on every save.
+      const avatar_url = `${publicUrl}?v=${Date.now()}`
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ avatar_url })
+        .eq('id', user.id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.profiles.current })
+    },
+  })
+}
+
+/** Drop the uploaded photo and fall back to the initials avatar. */
+export function useRemoveAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in.')
+
+      await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`])
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id)
+      if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.profiles.current })

@@ -90,7 +90,7 @@ export function GradeReportDialog({
               aria-label="Learner"
               value={student?.id ?? ''}
               onChange={(event) => setStudentId(event.target.value)}
-              className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
+              className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
             >
               {students.map((row) => (
                 <option key={row.id} value={row.id}>
@@ -99,7 +99,7 @@ export function GradeReportDialog({
               ))}
             </select>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="report-period">Report period</Label>
               <select
@@ -107,7 +107,7 @@ export function GradeReportDialog({
                 aria-label="Report period"
                 value={period}
                 onChange={(event) => setPeriod(event.target.value)}
-                className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
+                className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
                 <option value="overall">Overall grade</option>
                 {structure.periods.map((item) => (
@@ -124,7 +124,7 @@ export function GradeReportDialog({
                 aria-label="Grade report recipient"
                 value={recipient}
                 onChange={(event) => setRecipient(event.target.value as Recipient)}
-                className="h-10 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
+                className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
                 <option value="student">Student email</option>
                 <option value="guardian">Guardian email</option>

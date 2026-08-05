@@ -55,9 +55,14 @@ export function TeacherBreadcrumbs() {
         label: classroom.cohort_name || classroom.block || classroom.course_name,
         classroomId,
       })
-    if (pathname.includes('/grades')) crumbs.push({ label: 'Grades' })
-    if (pathname.includes('/attendance')) crumbs.push({ label: 'Attendance' })
-    if (pathname.includes('/slideshow')) crumbs.push({ label: 'Slideshow' })
+    if (classroom) {
+      // The classroom index is the Roster tab, so name it rather than ending on
+      // the cohort twice.
+      if (pathname.includes('/grades')) crumbs.push({ label: 'Grades' })
+      else if (pathname.includes('/attendance')) crumbs.push({ label: 'Attendance' })
+      else if (pathname.includes('/slideshow')) crumbs.push({ label: 'Slideshow' })
+      else crumbs.push({ label: 'Roster' })
+    }
   } else if (pathname.startsWith('/teacher/modules')) {
     crumbs.push({ label: 'Materials', to: '/teacher/modules' })
   } else if (pathname.startsWith('/teacher/calendar')) {

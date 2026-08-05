@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
-import { PageLoader } from './components/ui/PageLoader'
+import { RouteSkeleton } from './components/ui/RouteSkeleton'
 import { ErrorBoundary } from './lib/bugsnag'
 import { saveLastRoute } from './lib/lastRoute'
 import './styles/app.css'
@@ -10,7 +10,7 @@ import './styles/app.css'
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
-  defaultPendingComponent: PageLoader,
+  defaultPendingComponent: RouteSkeleton,
   scrollRestoration: true,
 })
 

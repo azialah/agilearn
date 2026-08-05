@@ -428,17 +428,13 @@ export type Database = {
           academic_year: string
           block: string
           cohort_name: string
+          color: string | null
           course_code: string
           course_name: string
           created_at: string
-          description: string
-          grading_template: string
           id: string
           owner_id: string
-          room: string
-          schedule: string
           school_level: Database['public']['Enums']['teaching_level'] | null
-          subject_code: string
           term_name: string
           updated_at: string
           year: string
@@ -448,17 +444,13 @@ export type Database = {
           academic_year?: string
           block?: string
           cohort_name?: string
-          course_code: string
-          course_name: string
+          color?: string | null
+          course_code?: string
+          course_name?: string
           created_at?: string
-          description?: string
-          grading_template?: string
           id?: string
           owner_id: string
-          room?: string
-          schedule?: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
-          subject_code?: string
           term_name?: string
           updated_at?: string
           year?: string
@@ -468,17 +460,13 @@ export type Database = {
           academic_year?: string
           block?: string
           cohort_name?: string
+          color?: string | null
           course_code?: string
           course_name?: string
           created_at?: string
-          description?: string
-          grading_template?: string
           id?: string
           owner_id?: string
-          room?: string
-          schedule?: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
-          subject_code?: string
           term_name?: string
           updated_at?: string
           year?: string
@@ -493,6 +481,41 @@ export type Database = {
           },
           {
             foreignKeyName: 'classrooms_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      classroom_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'classroom_templates_owner_id_fkey'
             columns: ['owner_id']
             isOneToOne: false
             referencedRelation: 'profiles'
@@ -535,6 +558,7 @@ export type Database = {
       }
       course_subjects: {
         Row: {
+          ched_increment: number
           classroom_id: string
           course_code: string
           created_at: string
@@ -544,12 +568,15 @@ export type Database = {
           kind: Database['public']['Enums']['course_subject_kind']
           name: string
           position: number
+          session_type: Database['public']['Enums']['course_subject_session']
           room: string
           schedule: string
           subject_code: string
+          transmutation_table_id: string | null
           updated_at: string
         }
         Insert: {
+          ched_increment?: number
           classroom_id: string
           course_code?: string
           created_at?: string
@@ -559,12 +586,15 @@ export type Database = {
           kind?: Database['public']['Enums']['course_subject_kind']
           name: string
           position?: number
+          session_type?: Database['public']['Enums']['course_subject_session']
           room?: string
           schedule?: string
           subject_code?: string
+          transmutation_table_id?: string | null
           updated_at?: string
         }
         Update: {
+          ched_increment?: number
           classroom_id?: string
           course_code?: string
           created_at?: string
@@ -574,9 +604,11 @@ export type Database = {
           kind?: Database['public']['Enums']['course_subject_kind']
           name?: string
           position?: number
+          session_type?: Database['public']['Enums']['course_subject_session']
           room?: string
           schedule?: string
           subject_code?: string
+          transmutation_table_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -593,6 +625,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'v_class_roster'
             referencedColumns: ['classroom_id']
+          },
+          {
+            foreignKeyName: 'course_subjects_transmutation_table_id_fkey'
+            columns: ['transmutation_table_id']
+            isOneToOne: false
+            referencedRelation: 'transmutation_tables'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -682,6 +721,134 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'course_subjects'
             referencedColumns: ['id', 'classroom_id']
+          },
+        ]
+      }
+      subject_grade_combination_items: {
+        Row: {
+          classroom_id: string
+          combination_id: string
+          course_subject_id: string
+          position: number
+          weight: number
+        }
+        Insert: {
+          classroom_id: string
+          combination_id: string
+          course_subject_id: string
+          position?: number
+          weight: number
+        }
+        Update: {
+          classroom_id?: string
+          combination_id?: string
+          course_subject_id?: string
+          position?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'subject_grade_combination_items_combination_id_classroom_id_fkey'
+            columns: ['combination_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'subject_grade_combinations'
+            referencedColumns: ['id', 'classroom_id']
+          },
+          {
+            foreignKeyName: 'subject_grade_combination_items_course_subject_id_classroom_id_fkey'
+            columns: ['course_subject_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'course_subjects'
+            referencedColumns: ['id', 'classroom_id']
+          },
+        ]
+      }
+      subject_grade_combinations: {
+        Row: {
+          classroom_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'subject_grade_combinations_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'subject_grade_combinations_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'v_class_roster'
+            referencedColumns: ['classroom_id']
+          },
+        ]
+      }
+      transmutation_tables: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      transmutation_bands: {
+        Row: {
+          id: string
+          max_percent: number
+          min_percent: number
+          table_id: string
+          transmuted_grade: number
+        }
+        Insert: {
+          id?: string
+          max_percent: number
+          min_percent: number
+          table_id: string
+          transmuted_grade: number
+        }
+        Update: {
+          id?: string
+          max_percent?: number
+          min_percent?: number
+          table_id?: string
+          transmuted_grade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transmutation_bands_table_id_fkey'
+            columns: ['table_id']
+            isOneToOne: false
+            referencedRelation: 'transmutation_tables'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -838,6 +1005,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_color: string
+          avatar_url: string | null
           created_at: string
           email: string
           first_name: string
@@ -855,6 +1023,7 @@ export type Database = {
         }
         Insert: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email: string
           first_name?: string
@@ -872,6 +1041,7 @@ export type Database = {
         }
         Update: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
           first_name?: string
@@ -990,6 +1160,45 @@ export type Database = {
           },
         ]
       }
+      subject_meeting_slot_conflicts: {
+        Row: {
+          archived_at: string
+          course_subject_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          location_label: string
+          modality: Database['public']['Enums']['class_modality']
+          owner_id: string
+          starts_at: string
+          weekday: number
+        }
+        Insert: {
+          archived_at?: string
+          course_subject_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          location_label?: string
+          modality?: Database['public']['Enums']['class_modality']
+          owner_id: string
+          starts_at: string
+          weekday: number
+        }
+        Update: {
+          archived_at?: string
+          course_subject_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          location_label?: string
+          modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
+          starts_at?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
       subject_meeting_slots: {
         Row: {
           course_subject_id: string
@@ -998,6 +1207,7 @@ export type Database = {
           id: string
           location_label: string
           modality: Database['public']['Enums']['class_modality']
+          owner_id: string
           starts_at: string
           weekday: number
         }
@@ -1008,6 +1218,7 @@ export type Database = {
           id?: string
           location_label?: string
           modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
           starts_at: string
           weekday: number
         }
@@ -1018,6 +1229,7 @@ export type Database = {
           id?: string
           location_label?: string
           modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
           starts_at?: string
           weekday?: number
         }
@@ -1027,6 +1239,13 @@ export type Database = {
             columns: ['course_subject_id']
             isOneToOne: false
             referencedRelation: 'course_subjects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'subject_meeting_slots_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -1287,6 +1506,22 @@ export type Database = {
         }
         Returns: string
       }
+      save_subject_grade_combination: {
+        Args: {
+          p_classroom_id: string
+          p_id: string | null
+          p_items: Json
+          p_name: string
+        }
+        Returns: string
+      }
+      delete_subject_grade_combination: {
+        Args: {
+          p_classroom_id: string
+          p_id: string
+        }
+        Returns: undefined
+      }
       submit_domain_request: {
         Args: {
           p_domain: string
@@ -1305,6 +1540,7 @@ export type Database = {
       calendar_event_visibility: 'private' | 'organization'
       class_modality: 'face_to_face' | 'online' | 'hybrid'
       course_subject_kind: 'lecture' | 'laboratory' | 'other'
+      course_subject_session: 'single' | 'lecture_lab'
       grade_component: 'lecture' | 'laboratory'
       module_kind:
         'lesson_plan' | 'activity_story' | 'resource' | 'syllabus' | 'teaching_material'
@@ -1439,6 +1675,7 @@ export const Constants = {
       calendar_event_visibility: ['private', 'organization'],
       class_modality: ['face_to_face', 'online', 'hybrid'],
       course_subject_kind: ['lecture', 'laboratory', 'other'],
+      course_subject_session: ['single', 'lecture_lab'],
       grade_component: ['lecture', 'laboratory'],
       module_kind: [
         'lesson_plan',

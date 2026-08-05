@@ -42,6 +42,11 @@ function toText(value: unknown): string {
   return String(value).trim()
 }
 
+/** "Manuel" / "M." / "M" all become "M" — the column stores the initial only. */
+export function toInitial(value: string): string {
+  return value.trim().charAt(0).toUpperCase()
+}
+
 const HEADER_TOKENS = new Set([
   'studentno',
   'studentid',
@@ -188,7 +193,9 @@ export function parseRosterRows(
     const studentNo = cells[0] ?? ''
     const lastName = cells[1] ?? ''
     const firstName = cells[2] ?? ''
-    const middleInitial = cells[3] ?? ''
+    // The sheet may carry a full middle name ("Manuel"); the roster stores and
+    // displays only the initial ("Lopez, John Neo M.").
+    const middleInitial = toInitial(cells[3] ?? '')
     const rowNumber = i + rowOffset + 1
 
     // Fully blank row — ignore entirely.

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { BookOpen, Search, Settings2 } from 'lucide-react'
+import { ClassroomIcon, SearchIcon, SettingsIcon, SubjectIcon } from '@/components/icons'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog'
 import { cn } from '@/lib/cn'
 import { useProfile } from '@/lib/queries/profiles'
@@ -47,16 +47,16 @@ export function CommandPalette({
     const classroomItems = classrooms.slice(0, 8).map((classroom) => ({
       to: `/teacher/classrooms/${classroom.id}`,
       label: classroom.cohort_name || classroom.block || classroom.course_name,
-      icon: BookOpen,
+      icon: ClassroomIcon,
     }))
     const subjectItems = subjects.slice(0, 10).map((subject) => ({
       to: `/teacher/classrooms/${subject.classroom_id}`,
       label: `Subject · ${subject.name}`,
-      icon: BookOpen,
+      icon: SubjectIcon,
     }))
     return [
       ...navItems,
-      { to: '/settings', label: t('settings'), icon: Settings2 },
+      { to: '/settings', label: t('settings'), icon: SettingsIcon },
       ...classroomItems,
       ...subjectItems,
     ]
@@ -127,7 +127,10 @@ export function CommandPalette({
         <DialogTitle className="sr-only">Jump to a page</DialogTitle>
         <div className="flex h-full flex-col lg:h-auto">
           <div className="flex items-center gap-3 border-b border-(--color-border) px-4 py-3.5">
-            <Search className="size-5 shrink-0 text-(--color-accent-350)" aria-hidden />
+            <SearchIcon
+              className="size-5 shrink-0 text-(--color-accent-350)"
+              aria-hidden
+            />
             <input
               ref={inputRef}
               role="combobox"
@@ -177,7 +180,7 @@ export function CommandPalette({
                       : 'text-(--color-ink-muted)',
                   )}
                 >
-                  <Icon className="text-base text-(--color-ink-faint)" />
+                  <Icon className="size-4 shrink-0 text-(--color-ink-faint)" />
                   {item.label}
                 </li>
               )

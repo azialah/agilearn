@@ -94,7 +94,7 @@ export function RequestAccess() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
-          className="mx-auto mt-8 grid max-w-xl gap-4 sm:grid-cols-2"
+          className="mx-auto mt-8 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2"
         >
           <motion.div variants={item} className="space-y-1.5">
             <Label htmlFor="ra-name">Full name</Label>
@@ -151,12 +151,7 @@ export function RequestAccess() {
           )}
 
           <motion.div variants={item} className="sm:col-span-2">
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full !rounded-full"
-              loading={submitting}
-            >
+            <Button type="submit" size="lg" className="w-full" loading={submitting}>
               Send request
             </Button>
             <p className="mt-3 text-center text-xs text-(--color-ink-faint)">

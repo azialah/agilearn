@@ -18,11 +18,15 @@ export const Route = createFileRoute('/_auth/teacher/classrooms/$classroomId/gra
 function GradesRoute() {
   const { classroomId } = Route.useParams()
   const { studentId, subjectId } = Route.useSearch()
+  const navigate = Route.useNavigate()
   return (
     <GradesPage
       classroomId={classroomId}
       focusStudentId={studentId}
       initialSubjectId={subjectId}
+      onSubjectChange={(id) =>
+        navigate({ search: (prev) => ({ ...prev, subjectId: id }) })
+      }
     />
   )
 }

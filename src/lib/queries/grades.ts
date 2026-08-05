@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
-import type { GradebookStructure, ScoreMap } from '@/lib/grading'
+import type { GradebookStructure, ScoreMap, TransmutationTable } from '@/lib/grading'
 import type {
   Activity,
   ActivityCategory,
@@ -16,10 +16,85 @@ import type {
   GradeComponentRecord,
   GradeComponentInsert,
   GradeComponentUpdate,
+  SubjectGradeCombination,
+  SubjectGradeCombinationItem,
 } from '@/types/domain'
 
 export type GradeTemplate =
   'basic_education' | 'senior_high' | 'higher_education' | 'custom'
+
+export interface SubjectGradeCombinationWithItems extends SubjectGradeCombination {
+  items: SubjectGradeCombinationItem[]
+}
+
+export function useSubjectGradeCombinations(classroomId: string) {
+  return useQuery({
+    queryKey: keys.grades.combinations(classroomId),
+    enabled: !!classroomId,
+    queryFn: async (): Promise<SubjectGradeCombinationWithItems[]> => {
+      const { data, error } = await supabase
+        .from('subject_grade_combinations')
+        .select('*, items:subject_grade_combination_items(*)')
+        .eq('classroom_id', classroomId)
+        .order('created_at')
+        .returns<SubjectGradeCombinationWithItems[]>()
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
+export function useSaveSubjectGradeCombination() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      classroomId,
+      name,
+      items,
+    }: {
+      id?: string
+      classroomId: string
+      name: string
+      items: Array<{ courseSubjectId: string; weight: number }>
+    }) => {
+      const { data, error } = await supabase.rpc('save_subject_grade_combination', {
+        p_id: id ?? null,
+        p_classroom_id: classroomId,
+        p_name: name,
+        p_items: items.map((item) => ({
+          course_subject_id: item.courseSubjectId,
+          weight: item.weight,
+        })),
+      })
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_row, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: keys.grades.combinations(variables.classroomId),
+      })
+    },
+  })
+}
+
+export function useDeleteSubjectGradeCombination() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, classroomId }: { id: string; classroomId: string }) => {
+      const { error } = await supabase.rpc('delete_subject_grade_combination', {
+        p_id: id,
+        p_classroom_id: classroomId,
+      })
+      if (error) throw error
+    },
+    onSuccess: (_value, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: keys.grades.combinations(variables.classroomId),
+      })
+    },
+  })
+}
 
 /** Seeds an editable starting structure; teachers retain full control afterwards. */
 export function useSeedGradeTemplate() {
@@ -76,11 +151,12 @@ export function useSeedGradeTemplate() {
       const categories: Array<{ name: string; weight: number }> =
         template === 'higher_education'
           ? [
-              { name: 'Midterm quizzes', weight: 0.3 },
-              { name: 'Midterm projects & activities', weight: 0.5 },
-              { name: 'Midterm exam', weight: 0.2 },
-              { name: 'Final activities & quizzes', weight: 0.4 },
-              { name: 'Final projects', weight: 0.6 },
+              { name: 'Midterm quizzes', weight: 0.2 },
+              { name: 'Midterm projects', weight: 0.4 },
+              { name: 'Midterm exam', weight: 0.4 },
+              { name: 'Final quizzes', weight: 0.2 },
+              { name: 'Final projects', weight: 0.4 },
+              { name: 'Final exam', weight: 0.4 },
             ]
           : [
               { name: 'Written work', weight: 0.3 },
@@ -258,6 +334,12 @@ export interface ClassroomGradebook {
   scores: ScoreMap
 }
 
+export interface SubjectGradebook {
+  courseSubjectId: string
+  structure: GradebookStructure
+  scores: ScoreMap
+}
+
 /**
  * Structure + scores for many classrooms at once, for the dashboard and the
  * school-wide admin overview. RLS decides the reach: a teacher gets their own
@@ -314,13 +396,67 @@ export function useAllGradebooks(classroomIds: string[]) {
 }
 
 /**
+ * Loads one gradebook per subject in a classroom. Subject-scoped score keys
+ * prevent a Lecture query from overwriting the Laboratory score cache.
+ */
+export function useSubjectGradebooks(classroomId: string, courseSubjectIds: string[]) {
+  const structureQueries = useQueries({
+    queries: courseSubjectIds.map((courseSubjectId) => ({
+      queryKey: keys.grades.structure(classroomId, courseSubjectId),
+      enabled: !!classroomId && !!courseSubjectId,
+      queryFn: () => fetchGradebookStructure(classroomId, courseSubjectId),
+    })),
+  })
+
+  const scoresQueries = useQueries({
+    queries: courseSubjectIds.map((courseSubjectId, index) => {
+      const activityIds = (structureQueries[index]?.data?.activities ?? []).map(
+        (activity) => activity.id,
+      )
+      return {
+        queryKey: keys.grades.byClassroom(classroomId, courseSubjectId),
+        enabled: !!classroomId && !!courseSubjectId && activityIds.length > 0,
+        queryFn: () => fetchScores(activityIds),
+      }
+    }),
+  })
+
+  const gradebooks = useMemo(() => {
+    const map = new Map<string, SubjectGradebook>()
+    courseSubjectIds.forEach((courseSubjectId, index) => {
+      const structure = structureQueries[index]?.data
+      if (!structure) return
+      map.set(courseSubjectId, {
+        courseSubjectId,
+        structure,
+        scores: scoresQueries[index]?.data ?? {},
+      })
+    })
+    return map
+    // `useQueries` returns a stable result array keyed by each subject query.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseSubjectIds.join(','), structureQueries, scoresQueries])
+
+  return {
+    gradebooks,
+    isLoading:
+      structureQueries.some((query) => query.isLoading) ||
+      scoresQueries.some((query) => query.isLoading),
+  }
+}
+
+/**
  * Fetch every score for the supplied activities as a nested
  * activityId -> studentId -> score map. Disabled until at least one activity id
  * is known so we never issue an empty `.in()` query.
  */
-export function useScores(classroomId: string, activityIds: string[]) {
+export function useScores(
+  classroomId: string,
+  activityIds: string[],
+  courseSubjectId?: string,
+) {
   return useQuery({
-    queryKey: keys.grades.byClassroom(classroomId),
+    queryKey: keys.grades.byClassroom(classroomId, courseSubjectId),
     enabled: !!classroomId && activityIds.length > 0,
     queryFn: () => fetchScores(activityIds),
   })
@@ -341,6 +477,49 @@ async function fetchScores(activityIds: string[]): Promise<ScoreMap> {
     bucket[row.student_id] = row.score
   }
   return map
+}
+
+/* -------------------------------------------------------------------------- */
+/* Transmutation tables                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Resolves an explicit table id, or the `is_default = true` table when
+ * `tableId` is undefined (a subject with `transmutation_table_id: null`).
+ * Reshapes rows into the plain band-array shape `grading.ts`'s pure
+ * `transmuteGrade`/`computeTransmutedStudentGradebook` expect — the same
+ * "assemble a plain structure from separate queries" pattern
+ * `fetchGradebookStructure` already uses.
+ */
+export function useTransmutationTable(tableId?: string, enabled = true) {
+  return useQuery({
+    queryKey: keys.grades.transmutationTable(tableId),
+    enabled,
+    queryFn: async (): Promise<TransmutationTable> => {
+      const tableQuery = tableId
+        ? supabase.from('transmutation_tables').select('id').eq('id', tableId).single()
+        : supabase
+            .from('transmutation_tables')
+            .select('id')
+            .eq('is_default', true)
+            .single()
+      const { data: table, error: tableError } = await tableQuery
+      if (tableError) throw tableError
+
+      const { data: bands, error: bandsError } = await supabase
+        .from('transmutation_bands')
+        .select('min_percent, max_percent, transmuted_grade')
+        .eq('table_id', table.id)
+        .order('min_percent', { ascending: true })
+      if (bandsError) throw bandsError
+
+      return (bands ?? []).map((band) => ({
+        minPercent: band.min_percent,
+        maxPercent: band.max_percent,
+        transmutedGrade: band.transmuted_grade,
+      }))
+    },
+  })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -401,7 +580,7 @@ export function useDeletePeriod() {
         queryKey: keys.grades.structureBase(variables.classroomId),
       })
       queryClient.invalidateQueries({
-        queryKey: keys.grades.byClassroom(variables.classroomId),
+        queryKey: keys.grades.scoresBase(variables.classroomId),
       })
     },
   })
@@ -465,7 +644,7 @@ export function useDeleteCategory() {
         queryKey: keys.grades.structureBase(variables.classroomId),
       })
       queryClient.invalidateQueries({
-        queryKey: keys.grades.byClassroom(variables.classroomId),
+        queryKey: keys.grades.scoresBase(variables.classroomId),
       })
     },
   })
@@ -536,7 +715,7 @@ export function useDeleteActivity() {
         queryKey: keys.grades.structureBase(variables.classroomId),
       })
       queryClient.invalidateQueries({
-        queryKey: keys.grades.byClassroom(variables.classroomId),
+        queryKey: keys.grades.scoresBase(variables.classroomId),
       })
     },
   })
@@ -548,6 +727,7 @@ export function useDeleteActivity() {
 
 export interface ScoreMutationInput {
   classroomId: string
+  courseSubjectId?: string
   activityId: string
   studentId: string
   score: number | null
@@ -569,8 +749,8 @@ export function useUpsertScore() {
         )
       if (error) throw error
     },
-    onMutate: async ({ classroomId, activityId, studentId, score }) => {
-      const key = keys.grades.byClassroom(classroomId)
+    onMutate: async ({ classroomId, courseSubjectId, activityId, studentId, score }) => {
+      const key = keys.grades.byClassroom(classroomId, courseSubjectId)
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<ScoreMap>(key)
       queryClient.setQueryData<ScoreMap>(key, (old) => {
@@ -585,7 +765,7 @@ export function useUpsertScore() {
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({
-        queryKey: keys.grades.byClassroom(variables.classroomId),
+        queryKey: keys.grades.scoresBase(variables.classroomId),
       })
     },
   })

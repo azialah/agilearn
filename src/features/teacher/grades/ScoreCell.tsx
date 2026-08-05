@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { directionForKey, parseScoreInput, type NavDirection } from './navigation'
 
@@ -39,6 +39,7 @@ export function ScoreCell({
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState('')
   const [invalid, setInvalid] = useState<string | null>(null)
+  const errorId = useId()
 
   // Seed the draft when entering edit mode and focus the input.
   useEffect(() => {
@@ -139,6 +140,7 @@ export function ScoreCell({
             if (!tryCommit(null)) onCancel()
           }}
           aria-invalid={invalid ? true : undefined}
+          aria-describedby={invalid ? errorId : undefined}
           className={cn(
             'h-9 w-full min-w-16 rounded-none border-2 bg-(--color-surface-0) px-2 text-right text-sm',
             'text-(--color-ink) focus:outline-none',
@@ -146,7 +148,11 @@ export function ScoreCell({
           )}
         />
         {invalid && (
-          <span className="absolute left-1 top-full z-10 mt-0.5 whitespace-nowrap rounded-sm bg-(--color-danger) px-1.5 py-0.5 text-[10px] font-medium text-white shadow-(--shadow-pop)">
+          <span
+            id={errorId}
+            role="alert"
+            className="absolute left-1 top-full z-10 mt-0.5 whitespace-nowrap rounded-sm bg-(--color-danger) px-1.5 py-0.5 text-[10px] font-medium text-white shadow-(--shadow-pop)"
+          >
             {invalid}
           </span>
         )}

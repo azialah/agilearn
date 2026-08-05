@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { RouteSkeleton } from '@/components/ui/RouteSkeleton'
 import { SlideshowIcon } from '@/components/icons'
 import { useSlideshowData } from './useSlideshowData'
 import { SlidePlayer } from './SlidePlayer'
@@ -12,12 +12,7 @@ export function SlideshowPage({ classroomId }: { classroomId: string }) {
     useSlideshowData(classroomId)
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-(--color-ink-muted)">
-        <Spinner className="size-6" />
-        <p className="text-sm">Preparing the presentation…</p>
-      </div>
-    )
+    return <RouteSkeleton />
   }
 
   if (isError || !classroom) {

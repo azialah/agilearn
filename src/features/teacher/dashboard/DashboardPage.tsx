@@ -18,11 +18,11 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useProfile } from '@/lib/queries/profiles'
-import { useAcademicPeriods } from '@/lib/queries/academicWorkspace'
+import { useAcademicPeriods, useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useAllStudents } from '@/lib/queries/students'
 import { useAllClassSessions } from '@/lib/queries/attendance'
 import {
-  computeStudentGradebook,
+  computeConfiguredStudentGradebook,
   type GradebookStructure,
   type ScoreMap,
 } from '@/lib/grading'
@@ -54,6 +54,7 @@ export function DashboardPage() {
   // DB ensures teachers only see their own classrooms/students/sessions.
   const studentsQuery = useAllStudents()
   const allSessionsQuery = useAllClassSessions()
+  const subjectsQuery = useAllCourseSubjects()
 
   // Structure + scores for every classroom, in one shared hook (RLS scopes the
   // reach). Replaces two hand-rolled `useQueries` blocks that duplicated
@@ -62,7 +63,17 @@ export function DashboardPage() {
     () => (classrooms ?? []).map((classroom) => classroom.id),
     [classrooms],
   )
-  const { gradebooks } = useAllGradebooks(classroomIds)
+  const singleSubjectClassroomIds = React.useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const subject of subjectsQuery.data ?? []) {
+      counts.set(subject.classroom_id, (counts.get(subject.classroom_id) ?? 0) + 1)
+    }
+    return classroomIds.filter((classroomId) => counts.get(classroomId) === 1)
+  }, [classroomIds, subjectsQuery.data])
+  // A classroom with multiple subjects has no implicit “one final”. Its
+  // grade-sheet preview can show each subject or an explicitly saved combined
+  // final, so the dashboard intentionally excludes it instead of merging data.
+  const { gradebooks } = useAllGradebooks(singleSubjectClassroomIds)
 
   const structureByClassroom = React.useMemo(() => {
     const m = new Map<string, GradebookStructure>()
@@ -92,7 +103,11 @@ export function DashboardPage() {
       const scores = scoresByClassroom.get(student.classroom_id) ?? {}
       if (structure) {
         try {
-          const final = computeStudentGradebook(structure, scores, student.id).final
+          const final = computeConfiguredStudentGradebook(
+            structure,
+            scores,
+            student.id,
+          ).final
           map.set(student.id, { final })
         } catch {
           map.set(student.id, { final: null })
@@ -210,9 +225,16 @@ export function DashboardPage() {
         transition={{ duration: reducedMotion ? 0 : 0.34 }}
         className="relative isolate overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1) shadow-(--shadow-card)"
       >
+        {/* Decorative only, and 2.3 MB of it. Async decode keeps a 2172px-wide
+            PNG off the main thread, and low priority stops it competing with
+            the fonts and JS that the dashboard actually needs to render.
+            The real fix is re-encoding: it ships at 2172x724 but never renders
+            wider than ~1100 CSS px. */}
         <img
           src="/images/home-teaching-ritual.png"
           alt=""
+          decoding="async"
+          fetchPriority="low"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center] opacity-80"
         />
         <div className="absolute inset-0 -z-10 bg-linear-to-r from-(--color-surface-1) via-(--color-surface-1)/92 to-transparent" />
@@ -244,7 +266,7 @@ export function DashboardPage() {
       <motion.div
         variants={rise}
         transition={{ duration: reducedMotion ? 0 : 0.3 }}
-        className="grid gap-3 sm:grid-cols-3"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
       >
         <Metric
           label="Active classes"
@@ -292,7 +314,7 @@ export function DashboardPage() {
       <motion.section
         variants={rise}
         transition={{ duration: reducedMotion ? 0 : 0.32 }}
-        className="grid gap-4 lg:grid-cols-[1.5fr_1fr]"
+        className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]"
       >
         <Card>
           <CardBody className="space-y-4">
@@ -311,7 +333,7 @@ export function DashboardPage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Skeleton className="h-24" />
                 <Skeleton className="h-24" />
               </div>
@@ -327,7 +349,7 @@ export function DashboardPage() {
                 }
               />
             ) : (
-              <div className="stagger-enter grid gap-3 sm:grid-cols-2">
+              <div className="stagger-enter grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {classrooms.slice(0, 4).map((classroom) => (
                   <Link
                     key={classroom.id}
@@ -390,7 +412,7 @@ export function DashboardPage() {
       <motion.section
         variants={rise}
         transition={{ duration: reducedMotion ? 0 : 0.32 }}
-        className="grid gap-4 lg:grid-cols-[1fr]"
+        className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr]"
       >
         <Card>
           <CardBody>
@@ -471,7 +493,7 @@ export function DashboardPage() {
       <motion.section
         variants={rise}
         transition={{ duration: reducedMotion ? 0 : 0.32 }}
-        className="grid gap-4 lg:grid-cols-[1.2fr_1fr]"
+        className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]"
       >
         <Card>
           <CardBody>

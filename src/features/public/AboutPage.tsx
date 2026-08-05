@@ -10,7 +10,7 @@ export function AboutPage() {
       title="A calmer place to keep the work of teaching moving."
       description="Agilearn is a school-management workspace for teachers and administrators who need a clearer view of classes, student progress, and teaching materials."
     >
-      <section className="mx-auto grid max-w-5xl gap-5 px-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="mx-auto grid max-w-5xl grid-cols-1 gap-5 px-6 lg:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-3xl border border-(--color-border) bg-(--color-surface-1) p-7 shadow-(--shadow-card) sm:p-9">
           <Bird className="size-8 text-(--color-accent-350)" aria-hidden="true" />
           <h2 className="mt-5 text-2xl font-semibold tracking-tight">
@@ -38,7 +38,7 @@ export function AboutPage() {
             layer rather than left to interface decisions alone.
           </p>
           <Link to="/privacy" className="mt-7 inline-flex">
-            <Button variant="outline" className="!rounded-full">
+            <Button variant="outline">
               Read the privacy draft <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
           </Link>

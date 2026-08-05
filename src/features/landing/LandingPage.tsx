@@ -170,7 +170,7 @@ function Hero() {
             <MagneticButton className="inline-block">
               <Button
                 size="lg"
-                className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
               >
                 Get started
                 <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
@@ -180,7 +180,7 @@ function Hero() {
             </MagneticButton>
           </Link>
           <a href="#features">
-            <Button size="lg" variant="outline" className="!rounded-full">
+            <Button size="lg" variant="outline">
               Explore features
             </Button>
           </a>
@@ -260,7 +260,7 @@ function Features() {
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, amount: 0.2 }}
-        className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         {FEATURES.map((feature, index) => {
           const IconComp = feature.icon
@@ -362,7 +362,7 @@ function CallToAction() {
               <MagneticButton className="inline-block">
                 <Button
                   size="lg"
-                  className="group gap-2.5 !rounded-full pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
+                  className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
                 >
                   Sign in to Agilearn
                   <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">

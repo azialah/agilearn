@@ -14,11 +14,18 @@ import { maybeNotifyNative } from '@/lib/nativeNotify'
 
 export type ToastTone = 'default' | 'success' | 'error'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastItem {
   id: number
   title: string
   description?: string
   tone: ToastTone
+  action?: ToastAction
+  durationMs: number
 }
 
 interface ToastInput {
@@ -27,6 +34,11 @@ interface ToastInput {
   tone?: ToastTone
   /** Also fire a native OS notification (Notification API) alongside the in-app toast. */
   native?: boolean
+  /** A single action button (e.g. "Undo"). Clicking it also dismisses the toast. */
+  action?: ToastAction
+  /** Overrides the default 4.5s auto-dismiss — an undoable action needs more
+   *  time to actually be undoable. */
+  durationMs?: number
 }
 
 interface ToastContextValue {
@@ -75,10 +87,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const toast = useCallback<ToastContextValue['toast']>(
-    ({ title, description, tone = 'default', native }) => {
+    ({
+      title,
+      description,
+      tone = 'default',
+      native,
+      action,
+      durationMs = DURATION_MS,
+    }) => {
       const id = ++counter
-      setItems((current) => [...current, { id, title, description, tone }])
-      setTimeout(() => dismiss(id), DURATION_MS)
+      setItems((current) => [
+        ...current,
+        { id, title, description, tone, action, durationMs },
+      ])
+      setTimeout(() => dismiss(id), durationMs)
       if (native) maybeNotifyNative(title, description)
     },
     [dismiss],
@@ -91,7 +113,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* xs–md: top-center banner sliding down from the top (iOS-style).
           lg+: top-right corner stack sliding in from the right (Sonner-style). */}
+      {/* One persistent live region that outlives individual toasts. Announcing
+          from a node that mounts with its message is unreliable — some screen
+          readers need the region present before the text arrives. */}
       <div
+        aria-live="polite"
+        aria-atomic="false"
         className={cn(
           'pointer-events-none fixed inset-x-0 top-4 z-100 flex flex-col items-center gap-2 px-4',
           'lg:inset-x-auto lg:right-4 lg:items-end lg:px-0',
@@ -103,7 +130,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             return (
               <motion.div
                 key={item.id}
-                role="status"
                 layout
                 // lg+: enters and leaves through the right edge.
                 // Below lg: drops down from above on enter and retracts back up
@@ -143,6 +169,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         {item.description}
                       </p>
                     )}
+                    {item.action && (
+                      <button
+                        onClick={() => {
+                          item.action?.onClick()
+                          dismiss(item.id)
+                        }}
+                        className="mt-1.5 text-sm font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
+                      >
+                        {item.action.label}
+                      </button>
+                    )}
                   </div>
                   <button
                     aria-label="Dismiss"
@@ -158,7 +195,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     className="h-[3px] origin-left bg-(--color-accent-400)/50"
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
-                    transition={{ duration: DURATION_MS / 1000, ease: 'linear' }}
+                    transition={{ duration: item.durationMs / 1000, ease: 'linear' }}
                   />
                 )}
               </motion.div>

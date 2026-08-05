@@ -5,13 +5,14 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Spinner } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/toast'
+import { OfflineSyncBar } from './OfflineSyncBar'
 import { cn } from '@/lib/cn'
 import { ChevronRightIcon, UsersIcon } from '@/components/icons'
-import { useStudents } from '@/lib/queries/students'
+import { STUDENTS_PAGE_SIZE, useStudents } from '@/lib/queries/students'
 import {
   useBulkUpsertAttendance,
   useClassSession,
@@ -50,6 +51,15 @@ export function SessionPage({
   const upsert = useUpsertAttendance(sessionId, classroomId)
   const bulkUpsert = useBulkUpsertAttendance(sessionId, classroomId)
   const { toast } = useToast()
+  // Client-side, not a server page: counts, "mark all present", and the
+  // unrecorded tally all need the whole roster regardless of which page is
+  // showing.
+  const [page, setPage] = useState(0)
+  const pageCount = Math.max(1, Math.ceil((students?.length ?? 0) / STUDENTS_PAGE_SIZE))
+  const visibleStudents = students?.slice(
+    page * STUDENTS_PAGE_SIZE,
+    page * STUDENTS_PAGE_SIZE + STUDENTS_PAGE_SIZE,
+  )
 
   const recordByStudent = useMemo(
     () => new Map((records ?? []).map((record) => [record.student_id, record])),
@@ -125,6 +135,9 @@ export function SessionPage({
 
   return (
     <div className="space-y-6">
+      {/* Marking happens here, so this is where a stranded change must be
+          visible — not one screen back. */}
+      <OfflineSyncBar />
       <div className="space-y-2">
         <Link
           to="/teacher/classrooms/$classroomId/attendance"
@@ -173,8 +186,10 @@ export function SessionPage({
       )}
 
       {studentsLoading || recordsLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }, (_, row) => (
+            <Skeleton key={row} className="h-12 w-full" />
+          ))}
         </div>
       ) : !students || students.length === 0 ? (
         <EmptyState
@@ -188,17 +203,44 @@ export function SessionPage({
           }
         />
       ) : (
-        <div className="grid gap-2">
-          {students.map((student) => (
-            <RosterRow
-              key={student.id}
-              name={studentFullName(student)}
-              record={recordByStudent.get(student.id)}
-              onSetStatus={(status) => setStatus(student.id, status)}
-              onSaveRemarks={(remarks) => saveRemarks(student.id, remarks)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-2">
+            {visibleStudents?.map((student) => (
+              <RosterRow
+                key={student.id}
+                name={studentFullName(student)}
+                record={recordByStudent.get(student.id)}
+                onSetStatus={(status) => setStatus(student.id, status)}
+                onSaveRemarks={(remarks) => saveRemarks(student.id, remarks)}
+              />
+            ))}
+          </div>
+          {students.length > STUDENTS_PAGE_SIZE && (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-(--color-ink-muted)">
+                Page {page + 1} of {pageCount}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => current - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page + 1 >= pageCount}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
 import { useCreateStudent, useUpdateStudent } from '@/lib/queries/students'
+import { toInitial } from '@/features/teacher/io/parsing'
 import type { Student } from '@/types/domain'
 
 interface FormState {
@@ -44,7 +45,7 @@ export function StudentFormDialog({
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState<FormState>(initialState(student))
+  const [raw, setForm] = useState<FormState>(initialState(student))
   const createStudent = useCreateStudent()
   const updateStudent = useUpdateStudent()
   const { toast } = useToast()
@@ -56,6 +57,8 @@ export function StudentFormDialog({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    // The field accepts a full middle name; the roster keeps only the initial.
+    const form = { ...raw, middle_initial: toInitial(raw.middle_initial) }
     try {
       if (isEditing) {
         await updateStudent.mutateAsync({
@@ -101,11 +104,11 @@ export function StudentFormDialog({
             <Input
               id="student_no"
               required
-              value={form.student_no}
-              onChange={(e) => setForm({ ...form, student_no: e.target.value })}
+              value={raw.student_no}
+              onChange={(e) => setForm({ ...raw, student_no: e.target.value })}
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="student_email">
                 Student email{' '}
@@ -115,8 +118,8 @@ export function StudentFormDialog({
                 id="student_email"
                 type="email"
                 placeholder="student@example.com"
-                value={form.student_email}
-                onChange={(e) => setForm({ ...form, student_email: e.target.value })}
+                value={raw.student_email}
+                onChange={(e) => setForm({ ...raw, student_email: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
@@ -128,8 +131,8 @@ export function StudentFormDialog({
                 id="guardian_email"
                 type="email"
                 placeholder="guardian@example.com"
-                value={form.guardian_email}
-                onChange={(e) => setForm({ ...form, guardian_email: e.target.value })}
+                value={raw.guardian_email}
+                onChange={(e) => setForm({ ...raw, guardian_email: e.target.value })}
               />
             </div>
           </div>
@@ -143,8 +146,8 @@ export function StudentFormDialog({
               <Input
                 id="last_name"
                 required
-                value={form.last_name}
-                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                value={raw.last_name}
+                onChange={(e) => setForm({ ...raw, last_name: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
@@ -152,18 +155,17 @@ export function StudentFormDialog({
               <Input
                 id="first_name"
                 required
-                value={form.first_name}
-                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                value={raw.first_name}
+                onChange={(e) => setForm({ ...raw, first_name: e.target.value })}
               />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="middle_initial">Middle initial</Label>
+            <Label htmlFor="middle_initial">Middle name</Label>
             <Input
               id="middle_initial"
-              maxLength={4}
-              value={form.middle_initial}
-              onChange={(e) => setForm({ ...form, middle_initial: e.target.value })}
+              value={raw.middle_initial}
+              onChange={(e) => setForm({ ...raw, middle_initial: e.target.value })}
             />
           </div>
           <DialogFooter>

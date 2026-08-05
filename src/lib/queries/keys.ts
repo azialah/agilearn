@@ -24,6 +24,10 @@ export const keys = {
     detail: (id: string) => ['classrooms', 'detail', id] as const,
   },
 
+  classroomTemplates: {
+    all: ['classroom-templates', 'list'] as const,
+  },
+
   academicPeriods: {
     all: ['academic-periods', 'list'] as const,
     detail: (id: string) => ['academic-periods', 'detail', id] as const,
@@ -53,13 +57,23 @@ export const keys = {
   students: {
     byClassroom: (classroomId: string) =>
       ['students', 'byClassroom', classroomId] as const,
+    // Nested under byClassroom so the existing invalidations also drop pages.
+    page: (classroomId: string, page: number) =>
+      ['students', 'byClassroom', classroomId, 'page', page] as const,
   },
 
   grades: {
     structureBase: (classroomId: string) => ['grades', 'structure', classroomId] as const,
     structure: (classroomId: string, courseSubjectId: string = 'all') =>
       [...keys.grades.structureBase(classroomId), courseSubjectId] as const,
-    byClassroom: (classroomId: string) => ['grades', 'scores', classroomId] as const,
+    scoresBase: (classroomId: string) => ['grades', 'scores', classroomId] as const,
+    byClassroom: (classroomId: string, courseSubjectId: string = 'all') =>
+      [...keys.grades.scoresBase(classroomId), courseSubjectId] as const,
+    combinations: (classroomId: string) =>
+      ['grades', 'subject-combinations', classroomId] as const,
+    // Not classroom-scoped — transmutation tables are shared reference data.
+    transmutationTable: (tableId: string = 'default') =>
+      ['grades', 'transmutation-table', tableId] as const,
   },
 
   attendance: {

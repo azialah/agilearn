@@ -276,7 +276,7 @@ export function SchoolOverviewPage() {
           description="Once teachers create classrooms, school-wide stats appear here."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardBody>
               <p className="text-sm text-(--color-ink-muted)">Average grade</p>

@@ -17,12 +17,13 @@ import {
 } from '@/lib/grading'
 import type { Activity, Classroom, Student } from '@/types/domain'
 
-const TEMPLATE_HEADERS = ['Student No', 'Last Name', 'First Name', 'MI'] as const
+const TEMPLATE_HEADERS = ['Student No', 'Last Name', 'First Name', 'Middle Name'] as const
+// The middle name may be written in full — the importer keeps only the initial.
 const TEMPLATE_NOTES = [
   'e.g. 2021-00123',
   'e.g. Dela Cruz',
   'e.g. Juan',
-  'e.g. R',
+  'e.g. Reyes',
 ] as const
 
 function belongsToComponent(
@@ -41,7 +42,7 @@ function belongsToComponent(
 export function buildRosterTemplateWorkbook(): XLSX.WorkBook {
   const aoa: (string | number)[][] = [[...TEMPLATE_HEADERS], [...TEMPLATE_NOTES]]
   const ws = XLSX.utils.aoa_to_sheet(aoa)
-  ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 8 }]
+  ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 22 }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Students')
   return wb

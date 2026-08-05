@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
+import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
+import { OfflineSyncBar } from './OfflineSyncBar'
+import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
+import { SubjectTabs } from '@/features/teacher/classrooms/SubjectTabs'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Card, CardBody } from '@/components/ui/Card'
@@ -44,15 +48,28 @@ function formatSessionDate(iso: string): string {
 export function AttendancePage({
   classroomId,
   focusStudentId,
+  initialSubjectId,
+  onSubjectChange,
 }: {
   classroomId: string
   focusStudentId?: string
+  initialSubjectId?: string
+  /** Lets the route sync the selection into the URL — kept as a callback so
+   *  this component doesn't need to import its own route. */
+  onSubjectChange?: (subjectId: string) => void
 }) {
   const { data: subjects = [] } = useCourseSubjects(classroomId)
-  const [subjectId, setSubjectId] = useState('')
+  const [subjectId, setSubjectId] = useState(initialSubjectId ?? '')
+  useEffect(() => {
+    if (initialSubjectId) setSubjectId(initialSubjectId)
+  }, [initialSubjectId])
   useEffect(() => {
     if (!subjectId && subjects[0]) setSubjectId(subjects[0].id)
   }, [subjectId, subjects])
+  function handleSubjectChange(id: string) {
+    setSubjectId(id)
+    onSubjectChange?.(id)
+  }
   const { data: sessions, isLoading } = useClassSessions(
     classroomId,
     subjectId || undefined,
@@ -133,28 +150,29 @@ export function AttendancePage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Attendance"
-        description="Track class sessions and per-student attendance."
-        actions={newSessionButton}
-      />
+      <ClassroomHeader classroomId={classroomId} />
+      <ClassroomMeta classroomId={classroomId} />
+      <OfflineSyncBar />
+      <ClassroomTabs classroomId={classroomId} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-medium text-(--color-ink-muted)">Attendance</h2>
+          <p className="text-sm text-(--color-ink-faint)">
+            Track class sessions and per-student attendance.
+          </p>
+        </div>
+        {newSessionButton}
+      </div>
 
       {subjects.length > 1 && (
-        <label className="block max-w-sm text-sm font-medium">
-          Course subject
-          <select
-            aria-label="Course subject"
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Course subject</p>
+          <SubjectTabs
+            subjects={subjects}
             value={subjectId}
-            onChange={(event) => setSubjectId(event.target.value)}
-            className="mt-1.5 h-10 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-3"
-          >
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={handleSubjectChange}
+          />
+        </div>
       )}
 
       {isLoading ? (

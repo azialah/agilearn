@@ -1,0 +1,5 @@
+# puppeteer arrives via the impeccable dev CLI. Its postinstall downloads a
+# Chromium build this project never uses, and leaving the choice unanswered
+# makes every `pnpm run` script exit 1 on the pre-run deps check.
+allowBuilds:
+  puppeteer: false

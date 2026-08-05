@@ -1,56 +1,41 @@
-import { Suspense, lazy } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
-import { Badge } from '@/components/ui/Badge'
-import { Spinner } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { RouteSkeleton } from '@/components/ui/RouteSkeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from '@/components/ui/Table'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/icons'
-import { useProfile } from '@/lib/queries/profiles'
 import { useClassroom } from '@/lib/queries/classrooms'
-import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
-import { useDeleteStudent, useStudents } from '@/lib/queries/students'
+import {
+  STUDENTS_PAGE_SIZE,
+  useDeleteStudent,
+  useStudentsPage,
+} from '@/lib/queries/students'
 import { studentFullName } from '@/types/domain'
-const ImportButton = lazy(() =>
-  import('@/features/teacher/io/ImportButton').then((module) => ({
-    default: module.ImportButton,
-  })),
-)
-const ExportMenu = lazy(() =>
-  import('@/features/teacher/io/ExportMenu').then((module) => ({
-    default: module.ExportMenu,
-  })),
-)
-import { ClassroomFormDialog } from './ClassroomFormDialog'
+import { ClassroomHeader } from './ClassroomHeader'
+import { ClassroomMeta } from './ClassroomMeta'
+import { ClassroomTabs } from './ClassroomTabs'
 import { StudentFormDialog } from './StudentFormDialog'
-import { MeetingSlotDialog } from '@/features/teacher/calendar/MeetingSlotDialog'
-
-const TABS = [
-  { label: 'Roster', to: '/teacher/classrooms/$classroomId', exact: true },
-  { label: 'Grades', to: '/teacher/classrooms/$classroomId/grades', exact: false },
-  {
-    label: 'Attendance',
-    to: '/teacher/classrooms/$classroomId/attendance',
-    exact: false,
-  },
-  { label: 'Slideshow', to: '/teacher/classrooms/$classroomId/slideshow', exact: false },
-] as const
 
 export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
-  const { data: profile } = useProfile()
   const { data: classroom, isLoading } = useClassroom(classroomId)
-  const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
-  const { data: subjects = [] } = useCourseSubjects(classroomId)
+  const [page, setPage] = useState(0)
+  const { data: roster, isLoading: studentsLoading } = useStudentsPage(classroomId, page)
+  const students = roster?.rows
+  const total = roster?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / STUDENTS_PAGE_SIZE))
   const deleteStudent = useDeleteStudent()
   const { toast } = useToast()
 
   async function handleDeleteStudent(id: string) {
     try {
       await deleteStudent.mutateAsync({ id, classroomId })
+      // Emptying the last page would otherwise strand the table on a blank page.
+      if (students?.length === 1 && page > 0) setPage(page - 1)
       toast({ title: 'Student removed', tone: 'success' })
     } catch (error) {
       toast({
@@ -61,13 +46,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    )
-  }
+  if (isLoading) return <RouteSkeleton />
 
   if (!classroom) {
     return (
@@ -85,84 +64,11 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={classroom.course_name}
-        description={`${classroom.course_code} · ${classroom.year} · ${classroom.block}`}
-        actions={
-          <div className="flex items-center gap-2">
-            <Suspense
-              fallback={
-                <Button variant="outline" size="sm" disabled>
-                  <span className="flex items-center gap-2">
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
-                    Import
-                  </span>
-                </Button>
-              }
-            >
-              <ImportButton classroomId={classroomId} />
-            </Suspense>
-            <Suspense
-              fallback={
-                <Button variant="outline" size="sm" disabled>
-                  <span className="flex items-center gap-2">
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
-                    Export
-                  </span>
-                </Button>
-              }
-            >
-              <ExportMenu classroomId={classroomId} />
-            </Suspense>
-            {profile && (
-              <ClassroomFormDialog
-                ownerId={profile.id}
-                classroom={classroom}
-                trigger={
-                  <Button variant="secondary">
-                    <EditIcon /> Edit
-                  </Button>
-                }
-              />
-            )}
-          </div>
-        }
-      />
+      <ClassroomHeader classroomId={classroomId} />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge>{students?.length ?? 0} students</Badge>
-        {subjects.map((subject) => (
-          <Badge key={subject.id} tone="accent">
-            {subject.name}
-          </Badge>
-        ))}
-      </div>
+      <ClassroomMeta classroomId={classroomId} />
 
-      {subjects.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {subjects.map((subject) => (
-            <MeetingSlotDialog key={subject.id} subject={subject} />
-          ))}
-        </div>
-      )}
-
-      <nav className="flex gap-1 border-b border-(--color-border)">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            params={{ classroomId }}
-            activeOptions={{ exact: tab.exact }}
-            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
-            activeProps={{
-              className:
-                '-mb-px border-b-2 border-(--color-accent-400) px-3 py-2 text-sm font-medium text-(--color-ink)',
-            }}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <ClassroomTabs classroomId={classroomId} />
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-(--color-ink-muted)">Roster</h2>
@@ -177,8 +83,10 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       </div>
 
       {studentsLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }, (_, row) => (
+            <Skeleton key={row} className="h-12 w-full" />
+          ))}
         </div>
       ) : !students || students.length === 0 ? (
         <EmptyState
@@ -191,14 +99,18 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
           <Table>
             <THead>
               <TR>
+                <TH className="w-12 text-right">#</TH>
                 <TH className="w-40">Student no.</TH>
                 <TH>Name</TH>
                 <TH className="w-24 text-right">Actions</TH>
               </TR>
             </THead>
             <TBody>
-              {students.map((student) => (
+              {students.map((student, index) => (
                 <TR key={student.id}>
+                  <TD className="text-right text-xs text-(--color-ink-faint)">
+                    {page * STUDENTS_PAGE_SIZE + index + 1}
+                  </TD>
                   <TD className="font-mono text-xs text-(--color-ink-muted)">
                     {student.student_no}
                   </TD>
@@ -218,6 +130,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
                         title="Remove student?"
                         description={`This removes ${studentFullName(student)} and their scores and attendance.`}
                         confirmLabel="Remove"
+                        confirmPhrase={studentFullName(student)}
                         onConfirm={() => handleDeleteStudent(student.id)}
                         trigger={
                           <IconButton label="Remove student" size="sm" variant="danger">
@@ -232,6 +145,32 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
             </TBody>
           </Table>
         </TableContainer>
+      )}
+
+      {total > STUDENTS_PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-(--color-ink-muted)">
+            Page {page + 1} of {pageCount}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page === 0}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page + 1 >= pageCount}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -154,3 +154,10 @@ describe('buildFilename', () => {
     expect(buildFilename(undefined, 'grade-sheet')).toBe('classroom-grade-sheet.xlsx')
   })
 })
+
+describe('middle name normalisation', () => {
+  it('stores a full middle name as its initial', () => {
+    const result = parseRosterRows([['202110190', 'Lopez', 'John Neo', 'Manuel']])
+    expect(result.rows[0].middleInitial).toBe('M')
+  })
+})

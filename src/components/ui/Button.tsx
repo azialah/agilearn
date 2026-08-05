@@ -12,14 +12,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
 }
 
+// No `focus-visible:outline-none` here: it used to suppress the global
+// :focus-visible outline in app.css without replacing it, leaving every button
+// in the app — Sign in, Save, Add student — with no keyboard focus indicator.
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-md font-medium ' +
-  'transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ' +
-  'whitespace-nowrap select-none'
+  'inline-flex items-center justify-center gap-2 rounded-full font-medium ' +
+  'transition-[background-color,box-shadow,transform] duration-150 ' +
+  'motion-safe:active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ' +
+  'disabled:active:scale-100 whitespace-nowrap select-none'
 
 const variants: Record<ButtonVariant, string> = {
+  // Tinted shadow, not a generic gray one — the app's one accent color
+  // carries its own depth instead of a default drop shadow.
   primary:
-    'bg-(--color-accent-400) text-(--color-accent-fg) hover:bg-(--color-accent-500)',
+    'bg-(--color-accent-400) text-(--color-accent-fg) shadow-(--shadow-accent) hover:bg-(--color-accent-500)',
   secondary: 'bg-(--color-surface-3) text-(--color-ink) hover:bg-(--color-border)',
   outline:
     'border border-(--color-border-strong) bg-(--color-surface-2) text-(--color-ink) hover:bg-(--color-surface-3)',

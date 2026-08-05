@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { cn } from '@/lib/cn'
 import {
+  computeChedFinalGrade,
   computeConfiguredStudentGradebook,
+  computeTransmutedStudentGradebook,
   round2,
   type GradebookStructure,
   type ScoreMap,
+  type TransmutationTable,
 } from '@/lib/grading'
-import { studentFullName, type Student } from '@/types/domain'
+import { studentFullName, type GradingTemplate, type Student } from '@/types/domain'
 
 function fmt(value: number | null | undefined) {
   return value == null ? '—' : round2(value).toFixed(2)
@@ -14,22 +17,54 @@ function fmt(value: number | null | undefined) {
 const STICKY =
   'sticky left-0 z-20 border-r border-(--color-border-strong) bg-(--color-surface-1)'
 
+/** Report-card label for the Final column, matching what's actually shown —
+ * a raw percentage reads as ambiguous once it might be a transmuted DepEd
+ * grade or a CHED 1.00-5.00 instead. */
+export function finalColumnLabel(gradingTemplate?: GradingTemplate): string {
+  if (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') {
+    return 'Final (transmuted)'
+  }
+  if (gradingTemplate === 'higher_education') return 'Final (1.00–5.00)'
+  return 'Final'
+}
+
 export function SummaryTable({
   structure,
   scores,
   students,
+  gradingTemplate,
+  transmutationTable,
+  chedIncrement,
 }: {
   structure: GradebookStructure
   scores: ScoreMap
   students: Student[]
+  /** Undefined/'custom' shows the raw computed percentage, unchanged. */
+  gradingTemplate?: GradingTemplate
+  /** Only consulted for 'basic_education'/'senior_high'. */
+  transmutationTable?: TransmutationTable
+  /** Only consulted for 'higher_education'. */
+  chedIncrement?: number
 }) {
   const rows = useMemo(
     () =>
-      students.map((student) => ({
-        student,
-        gradebook: computeConfiguredStudentGradebook(structure, scores, student.id),
-      })),
-    [students, structure, scores],
+      students.map((student) => {
+        const gradebook = computeConfiguredStudentGradebook(structure, scores, student.id)
+        const reportedFinal =
+          (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') &&
+          transmutationTable
+            ? computeTransmutedStudentGradebook(
+                structure,
+                scores,
+                student.id,
+                transmutationTable,
+              ).final
+            : gradingTemplate === 'higher_education'
+              ? computeChedFinalGrade(structure, scores, student.id, chedIncrement)
+              : gradebook.final
+        return { student, gradebook, reportedFinal }
+      }),
+    [students, structure, scores, gradingTemplate, transmutationTable, chedIncrement],
   )
   return (
     <div className="scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)">
@@ -78,12 +113,12 @@ export function SummaryTable({
               </th>
             ))}
             <th className="whitespace-nowrap px-3 py-1.5 text-right font-medium">
-              Final
+              {finalColumnLabel(gradingTemplate)}
             </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ student, gradebook }) => (
+          {rows.map(({ student, gradebook, reportedFinal }) => (
             <tr
               key={student.id}
               className="border-b border-(--color-border) hover:bg-(--color-surface-1)/60"
@@ -110,7 +145,7 @@ export function SummaryTable({
                 </td>
               ))}
               <td className="whitespace-nowrap bg-(--color-accent-500)/10 px-3 py-1.5 text-right font-semibold tabular-nums text-(--color-accent-300)">
-                {fmt(gradebook.final)}
+                {fmt(reportedFinal)}
               </td>
             </tr>
           ))}

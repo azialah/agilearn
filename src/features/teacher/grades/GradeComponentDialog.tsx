@@ -29,22 +29,23 @@ export function GradeComponentDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(component?.name ?? '')
-  const [weight, setWeight] = useState(String(component?.weight ?? 1))
+  const [weight, setWeight] = useState(String((component?.weight ?? 1) * 100))
   const create = useCreateGradeComponent()
   const update = useUpdateGradeComponent()
   const { toast } = useToast()
   useEffect(() => {
     if (open) {
       setName(component?.name ?? '')
-      setWeight(String(component?.weight ?? 1))
+      setWeight(String((component?.weight ?? 1) * 100))
     }
   }, [open, component])
-  const numericWeight = Number(weight)
+  const percentWeight = Number(weight)
+  const numericWeight = percentWeight / 100
   const valid =
     name.trim().length > 0 &&
-    Number.isFinite(numericWeight) &&
-    numericWeight > 0 &&
-    numericWeight <= 1
+    Number.isFinite(percentWeight) &&
+    percentWeight > 0 &&
+    percentWeight <= 100
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!valid) return
@@ -95,20 +96,19 @@ export function GradeComponentDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="component-weight">Weight</Label>
+            <Label htmlFor="component-weight">Weight (%)</Label>
             <Input
               id="component-weight"
               type="number"
-              min={0.01}
-              max={1}
-              step={0.01}
+              min={1}
+              max={100}
+              step={1}
               value={weight}
               onChange={(event) => setWeight(event.target.value)}
             />
           </div>
           <p className="text-xs text-(--color-ink-faint)">
-            Components combine into the class grade. Their weights are normalized across
-            the class.
+            Component weights must total 100% before Agilearn calculates a final grade.
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
