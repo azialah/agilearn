@@ -1,107 +1,183 @@
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { PlusIcon } from '@/components/icons'
+import { IconButton } from '@/components/ui/IconButton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useToast } from '@/components/ui/toast'
+import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useStudentsPage } from '@/lib/queries/students'
+import { useDeleteMeetingSlot, useMeetingSlots } from '@/lib/queries/calendar'
+import { MeetingSlotDialog } from '@/features/teacher/calendar/MeetingSlotDialog'
+import { to12Hour, WEEKDAY_LABELS } from '@/features/teacher/calendar/calendar'
+import type { CourseSubject, SubjectMeetingSlot } from '@/types/domain'
+import { KIND_LABEL } from './SubjectFields'
 import { SubjectFormDialog } from './SubjectFormDialog'
-import { KIND_LABEL, subjectLabel } from './SubjectTabs'
-import type { CourseSubjectKind } from '@/types/domain'
-
-/** "CS Elective 2 Lecture" + "Laboratory" -> "CS Elective 2 Laboratory". Falls
- * back to appending "(Laboratory)" when the sibling's label isn't in its
- * name, and to no suggestion at all if that would produce the sibling's own
- * name — never suggest one that would immediately collide. */
-function suggestName(
-  siblingName: string,
-  siblingLabel: string,
-  nextLabel: string,
-): string | undefined {
-  const trimmed = siblingName.trim()
-  if (!trimmed) return undefined
-  const pattern = new RegExp(siblingLabel, 'i')
-  const candidate = pattern.test(trimmed)
-    ? trimmed.replace(pattern, nextLabel)
-    : `${trimmed} (${nextLabel})`
-  return candidate.toLowerCase() === trimmed.toLowerCase() ? undefined : candidate
-}
 
 /**
- * Roster size, the subjects sharing that roster, and their weekly meetings.
- * Rendered under the header on every classroom tab so the context does not
- * disappear when you move from Roster to Grades or Attendance.
+ * The classroom's subjects and their weekly meetings — one list, not five.
  *
- * Page 0 of the roster query is reused purely for its exact count — the roster
- * table already holds it in cache, so this costs no extra request there.
+ * This used to render each subject three times over: a chip, a "Schedule
+ * <subject>" button, and a meeting row that repeated the name again. With real
+ * subject names running past seventy characters, one classroom filled the screen
+ * with the same string. Each subject now owns a single row that carries its
+ * identity, its meetings, and its actions.
+ *
+ * The subject's kind/code header doubles as the entry point into editing (or
+ * deleting) the subject itself — opening SubjectFormDialog in edit mode, the
+ * same dialog used for adding one. There is no separate "rename this subject"
+ * flow to keep in sync with it.
  */
 export function ClassroomMeta({ classroomId }: { classroomId: string }) {
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const { data: roster } = useStudentsPage(classroomId, 0)
   const { data: allSlots = [] } = useMeetingSlots()
 
-  // With exactly one subject so far, the next one is almost always its
-  // lecture/laboratory counterpart — pre-select that instead of a bare "Other".
-  const kinds = new Set(subjects.map((subject) => subject.kind))
-  const suggestedKind: CourseSubjectKind | undefined =
-    subjects.length === 1 && kinds.has('lecture') && !kinds.has('laboratory')
-      ? 'laboratory'
-      : subjects.length === 1 && kinds.has('laboratory') && !kinds.has('lecture')
-        ? 'lecture'
-        : undefined
-  const addLabel = suggestedKind ? `Add ${suggestedKind}` : 'Add subject'
-  const suggestedName =
-    suggestedKind && subjects.length === 1
-      ? suggestName(
-          subjects[0].name,
-          KIND_LABEL[subjects[0].kind],
-          KIND_LABEL[suggestedKind],
-        )
-      : undefined
-
   return (
-    <div className="rounded-2xl border border-(--color-border) bg-(--color-surface-1) px-4 py-3">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <p className="text-xs font-medium text-(--color-ink-faint)">
-          Course subjects · one shared roster
+    <section
+      aria-label="Course subjects"
+      className="rounded-2xl border border-(--color-border) bg-(--color-surface-1)"
+    >
+      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <p className="text-sm text-(--color-ink-muted)">
+          <span className="font-medium text-(--color-ink)">
+            {roster?.total ?? 0} students
+          </span>{' '}
+          shared by {subjects.length} {subjects.length === 1 ? 'subject' : 'subjects'}
         </p>
-        <Badge>{roster?.total ?? 0} students</Badge>
-        {subjects.map((subject) => (
-          <Badge key={subject.id} tone="accent">
-            {subject.name}
-          </Badge>
-        ))}
         <SubjectFormDialog
           classroomId={classroomId}
-          defaultKind={suggestedKind}
-          defaultName={suggestedName}
+          trigger={
+            <Button variant="ghost" size="sm">
+              <PlusIcon /> Add subject
+            </Button>
+          }
+        />
+      </header>
+
+      {subjects.length > 0 && (
+        <ul className="divide-y divide-(--color-border) border-t border-(--color-border)">
+          {subjects.map((subject) => (
+            <SubjectRow
+              key={subject.id}
+              classroomId={classroomId}
+              subject={subject}
+              slots={allSlots.filter((slot) => slot.course_subject_id === subject.id)}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function SubjectRow({
+  classroomId,
+  subject,
+  slots,
+}: {
+  classroomId: string
+  subject: CourseSubject
+  slots: SubjectMeetingSlot[]
+}) {
+  return (
+    <li className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <SubjectFormDialog
+          classroomId={classroomId}
+          subject={subject}
           trigger={
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+              className="flex flex-wrap items-baseline gap-x-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
             >
-              <PlusIcon className="size-3" /> {addLabel}
+              <span className="text-xs font-medium uppercase tracking-wide text-(--color-accent-350)">
+                {KIND_LABEL[subject.kind]}
+              </span>
+              {subject.course_code && (
+                <span className="font-mono text-xs text-(--color-ink-muted)">
+                  {subject.course_code}
+                </span>
+              )}
             </button>
           }
         />
+        {/* Long names are the norm here, so one truncated line with the full
+            text on hover beats wrapping four lines of repeated words. */}
+        <p className="truncate text-sm text-(--color-ink)" title={subject.name}>
+          {subject.name}
+        </p>
+        {slots.length > 0 ? (
+          <ul className="mt-1 space-y-1">
+            {slots.map((slot) => (
+              <MeetingRow key={slot.id} slot={slot} subject={subject} />
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-xs text-(--color-ink-faint)">No meeting scheduled</p>
+        )}
       </div>
+      <MeetingSlotDialog
+        subject={subject}
+        trigger={
+          <Button variant="ghost" size="sm">
+            <PlusIcon /> Meeting
+          </Button>
+        }
+      />
+    </li>
+  )
+}
 
-      {subjects.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2 border-t border-(--color-border) pt-2">
-          {subjects.map((subject) => (
-            <MeetingSlotDialog
-              key={subject.id}
-              subject={subject}
-              trigger={
-                <Button variant="ghost" size="sm">
-                  <PlusIcon />
-                  {subjects.length > 1
-                    ? `Schedule ${subject.name}`
-                    : 'Schedule a meeting'}
-                </Button>
-              }
-            />
-          ))}
-        </div>
-      )}
-    </div>
+function MeetingRow({
+  slot,
+  subject,
+}: {
+  slot: SubjectMeetingSlot
+  subject: CourseSubject
+}) {
+  const remove = useDeleteMeetingSlot()
+  const { toast } = useToast()
+  const when = `${WEEKDAY_LABELS[slot.weekday]} ${to12Hour(slot.starts_at)}–${to12Hour(slot.ends_at)}`
+
+  async function handleDelete() {
+    try {
+      await remove.mutateAsync(slot)
+      toast({ title: 'Meeting removed', tone: 'success' })
+    } catch (error) {
+      toast({
+        title: 'Could not remove the meeting',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    }
+  }
+
+  return (
+    <li className="group flex items-center gap-2 text-xs text-(--color-ink-muted)">
+      <span className="font-medium text-(--color-ink)">{when}</span>
+      {slot.location_label && <span>{slot.location_label}</span>}
+      {/* The row already names the subject, so these only need the time. */}
+      <span className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <MeetingSlotDialog
+          subject={subject}
+          slot={slot}
+          trigger={
+            <IconButton label={`Edit the ${when} meeting`} size="sm">
+              <EditIcon />
+            </IconButton>
+          }
+        />
+        <ConfirmDialog
+          title="Remove this meeting?"
+          description={`${subject.name} on ${when} disappears from your Calendar. The subject and its grades stay.`}
+          confirmLabel="Remove"
+          onConfirm={handleDelete}
+          trigger={
+            <IconButton label={`Remove the ${when} meeting`} size="sm" variant="danger">
+              <TrashIcon />
+            </IconButton>
+          }
+        />
+      </span>
+    </li>
   )
 }

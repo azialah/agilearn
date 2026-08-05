@@ -325,12 +325,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-ink-faint)">
               Recent classrooms
             </p>
-            <div className="space-y-2">
-              {classrooms?.slice(0, 3).map((classroom) => (
-                <div
-                  key={classroom.id}
-                  className="rounded-xl bg-(--color-surface-2) p-2 text-center"
-                >
+            <ul className="space-y-1">
+              {recentClassrooms.map((classroom) => (
+                <li key={classroom.id}>
                   <Link
                     to="/teacher/classrooms/$classroomId"
                     params={{ classroomId: classroom.id }}
@@ -357,24 +354,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                       </span>
                     </span>
                   </Link>
-                  <div className="mt-1 space-y-1">
-                    {subjects
-                      ?.filter((subject) => subject.classroom_id === classroom.id)
-                      .slice(0, 3)
-                      .map((subject) => (
-                        <Link
-                          key={subject.id}
-                          to="/teacher/classrooms/$classroomId"
-                          params={{ classroomId: classroom.id }}
-                          className="block truncate pl-2 text-[11px] text-(--color-ink-muted) hover:text-(--color-accent-350)"
-                        >
-                          {subject.name}
-                        </Link>
-                      ))}
-                  </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
         {!settingsMode && !effectiveCompact && (
@@ -418,7 +400,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main
           key={pathname}
           className={cn(
-            'page-enter mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
+            // pb-24 clears the floating bottom nav; it runs through md now, so
+            // the padding has to follow it to lg.
+            'page-enter page-stagger mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 lg:pb-6',
           )}
         >
           {children}

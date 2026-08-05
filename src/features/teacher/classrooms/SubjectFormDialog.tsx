@@ -15,46 +15,42 @@ import {
   useUpdateCourseSubject,
 } from '@/lib/queries/academicWorkspace'
 import { useClassroom } from '@/lib/queries/classrooms'
+import { meetingSlotErrorMessage } from '@/features/teacher/calendar/slotErrors'
+import type { CourseSubject } from '@/types/domain'
 import {
-  useCreateMeetingSlot,
-  useDeleteMeetingSlot,
-  useMeetingSlots,
-  useUpdateMeetingSlot,
-} from '@/lib/queries/calendar'
-import {
-  addHours,
-  DEFAULT_DURATION_HOURS,
-  WEEKDAY_LABELS,
-} from '@/features/teacher/calendar/calendar'
-import type { CourseSubject, CourseSubjectKind } from '@/types/domain'
+  EMPTY_SUBJECT_DRAFT,
+  kindsFor,
+  SubjectFields,
+  type SubjectDraft,
+} from './SubjectFields'
 
-interface FormState {
-  name: string
-  courseCode: string
-  subjectCode: string
-  kind: CourseSubjectKind
-  description: string
-  room: string
-  /** '' = no meeting scheduled yet. */
-  weekday: string
-  startTime: string
-  endTime: string
+function draftFromSubject(subject?: CourseSubject): SubjectDraft {
+  if (!subject) return EMPTY_SUBJECT_DRAFT
+  return {
+    name: subject.name,
+    courseCode: subject.course_code ?? '',
+    subjectCode: subject.subject_code ?? '',
+    sessionType: subject.session_type,
+    description: subject.description ?? '',
+    room: subject.room ?? '',
+  }
 }
 
-function initialState(
-  subject?: CourseSubject,
-  defaultKind?: CourseSubjectKind,
-  defaultName?: string,
-): FormState {
-  return {
-    name: subject?.name ?? '',
-    courseCode: subject?.course_code ?? '',
-    subjectCode: subject?.subject_code ?? '',
-    kind: subject?.kind ?? 'other',
-    description: subject?.description ?? '',
-    schedule: subject?.schedule ?? '',
-    room: subject?.room ?? '',
-  }
+/** A Postgres unique-violation on the course_subjects name, distinguished
+ * from the constraint violations meetingSlotErrorMessage already covers —
+ * this one is about the subject's title, not its schedule. */
+function isNameCollision(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === '23505' &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string' &&
+    (error as { message: string }).message.includes(
+      'course_subjects_classroom_name_kind_key',
+    )
+  )
 }
 
 /**
@@ -64,58 +60,50 @@ function initialState(
 export function SubjectFormDialog({
   classroomId,
   subject,
-  defaultKind,
-  defaultName,
   trigger,
 }: {
   classroomId: string
   subject?: CourseSubject
-  /** Pre-selects Subject type when adding — e.g. the classroom already has a
-   *  lecture, so the next likely subject is its laboratory. */
-  defaultKind?: CourseSubjectKind
-  /** Pre-fills Course subject when adding — e.g. the sibling's name with the
-   *  kind swapped in. Always editable, never applied when editing. */
-  defaultName?: string
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState<FormState>(initialState(subject))
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [draft, setDraft] = useState<SubjectDraft>(draftFromSubject(subject))
+  const { data: classroom } = useClassroom(classroomId)
+  const { data: siblings = [] } = useCourseSubjects(classroomId)
   const update = useUpdateCourseSubject()
   const create = useCreateCourseSubject()
   const deleteSubject = useDeleteCourseSubject()
-  const meetingSlots = useMeetingSlots(subject?.id)
-  const createSlot = useCreateMeetingSlot()
-  const updateSlot = useUpdateMeetingSlot()
-  const deleteSlot = useDeleteMeetingSlot()
   const { toast } = useToast()
   const isEditing = !!subject
-  // Lecture/Laboratory is a college concept — hide the choice entirely for
-  // any other level, same as the classroom creation wizard.
-  const { data: classroom } = useClassroom(classroomId)
-  const isCollege = classroom?.school_level === 'college'
-
-  // A subject can have several meeting slots in the schema, but this form only
-  // manages one — the first is what "the schedule" means here.
-  const existingSlot = meetingSlots.data?.[0]
 
   useEffect(() => {
-    if (open) setForm(initialState(subject))
+    if (open) setDraft(draftFromSubject(subject))
   }, [open, subject])
 
   async function save() {
-    if (!form.name.trim()) return
+    if (!draft.name.trim()) return
     const fields = {
-      name: form.name.trim(),
-      course_code: form.courseCode.trim(),
-      subject_code: form.subjectCode.trim(),
-      kind: form.kind,
-      description: form.description.trim(),
-      schedule: form.schedule.trim(),
-      room: form.room.trim(),
+      name: draft.name.trim(),
+      course_code: draft.courseCode.trim(),
+      subject_code: draft.subjectCode.trim(),
+      session_type: draft.sessionType,
+      description: draft.description.trim(),
+      room: draft.room.trim(),
     }
     try {
-      if (subject) await update.mutateAsync({ id: subject.id, patch: fields })
-      else await create.mutateAsync({ classroom_id: classroomId, ...fields })
+      if (subject) {
+        await update.mutateAsync({
+          id: subject.id,
+          patch: { ...fields, kind: subject.kind },
+        })
+      } else {
+        // "Lecture + laboratory" means both halves exist from the start; the
+        // teacher named the subject once and expects to see two.
+        for (const kind of kindsFor(draft.sessionType)) {
+          await create.mutateAsync({ classroom_id: classroomId, kind, ...fields })
+        }
+      }
       toast({
         title: isEditing
           ? 'Course subject updated'
@@ -128,6 +116,24 @@ export function SubjectFormDialog({
     } catch (error) {
       toast({
         title: isEditing ? 'Could not update the subject' : 'Could not add the subject',
+        description: isNameCollision(error)
+          ? `A subject named "${draft.name.trim()}" already exists in this classroom — pick a different name.`
+          : meetingSlotErrorMessage(error),
+        tone: 'error',
+      })
+    }
+  }
+
+  async function handleDelete() {
+    if (!subject) return
+    try {
+      await deleteSubject.mutateAsync({ id: subject.id, classroomId })
+      toast({ title: 'Course subject deleted', tone: 'success' })
+      setConfirmDelete(false)
+      setOpen(false)
+    } catch (error) {
+      toast({
+        title: 'Could not delete the subject',
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -159,90 +165,39 @@ export function SubjectFormDialog({
           }
         />
         <ResponsiveDrawerBody>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="subject-edit-name">Course subject</Label>
-              <Input
-                id="subject-edit-name"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="subject-edit-course-code">Course code</Label>
-                <Input
-                  id="subject-edit-course-code"
-                  value={form.courseCode}
-                  onChange={(event) =>
-                    setForm({ ...form, courseCode: event.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="subject-edit-subject-code">Subject code</Label>
-                <Input
-                  id="subject-edit-subject-code"
-                  value={form.subjectCode}
-                  onChange={(event) =>
-                    setForm({ ...form, subjectCode: event.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="subject-edit-kind">Subject type</Label>
-              <select
-                id="subject-edit-kind"
-                aria-label="Subject type"
-                value={form.kind}
-                onChange={(event) =>
-                  setForm({ ...form, kind: event.target.value as CourseSubjectKind })
-                }
-                className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
+          <SubjectFields
+            value={draft}
+            onChange={setDraft}
+            isCollege={classroom?.school_level === 'college'}
+            idPrefix="subject-edit"
+            lockSessionType={isEditing}
+          />
+          {duplicate && (
+            <p role="alert" className="mt-3 text-sm text-(--color-danger)">
+              This classroom already has a subject with that title.
+            </p>
+          )}
+          {isEditing && (
+            <div className="mt-4 border-t border-(--color-border) pt-4">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="text-sm font-medium text-(--color-danger) hover:underline"
               >
-                <option value="other">Other</option>
-                <option value="lecture">Lecture</option>
-                <option value="laboratory">Laboratory</option>
-              </select>
+                Delete subject
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="subject-edit-description">Description</Label>
-              <textarea
-                id="subject-edit-description"
-                rows={3}
-                value={form.description}
-                onChange={(event) =>
-                  setForm({ ...form, description: event.target.value })
-                }
-                className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="subject-edit-schedule">Schedule</Label>
-                <Input
-                  id="subject-edit-schedule"
-                  value={form.schedule}
-                  placeholder="Mon 3–5 PM"
-                  onChange={(event) => setForm({ ...form, schedule: event.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="subject-edit-room">Room</Label>
-                <Input
-                  id="subject-edit-room"
-                  value={form.room}
-                  placeholder="Room 505"
-                  onChange={(event) => setForm({ ...form, room: event.target.value })}
-                />
-              </div>
-            </div>
-          </div>
+          )}
         </ResponsiveDrawerBody>
         <ResponsiveDrawerFooter
-          primaryLabel={isEditing ? 'Save subject' : 'Add subject'}
-          primaryDisabled={!form.name.trim()}
+          primaryLabel={
+            isEditing
+              ? 'Save subject'
+              : draft.sessionType === 'lecture_lab'
+                ? 'Add both'
+                : 'Add subject'
+          }
+          primaryDisabled={!draft.name.trim() || duplicate}
           primaryLoading={update.isPending || create.isPending}
           onPrimary={() => void save()}
           onSecondary={() => setOpen(false)}

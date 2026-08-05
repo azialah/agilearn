@@ -23,6 +23,7 @@ import {
   useDeletePeriod,
   useSeedGradeTemplate,
 } from '@/lib/queries/grades'
+import type { GradingPeriod } from '@/types/domain'
 import { PeriodDialog } from './PeriodDialog'
 import { CategoryDialog } from './CategoryDialog'
 import { ActivityDialog } from './ActivityDialog'
@@ -34,6 +35,41 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <h4 className="text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
       {children}
     </h4>
+  )
+}
+
+/**
+ * A step that cannot start yet. It names what is missing and carries the fix, so
+ * the teacher never has to scroll back up to unblock themselves.
+ */
+function NeedsPeriod({
+  classroomId,
+  courseSubjectId,
+  nextPosition,
+  periods,
+  children,
+}: {
+  classroomId: string
+  courseSubjectId: string
+  nextPosition: number
+  periods: readonly GradingPeriod[]
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--color-surface-3) px-3 py-2">
+      <p className="text-sm text-(--color-ink)">{children}</p>
+      <PeriodDialog
+        classroomId={classroomId}
+        courseSubjectId={courseSubjectId}
+        nextPosition={nextPosition}
+        siblings={periods}
+        trigger={
+          <Button size="sm" variant="secondary">
+            <PlusIcon className="size-4" /> Add a period
+          </Button>
+        }
+      />
+    </div>
   )
 }
 
@@ -471,37 +507,33 @@ export function StructurePanel({
 
           {/* Activities for a selected period */}
           <section className="space-y-3">
-            <Step
-              index={4}
-              title="Activities"
-              hint="The quizzes and projects students are actually scored on."
-              action={
-                selectedPeriod && (
-                  <ActivityDialog
-                    classroomId={classroomId}
-                    periodId={selectedPeriod.id}
-                    categories={structure.categories.filter(
-                      (category) =>
-                        category.grading_period_id === selectedPeriod.id ||
-                        category.grading_period_id === null,
-                    )}
-                    nextPosition={
-                      Math.max(
-                        -1,
-                        ...structure.activities
-                          .filter((a) => a.grading_period_id === selectedPeriod.id)
-                          .map((a) => a.position),
-                      ) + 1
-                    }
-                    trigger={
-                      <Button size="sm" variant="secondary">
-                        <PlusIcon className="size-4" /> Add activity
-                      </Button>
-                    }
-                  />
-                )
-              }
-            />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <SectionTitle>Activities</SectionTitle>
+              {selectedPeriod && (
+                <ActivityDialog
+                  classroomId={classroomId}
+                  periodId={selectedPeriod.id}
+                  categories={structure.categories.filter(
+                    (category) =>
+                      category.grading_period_id === selectedPeriod.id ||
+                      category.grading_period_id === null,
+                  )}
+                  nextPosition={
+                    Math.max(
+                      -1,
+                      ...structure.activities
+                        .filter((a) => a.grading_period_id === selectedPeriod.id)
+                        .map((a) => a.position),
+                    ) + 1
+                  }
+                  trigger={
+                    <Button size="sm" variant="secondary">
+                      <PlusIcon className="size-4" /> Add activity
+                    </Button>
+                  }
+                />
+              )}
+            </div>
 
             {structure.periods.length === 0 ? (
               <NeedsPeriod

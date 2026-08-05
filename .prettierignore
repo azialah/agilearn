@@ -7,6 +7,8 @@ src/types/database.ts
 .claude
 .agents
 .codex
+.github/skills
+.github/hooks
 AGENTS.md
 package-lock.json
 supabase/.temp
