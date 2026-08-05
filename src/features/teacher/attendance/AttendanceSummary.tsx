@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from '@/components/ui/Table'
 import { Badge } from '@/components/ui/Badge'
+import { STUDENTS_PAGE_SIZE } from '@/lib/queries/students'
 import { studentFullName, type Student } from '@/types/domain'
 import type { ClassSessionWithRecords } from '@/lib/queries/attendance'
 import {
@@ -77,6 +79,7 @@ export function AttendanceSummary({
   focusStudentId?: string
 }) {
   const [sort, setSort] = useState<SummarySort>('name')
+  const [page, setPage] = useState(0)
 
   const allRecords = useMemo(
     () => sessions.flatMap((session) => session.attendance_records),
@@ -109,6 +112,16 @@ export function AttendanceSummary({
   }, [students, allRecords, sort, nameById])
 
   const classRate = useMemo(() => computeClassAttendanceRate(allRecords), [allRecords])
+  const pageCount = Math.max(1, Math.ceil(rows.length / STUDENTS_PAGE_SIZE))
+  const visibleRows = rows.slice(
+    page * STUDENTS_PAGE_SIZE,
+    page * STUDENTS_PAGE_SIZE + STUDENTS_PAGE_SIZE,
+  )
+
+  function changeSort(next: SummarySort) {
+    setSort(next)
+    setPage(0)
+  }
 
   return (
     <Card>
@@ -139,12 +152,12 @@ export function AttendanceSummary({
           <SortToggle
             label="Name"
             active={sort === 'name'}
-            onClick={() => setSort('name')}
+            onClick={() => changeSort('name')}
           />
           <SortToggle
             label="Rate"
             active={sort === 'rate'}
-            onClick={() => setSort('rate')}
+            onClick={() => changeSort('rate')}
           />
         </div>
         <TableContainer className="rounded-none border-0">
@@ -160,7 +173,7 @@ export function AttendanceSummary({
               </TR>
             </THead>
             <TBody>
-              {rows.map((row) => (
+              {visibleRows.map((row) => (
                 <SummaryRow
                   key={row.studentId}
                   name={nameById.get(row.studentId) ?? 'Unknown student'}
@@ -171,6 +184,31 @@ export function AttendanceSummary({
             </TBody>
           </Table>
         </TableContainer>
+        {rows.length > STUDENTS_PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-3 border-t border-(--color-border) px-5 py-3">
+            <p className="text-sm text-(--color-ink-muted)">
+              Page {page + 1} of {pageCount}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 0}
+                onClick={() => setPage((current) => current - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page + 1 >= pageCount}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </CardBody>
     </Card>
   )

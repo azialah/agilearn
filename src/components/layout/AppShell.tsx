@@ -23,6 +23,7 @@ import {
   Home,
   Layers3,
   MoreHorizontal,
+  Pin,
 } from 'lucide-react'
 import { useProfile } from '@/lib/queries/profiles'
 import { useLocale } from '@/lib/locale'
@@ -292,11 +293,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!effectiveCompact && <Brand />}
           {!settingsMode && (
             <IconButton
-              label={effectiveCompact ? 'Expand sidebar' : 'Collapse sidebar'}
+              label={
+                sidebarCompact === true
+                  ? 'Pinned collapsed — click to unpin'
+                  : effectiveCompact
+                    ? 'Expand sidebar'
+                    : 'Collapse sidebar'
+              }
               onClick={toggleSidebar}
               className="hidden lg:inline-flex"
             >
-              {effectiveCompact ? (
+              {sidebarCompact === true ? (
+                // Distinguishes an explicit pin from the narrow-viewport
+                // auto-collapse, which still uses the plain chevron below.
+                <Pin className="size-4 fill-current" />
+              ) : effectiveCompact ? (
                 <ChevronRight className="size-4" />
               ) : (
                 <ChevronLeft className="size-4" />
@@ -314,9 +325,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-ink-faint)">
               Recent classrooms
             </p>
-            <ul className="space-y-1">
-              {recentClassrooms.map((classroom) => (
-                <li key={classroom.id}>
+            <div className="space-y-2">
+              {classrooms?.slice(0, 3).map((classroom) => (
+                <div
+                  key={classroom.id}
+                  className="rounded-xl bg-(--color-surface-2) p-2 text-center"
+                >
                   <Link
                     to="/teacher/classrooms/$classroomId"
                     params={{ classroomId: classroom.id }}
@@ -343,9 +357,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                       </span>
                     </span>
                   </Link>
-                </li>
+                  <div className="mt-1 space-y-1">
+                    {subjects
+                      ?.filter((subject) => subject.classroom_id === classroom.id)
+                      .slice(0, 3)
+                      .map((subject) => (
+                        <Link
+                          key={subject.id}
+                          to="/teacher/classrooms/$classroomId"
+                          params={{ classroomId: classroom.id }}
+                          className="block truncate pl-2 text-[11px] text-(--color-ink-muted) hover:text-(--color-accent-350)"
+                        >
+                          {subject.name}
+                        </Link>
+                      ))}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
         {!settingsMode && !effectiveCompact && (
@@ -382,19 +411,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-col">
         {/* Mobile settings screens carry their own header/back, so the app top
             bar is hidden there (an iOS-style bottom search bar replaces it). */}
-        {!settingsOnMobile && (
-          <TopBar
-            onOpenSearch={() => setSearchOpen(true)}
-            onOpenNavigation={() => setDrawerOpen(true)}
-          />
-        )}
+        {!settingsOnMobile && <TopBar onOpenSearch={() => setSearchOpen(true)} />}
         <TeacherBreadcrumbs />
         {/* Keyed by route: without this the element persists across navigation
             and the enter animation only ever plays on the first page load. */}
         <main
           key={pathname}
           className={cn(
-            'page-enter page-stagger mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
+            'page-enter mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
           )}
         >
           {children}
@@ -410,7 +434,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onPointerUp={handleMobileNavPointerEnd}
           onPointerCancel={handleMobileNavPointerCancel}
           onClickCapture={handleMobileNavClickCapture}
-          className="bottom-nav-enter fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-md touch-pan-y items-center justify-around rounded-[1.6rem] border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_55%,transparent)] px-2 py-2 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150 md:hidden"
+          className="bottom-nav-enter fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-md touch-pan-y items-center justify-around rounded-[1.6rem] border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_55%,transparent)] px-2 py-2 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
         >
           <MobileNavLink
             to="/teacher/dashboard"
@@ -425,15 +449,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             preview={mobileNavPreview}
           />
           <MobileNavLink
-            to="/teacher/calendar"
-            label="Calendar"
-            icon={<CalendarDays />}
-            preview={mobileNavPreview}
-          />
-          <MobileNavLink
             to="/teacher/modules"
             label="Materials"
             icon={<Layers3 />}
+            preview={mobileNavPreview}
+          />
+          <MobileNavLink
+            to="/teacher/calendar"
+            label="Calendar"
+            icon={<CalendarDays />}
             preview={mobileNavPreview}
           />
           <button

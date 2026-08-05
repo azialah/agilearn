@@ -115,7 +115,24 @@ export function ForgotPasswordFlow() {
   }
 
   return (
-    <AuthShell rail={RECOVERY_RAIL[stage]} mobileFormTypography mobileViewportLocked>
+    <AuthShell
+      rail={RECOVERY_RAIL[stage]}
+      mobileFormTypography
+      mobileFormCentered
+      mobileViewportLocked
+      mobileHeaderActionPosition="start"
+      mobileHeaderAction={
+        stage === 'email' ? (
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            Back
+          </Link>
+        ) : undefined
+      }
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={stage}
@@ -126,13 +143,6 @@ export function ForgotPasswordFlow() {
         >
           {stage === 'email' && (
             <>
-              <Link
-                to="/login"
-                aria-label="Back to sign in"
-                className="-ml-2 mb-3 inline-flex size-9 items-center justify-center rounded-full text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink) lg:hidden"
-              >
-                <ChevronLeft className="size-5" />
-              </Link>
               <StaggerGroup>
                 <StaggerItem>
                   <h1 className="text-lg font-semibold">Reset your password</h1>
@@ -169,7 +179,7 @@ export function ForgotPasswordFlow() {
                 <StaggerItem>
                   <Link
                     to="/login"
-                    className="mt-4 hidden h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) text-sm font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3) lg:flex"
+                    className="mt-4 hidden h-11 w-full items-center justify-center rounded-full border border-(--color-border-strong) bg-(--color-surface-2) text-sm font-medium text-(--color-ink) transition-colors hover:bg-(--color-surface-3) md:flex"
                   >
                     Back to sign in
                   </Link>

@@ -188,9 +188,12 @@ function MobileWelcome({
   onSignIn: () => void
 }) {
   return (
-    <div className="flex h-[calc(100dvh-9rem-env(safe-area-inset-bottom))] min-h-0 flex-col overflow-hidden overscroll-none text-center">
-      <div className="pt-[clamp(5rem,18dvh,10rem)]">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-(--color-accent-350)">
+    // md matches the onboarding card: max-w-md, centered, content flowing
+    // instead of pinned to the viewport. xs/sm keep the locked full-height
+    // layout with the CTAs at thumb height.
+    <div className="flex h-[calc(100dvh-9rem-env(safe-area-inset-bottom))] min-h-0 flex-col overflow-hidden overscroll-none text-center md:max-lg:mx-auto md:max-lg:h-[calc(100dvh-9rem)] md:max-lg:max-w-md md:max-lg:justify-center md:max-lg:overflow-visible">
+      <div className="pt-[clamp(5rem,18dvh,10rem)] md:max-lg:pt-0">
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-(--color-accent-350)">
           Agilearn for educators
         </p>
         <h1 className="mt-4 text-balance font-display text-4xl font-semibold leading-[1.06] tracking-tight text-(--color-ink)">
@@ -198,7 +201,7 @@ function MobileWelcome({
         </h1>
       </div>
 
-      <div className="fixed inset-x-6 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 space-y-3">
+      <div className="fixed inset-x-6 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 space-y-3 md:max-lg:static md:max-lg:z-auto md:max-lg:mb-8 md:max-lg:mt-20">
         <Link
           to="/teacher/signup"
           className="flex h-12 w-full items-center justify-center rounded-full bg-(--color-accent-400) px-6 text-base font-semibold text-(--color-accent-fg) shadow-(--shadow-card) transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) focus-visible:ring-offset-2"

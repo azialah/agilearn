@@ -4,13 +4,19 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
 import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
 import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
+import { SubjectTabs } from '@/features/teacher/classrooms/SubjectTabs'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { GradeIcon, PlusIcon } from '@/components/icons'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { useStudents } from '@/lib/queries/students'
-import { useGradebookStructure, useScores } from '@/lib/queries/grades'
+import {
+  useGradebookStructure,
+  useScores,
+  useSubjectGradeCombinations,
+  useSubjectGradebooks,
+} from '@/lib/queries/grades'
 import { reconcileNotificationIncident } from '@/lib/queries/notifications'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { computeConfiguredStudentGradebook } from '@/lib/grading'
@@ -30,6 +36,7 @@ import { PeriodDialog } from './PeriodDialog'
 import { GradeGrid } from './GradeGrid'
 import { SummaryTable } from './SummaryTable'
 import { GradeReportDialog } from './GradeReportDialog'
+import { CombinedFinalPreview } from './CombinedFinalPreview'
 
 type View = { kind: 'period'; periodId: string } | { kind: 'summary' }
 
@@ -37,15 +44,23 @@ export function GradesPage({
   classroomId,
   focusStudentId,
   initialSubjectId,
+  onSubjectChange,
 }: {
   classroomId: string
   focusStudentId?: string
   initialSubjectId?: string
+  /** Lets the route sync the selection into the URL — kept as a callback so
+   *  this component doesn't need to import its own route. */
+  onSubjectChange?: (subjectId: string) => void
 }) {
   const classroomQuery = useClassroom(classroomId)
   const subjectsQuery = useCourseSubjects(classroomId)
   const [subjectId, setSubjectId] = useState(initialSubjectId ?? '')
   const activeSubjectId = subjectId || subjectsQuery.data?.[0]?.id
+  function handleSubjectChange(id: string) {
+    setSubjectId(id)
+    onSubjectChange?.(id)
+  }
   const structureQuery = useGradebookStructure(classroomId, activeSubjectId)
   const studentsQuery = useStudents(classroomId)
 
@@ -54,7 +69,7 @@ export function GradesPage({
     () => structure?.activities.map((a) => a.id) ?? [],
     [structure],
   )
-  const scoresQuery = useScores(classroomId, activityIds)
+  const scoresQuery = useScores(classroomId, activityIds, activeSubjectId)
   const scores = scoresQuery.data ?? {}
 
   const periods = structure?.periods ?? []
@@ -63,6 +78,11 @@ export function GradesPage({
   const { toast } = useToast()
   const activeSubject = subjectsQuery.data?.find(
     (subject) => subject.id === activeSubjectId,
+  )
+  const combinationsQuery = useSubjectGradeCombinations(classroomId)
+  const subjectGradebooks = useSubjectGradebooks(
+    classroomId,
+    subjectsQuery.data?.map((subject) => subject.id) ?? [],
   )
 
   useEffect(() => {
@@ -186,23 +206,13 @@ export function GradesPage({
       </div>
 
       {(subjectsQuery.data?.length ?? 0) > 1 && (
-        <div className="max-w-sm">
-          <label htmlFor="grade-subject" className="mb-1.5 block text-sm font-medium">
-            Course subject
-          </label>
-          <select
-            id="grade-subject"
-            aria-label="Course subject"
-            value={activeSubjectId}
-            onChange={(event) => setSubjectId(event.target.value)}
-            className="h-9 w-full rounded-full border border-(--color-border) bg-(--color-surface-1) px-4 text-sm"
-          >
-            {subjectsQuery.data?.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Course subject</p>
+          <SubjectTabs
+            subjects={subjectsQuery.data ?? []}
+            value={activeSubjectId ?? ''}
+            onChange={handleSubjectChange}
+          />
         </div>
       )}
 
@@ -269,6 +279,7 @@ export function GradesPage({
               ) : (
                 <GradeGrid
                   classroomId={classroomId}
+                  courseSubjectId={activeSubjectId}
                   structure={structure!}
                   scores={scores}
                   students={students}
@@ -278,6 +289,16 @@ export function GradesPage({
               )}
             </motion.div>
           </AnimatePresence>
+
+          {(combinationsQuery.data?.length ?? 0) > 0 && (
+            <CombinedFinalPreview
+              combinations={combinationsQuery.data ?? []}
+              subjects={subjectsQuery.data ?? []}
+              gradebooks={subjectGradebooks.gradebooks}
+              loading={subjectGradebooks.isLoading}
+              students={students}
+            />
+          )}
 
           {structure!.categories.length === 0 && (
             <p className="text-sm text-(--color-ink-muted)">

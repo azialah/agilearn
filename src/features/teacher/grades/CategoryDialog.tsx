@@ -34,7 +34,7 @@ function initialState(
   return {
     name: category?.name ?? '',
     grade_component_id: category?.grade_component_id ?? defaultComponentId,
-    weight: String(category?.weight ?? 1),
+    weight: String((category?.weight ?? 1) * 100),
   }
 }
 
@@ -69,12 +69,14 @@ export function CategoryDialog({
     if (open) setForm(initialState(category, defaultComponentId))
   }, [open, category, defaultComponentId])
 
-  const weight = Number(form.weight)
+  const percentWeight = Number(form.weight)
+  const weight = percentWeight / 100
   const valid =
     form.name.trim().length > 0 &&
     (isLegacyCategory || !!form.grade_component_id) &&
-    Number.isFinite(weight) &&
-    weight > 0
+    Number.isFinite(percentWeight) &&
+    percentWeight > 0 &&
+    percentWeight <= 100
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -166,12 +168,13 @@ export function CategoryDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="category-weight">Weight</Label>
+              <Label htmlFor="category-weight">Weight (%)</Label>
               <Input
                 id="category-weight"
                 type="number"
-                min={0}
-                step={0.01}
+                min={1}
+                max={100}
+                step={1}
                 required
                 value={form.weight}
                 onChange={(e) => setForm({ ...form, weight: e.target.value })}
@@ -179,8 +182,8 @@ export function CategoryDialog({
             </div>
           </div>
           <p className="text-xs text-(--color-ink-faint)">
-            Category weights are relative within their component and renormalize when a
-            category has no graded work.
+            Categories in this period and component must total 100% before a final grade
+            is available.
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

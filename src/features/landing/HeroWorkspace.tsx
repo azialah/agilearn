@@ -33,7 +33,7 @@ export function HeroWorkspace() {
           <span>Tuesday · 3 tasks</span>
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1.15fr_0.85fr]">
           <motion.div
             {...enter(0.3)}
             animate={settled ?? enter(0.3).animate}

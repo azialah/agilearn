@@ -110,7 +110,7 @@ export function GradeBreakdownSlide({
       {hasPeriods ? (
         <motion.div
           variants={item}
-          className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {periods.map((period) => {
             const grade = gradebook.perPeriod[period.id] ?? {}

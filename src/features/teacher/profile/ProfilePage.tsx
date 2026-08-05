@@ -134,11 +134,11 @@ export function ProfilePage() {
           </p>
         </div>
       </Card>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <Card className="rounded-4xl p-6">
           <h2 className="font-semibold">Teaching details</h2>
           <form className="mt-5 space-y-4" onSubmit={(event) => void submit(event)}>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">
                 First name
                 <Input
@@ -158,7 +158,7 @@ export function ProfilePage() {
                 />
               </label>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">
                 Middle name{' '}
                 <span className="font-normal text-(--color-ink-faint)">(optional)</span>

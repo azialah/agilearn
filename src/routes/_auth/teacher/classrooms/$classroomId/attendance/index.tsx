@@ -3,6 +3,7 @@ import { AttendancePage } from '@/features/teacher/attendance/AttendancePage'
 
 interface AttendanceSearch {
   studentId?: string
+  subjectId?: string
 }
 
 export const Route = createFileRoute(
@@ -10,13 +11,24 @@ export const Route = createFileRoute(
 )({
   validateSearch: (search: Record<string, unknown>): AttendanceSearch => {
     const studentId = typeof search.studentId === 'string' ? search.studentId : undefined
-    return studentId ? { studentId } : {}
+    const subjectId = typeof search.subjectId === 'string' ? search.subjectId : undefined
+    return { ...(studentId ? { studentId } : {}), ...(subjectId ? { subjectId } : {}) }
   },
   component: AttendanceRoute,
 })
 
 function AttendanceRoute() {
   const { classroomId } = Route.useParams()
-  const { studentId } = Route.useSearch()
-  return <AttendancePage classroomId={classroomId} focusStudentId={studentId} />
+  const { studentId, subjectId } = Route.useSearch()
+  const navigate = Route.useNavigate()
+  return (
+    <AttendancePage
+      classroomId={classroomId}
+      focusStudentId={studentId}
+      initialSubjectId={subjectId}
+      onSubjectChange={(id) =>
+        navigate({ search: (prev) => ({ ...prev, subjectId: id }) })
+      }
+    />
+  )
 }

@@ -65,7 +65,7 @@ export function MultiplierDemo() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-12">
-        <div className="grid gap-6 rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/90 p-6 shadow-(--shadow-card) sm:p-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-10">
+        <div className="grid grid-cols-1 gap-6 rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1)/90 p-6 shadow-(--shadow-card) sm:p-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-10">
           {/* Controls */}
           <div>
             <div className="flex items-center justify-between text-sm">

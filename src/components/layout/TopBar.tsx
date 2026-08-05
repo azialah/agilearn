@@ -3,14 +3,12 @@ import { useNavigate } from '@tanstack/react-router'
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
 import { Bell, TriangleAlert } from 'lucide-react'
 import {
-  MenuIcon,
   ProfileIcon,
   SearchIcon,
   SettingsIcon,
   SignOutIcon,
   UsageIcon,
 } from '@/components/icons'
-import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/Badge'
 import {
   DropdownMenu,
@@ -82,13 +80,7 @@ function notificationPayload(notification: AppNotification): NotificationPayload
 
 // Navigation below `lg` lives entirely in the bottom navbar (its "More" button
 // opens the drawer), so the top bar carries no hamburger — just search + account.
-export function TopBar({
-  onOpenSearch,
-  onOpenNavigation,
-}: {
-  onOpenSearch: () => void
-  onOpenNavigation?: () => void
-}) {
+export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const { data: profile } = useProfile()
   const navigate = useNavigate()
   const { t } = useLocale()
@@ -195,68 +187,81 @@ export function TopBar({
         transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
         className="static z-30 flex h-14 items-center gap-3 bg-(--color-surface-0)/85 px-4 backdrop-blur md:sticky md:top-3 md:mx-3 md:rounded-3xl md:shadow-(--shadow-card) lg:top-0 lg:mx-0 lg:rounded-none lg:border-b lg:border-(--color-border) lg:shadow-none"
       >
-        {onOpenNavigation && (
-          <IconButton
-            label="Open navigation"
-            className="hidden! md:inline-flex! lg:hidden!"
-            onClick={onOpenNavigation}
-          >
-            <MenuIcon className="size-4" />
-          </IconButton>
-        )}
-        <div className="flex-1" />
+        {/* Only reserves space at lg+, where the search pill goes back to a
+            fixed width and needs something to push it (and account) right.
+            Below lg the search button's own flex-1 fills all remaining
+            width — this spacer would just steal half of it. */}
+        <div className="hidden lg:block lg:flex-1" />
+        {/* Same pill design at every width — xs/sm/md just get a full-width,
+            flexible version instead of an icon-only trigger. */}
         <button
           type="button"
           onClick={onOpenSearch}
           aria-label="Search (Ctrl+K)"
-          className="order-2 hidden h-9 w-64 items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1) pl-3 pr-2 text-sm text-(--color-ink-faint) transition-colors hover:border-(--color-border-strong) hover:text-(--color-ink-muted) lg:flex"
+          className="order-2 flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1) pl-3 pr-2 text-sm text-(--color-ink-faint) transition-colors hover:border-(--color-border-strong) hover:text-(--color-ink-muted) lg:max-w-none lg:flex-none lg:basis-64"
         >
           <SearchIcon className="size-4 shrink-0" aria-hidden />
-          <span className="flex-1 text-left">Search…</span>
-          <kbd className="rounded border border-(--color-border) bg-(--color-surface-2) px-1.5 py-0.5 text-[10px] font-medium">
+          <span className="min-w-0 flex-1 truncate text-left">Search…</span>
+          <kbd className="hidden shrink-0 rounded border border-(--color-border) bg-(--color-surface-2) px-1.5 py-0.5 text-[10px] font-medium sm:inline">
             {isMac ? 'Cmd K' : 'Ctrl K'}
           </kbd>
-        </button>
-        {/* A raw button, not IconButton: IconButton hardcodes `rounded-md`, and
-            cn() is clsx without tailwind-merge, so the `rounded-full` here would
-            be decided by CSS source order rather than by intent. */}
-        <button
-          type="button"
-          aria-label="Search (Ctrl+K)"
-          title="Search (Ctrl+K)"
-          onClick={onOpenSearch}
-          className={cn(TRIGGER_CLASS, 'order-2 lg:hidden')}
-        >
-          <SearchIcon className="size-4" aria-hidden />
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={
-                unreadCount === 0
-                  ? 'Notifications'
-                  : `Notifications, ${unreadCount} unread`
-              }
+              aria-label={`Account menu for ${profile?.full_name || profile?.email || 'your account'}`}
               className={cn(
                 TRIGGER_CLASS,
-                'order-1 relative lg:rounded-md lg:border-0 lg:bg-transparent lg:shadow-none',
+                'order-3 relative md:w-auto md:justify-start md:gap-2 md:pl-1 md:pr-3',
               )}
             >
-              <Bell className="size-4" aria-hidden />
+              <Avatar
+                name={profile?.full_name || profile?.email}
+                color={profile?.avatar_color}
+                src={profile?.avatar_url}
+                className="size-6! text-[10px]!"
+              />
+              <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-(--color-ink) md:block">
+                {displayName}
+              </span>
               {unreadCount > 0 && (
-                <span className="absolute right-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full bg-(--color-accent-400) px-1 text-[10px] font-bold leading-4 text-(--color-accent-fg)">
+                <span
+                  aria-hidden
+                  className="absolute right-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full bg-(--color-accent-400) px-1 text-[10px] font-bold leading-4 text-(--color-accent-fg) md:right-1 md:top-1"
+                >
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-[min(24rem,calc(100vw-2rem))] rounded-3xl p-2"
-          >
-            <DropdownMenuLabel className="flex items-center justify-between rounded-xl bg-(--color-surface-2) p-3 normal-case tracking-normal">
-              <span className="text-sm font-semibold text-(--color-ink)">
+          <DropdownMenuContent align="end" className="w-72 rounded-3xl p-2">
+            <DropdownMenuLabel className="rounded-xl bg-(--color-surface-2) p-3">
+              <div className="flex items-center gap-3">
+                <Avatar
+                  name={profile?.full_name || profile?.email}
+                  color={profile?.avatar_color}
+                  src={profile?.avatar_url}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-(--color-ink)">
+                    {profile?.full_name || 'Teacher account'}
+                  </p>
+                  <p className="truncate text-xs font-normal text-(--color-ink-muted)">
+                    {profile?.email}
+                  </p>
+                </div>
+              </div>
+              {profile?.role === 'admin' && (
+                <Badge tone="accent" className="mt-2">
+                  admin
+                </Badge>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="flex items-center justify-between px-2 py-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
+                <Bell className="size-3.5" aria-hidden />
                 Notifications
               </span>
               {unreadCount > 0 && (
@@ -269,7 +274,7 @@ export function TopBar({
                   Clear all
                 </button>
               )}
-            </DropdownMenuLabel>
+            </div>
             {unreadNotifications.isLoading ? (
               <p className="px-3 py-6 text-center text-sm text-(--color-ink-faint)">
                 Loading notifications…
@@ -279,7 +284,7 @@ export function TopBar({
                 You&apos;re all caught up.
               </p>
             ) : (
-              <div className="max-h-80 overflow-y-auto py-1">
+              <div className="max-h-64 overflow-y-auto py-1">
                 {unread.map((notification) => {
                   const payload = notificationPayload(notification)
                   const lowAverage = notification.type === 'low_average'
@@ -306,52 +311,6 @@ export function TopBar({
                 })}
               </div>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={`Account menu for ${profile?.full_name || profile?.email || 'your account'}`}
-              className={cn(
-                TRIGGER_CLASS,
-                'order-3 md:w-auto md:justify-start md:gap-2 md:pl-1 md:pr-3',
-              )}
-            >
-              <Avatar
-                name={profile?.full_name || profile?.email}
-                color={profile?.avatar_color}
-                src={profile?.avatar_url}
-                className="size-6! text-[10px]!"
-              />
-              <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-(--color-ink) md:block">
-                {displayName}
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72 rounded-3xl p-2">
-            <DropdownMenuLabel className="rounded-xl bg-(--color-surface-2) p-3">
-              <div className="flex items-center gap-3">
-                <Avatar
-                  name={profile?.full_name || profile?.email}
-                  color={profile?.avatar_color}
-                  src={profile?.avatar_url}
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-(--color-ink)">
-                    {profile?.full_name || 'Teacher account'}
-                  </p>
-                  <p className="truncate text-xs font-normal text-(--color-ink-muted)">
-                    {profile?.email}
-                  </p>
-                </div>
-              </div>
-              {profile?.role === 'admin' && (
-                <Badge tone="accent" className="mt-2">
-                  admin
-                </Badge>
-              )}
-            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate({ to: '/teacher/profile' })}>
               <ProfileIcon className="size-4" /> Profile

@@ -21,17 +21,72 @@ import {
   useCreateCalendarEvent,
   useMeetingSlots,
 } from '@/lib/queries/calendar'
-import {
-  addDays,
-  findSlotConflicts,
-  startOfSundayWeek,
-  toDateKey,
-  WEEKDAY_LABELS,
-} from './calendar'
+import { cn } from '@/lib/cn'
+import type { CalendarEvent, SubjectMeetingSlot } from '@/types/domain'
+import { addDays, startOfSundayWeek, toDateKey, WEEKDAY_LABELS } from './calendar'
 
 const MONTHS = Array.from({ length: 12 }, (_value, index) =>
   new Date(2026, index).toLocaleString(undefined, { month: 'long' }),
 )
+
+const MODALITY_LABEL = {
+  online: 'Online',
+  hybrid: 'Hybrid',
+} as const
+
+/**
+ * One scheduled class. `compact` is the lg+ week grid, where a 10px type size
+ * is what keeps a slot readable inside a single column; the stacked mobile
+ * list has the width to use the normal 12px scale.
+ */
+function SlotCard({
+  slot,
+  subjectName,
+  compact = false,
+}: {
+  slot: SubjectMeetingSlot
+  subjectName: string
+  compact?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl border border-(--color-border) bg-(--color-surface-2) p-2',
+        compact ? 'mb-2 text-[10px]' : 'text-xs',
+      )}
+    >
+      <p className="truncate font-semibold text-(--color-ink)">{subjectName}</p>
+      <p className="mt-1 text-(--color-ink-muted)">
+        {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
+      </p>
+      <p className="mt-1 truncate text-(--color-accent-350)">
+        {MODALITY_LABEL[slot.modality as keyof typeof MODALITY_LABEL] ?? 'Face-to-face'}
+      </p>
+    </div>
+  )
+}
+
+function EventCard({
+  event,
+  compact = false,
+}: {
+  event: CalendarEvent
+  compact?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl bg-(--color-accent-400)/12 p-2 text-(--color-ink)',
+        compact ? 'mb-2 text-[10px]' : 'text-xs',
+      )}
+    >
+      <p className="truncate font-medium">{event.title}</p>
+      <p className="mt-1 text-(--color-ink-muted)">
+        {event.kind === 'holiday' ? 'Holiday' : event.kind === 'note' ? 'Note' : 'Event'}
+      </p>
+    </div>
+  )
+}
 
 export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
@@ -119,8 +174,11 @@ export function CalendarPage() {
           </Button>
         }
       />
+      {/* Below lg the three groups don't fit on one line, so the week label
+          takes its own row and nav + pickers share the next. `lg:order-*`
+          restores the original single-row order untouched. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-(--color-border) bg-(--color-surface-1) p-3">
-        <div className="flex items-center gap-2">
+        <div className="order-2 flex items-center gap-2 lg:order-1">
           <Button
             size="sm"
             variant="ghost"
@@ -141,7 +199,7 @@ export function CalendarPage() {
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <p className="text-sm font-semibold text-(--color-ink)">
+        <p className="order-1 w-full text-sm font-semibold text-(--color-ink) lg:order-2 lg:w-auto">
           {weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
           {addDays(weekStart, 6).toLocaleDateString(undefined, {
             month: 'short',
@@ -149,7 +207,7 @@ export function CalendarPage() {
             year: 'numeric',
           })}
         </p>
-        <div className="flex gap-2">
+        <div className="order-3 flex gap-2">
           <select
             aria-label="Calendar month"
             value={selectedDate.getMonth()}
@@ -183,7 +241,7 @@ export function CalendarPage() {
           </select>
         </div>
       </div>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="overflow-hidden rounded-4xl p-0">
           <div className="grid grid-cols-7 border-b border-(--color-border)">
             {days.map((day, index) => {
@@ -233,36 +291,14 @@ export function CalendarPage() {
                     const subject = subjects.find(
                       (item) => item.id === slot.course_subject_id,
                     )
-                    // 0025 makes overlaps impossible going forward, but rows
-                    // predating it are still readable — show them rather than
-                    // stacking two boxes that silently hide each other.
-                    const clashes = findSlotConflicts(
-                      slot,
-                      daySlots.filter((other) => other.id !== slot.id),
-                    )
                     return (
                       <div
                         key={slot.id}
-                        className={cn(
-                          'mb-2 rounded-xl border p-2 text-[10px]',
-                          clashes.length
-                            ? 'border-(--color-danger)/50 bg-(--color-danger)/10'
-                            : 'border-(--color-border) bg-(--color-surface-2)',
-                        )}
+                        className="mb-2 rounded-xl border border-(--color-border) bg-(--color-surface-2) p-2 text-[10px]"
                       >
                         <p className="truncate font-semibold text-(--color-ink)">
                           {subject?.name ?? 'Course subject'}
                         </p>
-                        {subject && subject.kind !== 'other' && (
-                          <p className="mt-0.5 uppercase tracking-wide text-(--color-accent-350)">
-                            {subject.kind === 'lecture' ? 'Lecture' : 'Laboratory'}
-                          </p>
-                        )}
-                        {clashes.length > 0 && (
-                          <p className="mt-0.5 font-medium text-(--color-danger)">
-                            Overlaps another class
-                          </p>
-                        )}
                         <p className="mt-1 text-(--color-ink-muted)">
                           {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
                         </p>

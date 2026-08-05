@@ -56,6 +56,35 @@ src/
 - **Grades are computed in exactly one place.** `src/lib/grading.ts` is pure and
   covered by `grading.test.ts`, so weighting logic can't diverge across screens.
 
+## Feature map
+
+Route prefix → feature directory → what it's for. **Update this table in the
+same PR that adds a route/feature** — same discipline as keeping
+`database.types.ts` in sync, not a separate task.
+
+| Route prefix                          | Feature dir                    | Purpose                                          |
+| -------------------------------------- | ------------------------------- | ------------------------------------------------- |
+| `/` , `/about`, `/features`            | `features/landing`, `features/public` | Marketing landing page + public legal/about/features pages |
+| `/login`, `/forgot-password`           | `features/auth`                 | Sign-in, password reset (shared AuthShell/AuthRail) |
+| `/teacher.signup.*`                    | `features/teacher/onboarding`   | Domain-gated self-serve teacher sign-up wizard    |
+| `/_auth/teacher/dashboard`             | `features/teacher/dashboard`    | Home dashboard (grades/attendance summary)        |
+| `/_auth/teacher/classrooms/**`         | `features/teacher/classrooms`   | Classroom list/detail, roster                     |
+| `/_auth/teacher/classrooms/$id/grades` | `features/teacher/grades`       | Weighted gradebook                                |
+| `/_auth/teacher/classrooms/$id/attendance/**` | `features/teacher/attendance` | Attendance sessions + records                  |
+| `/_auth/teacher/classrooms/$id/slideshow` | `features/teacher/slideshow` | Classroom slideshow presentation view             |
+| `/_auth/teacher/modules`               | `features/teacher/modules`      | Teaching-modules library (Storage-backed files)   |
+| `/_auth/teacher/analytics`             | `features/teacher/analytics`    | Per-teacher analytics                             |
+| `/_auth/teacher/calendar`              | `features/teacher/calendar`     | Calendar view                                     |
+| `/_auth/teacher/profile`               | `features/teacher/profile`      | Teacher profile                                   |
+| `/_auth/teacher/usage`                 | `features/teacher/usage`        | Usage stats                                       |
+| `/_auth/admin/overview`                | `features/admin/SchoolOverviewPage` | School-wide analytics overview                |
+| `/_auth/admin/users`                   | `features/admin/UsersPage`      | User/role management                              |
+| `/_auth/admin/domain-requests`         | `features/admin/DomainRequestsPage` | Allowed-email-domain requests                 |
+| `/_auth/admin/audit-log`               | `features/admin/AuditLogPage`   | Admin audit log                                   |
+| `/_auth/settings/**`                   | `features/settings`             | Account settings (both roles)                     |
+| `features/teacher/io`                  | —                                | Import/export helpers (PDF/xlsx), no dedicated route |
+| `features/teacher/notifications`       | —                                | Notification UI, shared across teacher routes     |
+
 ## Data model
 
 Ten tables (see `supabase/migrations/0001`–`0006`):

@@ -66,7 +66,11 @@ export const keys = {
     structureBase: (classroomId: string) => ['grades', 'structure', classroomId] as const,
     structure: (classroomId: string, courseSubjectId: string = 'all') =>
       [...keys.grades.structureBase(classroomId), courseSubjectId] as const,
-    byClassroom: (classroomId: string) => ['grades', 'scores', classroomId] as const,
+    scoresBase: (classroomId: string) => ['grades', 'scores', classroomId] as const,
+    byClassroom: (classroomId: string, courseSubjectId: string = 'all') =>
+      [...keys.grades.scoresBase(classroomId), courseSubjectId] as const,
+    combinations: (classroomId: string) =>
+      ['grades', 'subject-combinations', classroomId] as const,
   },
 
   attendance: {

@@ -36,7 +36,8 @@ interface PeriodForm {
 function initialState(period?: GradingPeriod): PeriodForm {
   return {
     name: period?.name ?? '',
-    sharePercent: period && period.weight !== 1 ? String(period.weight) : '',
+    weight: String((period?.weight ?? 1) * 100),
+    position: String(period?.position ?? nextPosition),
   }
 }
 
@@ -67,17 +68,13 @@ export function PeriodDialog({
     if (open) setForm(initialState(period))
   }, [open, period])
 
-  const custom = form.sharePercent.trim() !== ''
-  const share = Number(form.sharePercent)
-  const weight = custom ? share : 1
+  const weight = Number(form.weight)
+  const position = Number(form.position)
   const valid =
-    form.name.trim().length > 0 && (!custom || (Number.isFinite(share) && share > 0))
-
-  // What this period will actually be worth once every weight is renormalized —
-  // the number the teacher cares about, which "weight: 1" never showed them.
-  const others = siblings.filter((item) => item.id !== period?.id)
-  const total = others.reduce((sum, item) => sum + item.weight, 0) + (weight || 0)
-  const resultingShare = total > 0 ? Math.round((weight / total) * 100) : 0
+    form.name.trim().length > 0 &&
+    Number.isFinite(weight) &&
+    weight > 0 &&
+    Number.isFinite(position)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -151,26 +148,18 @@ export function PeriodDialog({
               </div>
             )}
           </div>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-(--color-ink-muted)">
-              How much does it count?
-            </legend>
-            <div className="flex gap-2">
-              <ShareChoice
-                selected={!custom}
-                onSelect={() => setForm({ ...form, sharePercent: '' })}
-              >
-                Equal share
-              </ShareChoice>
-              <ShareChoice
-                selected={custom}
-                onSelect={() =>
-                  setForm({ ...form, sharePercent: String(resultingShare || 30) })
-                }
-              >
-                Set a percentage
-              </ShareChoice>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="period-weight">Weight</Label>
+              <Input
+                id="period-weight"
+                type="number"
+                min={0}
+                step={0.01}
+                required
+                value={form.weight}
+                onChange={(e) => setForm({ ...form, weight: e.target.value })}
+              />
             </div>
             {custom && (
               <div className="flex items-center gap-2">
@@ -216,8 +205,11 @@ export function PeriodDialog({
                 you have not given yet.
               </p>
             </div>
-          )}
-
+          </div>
+          <p className="text-xs text-(--color-ink-faint)">
+            Weights are relative — periods that have no graded work are dropped and the
+            rest renormalize automatically.
+          </p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel

@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -14,17 +15,27 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import type { GradebookStructure } from '@/lib/grading'
-import type { GradingPeriod } from '@/types/domain'
+import { hasExactWeightTotal, round2 } from '@/lib/grading'
 import {
   useDeleteActivity,
   useDeleteCategory,
   useDeleteGradeComponent,
   useDeletePeriod,
+  useSeedGradeTemplate,
 } from '@/lib/queries/grades'
 import { PeriodDialog } from './PeriodDialog'
 import { CategoryDialog } from './CategoryDialog'
 import { ActivityDialog } from './ActivityDialog'
 import { GradeComponentDialog } from './GradeComponentDialog'
+import { CombinedFinalsManager } from './CombinedFinalsManager'
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
+      {children}
+    </h4>
+  )
+}
 
 function belongsToComponent(
   category: GradebookStructure['categories'][number],
@@ -38,77 +49,8 @@ function belongsToComponent(
   )
 }
 
-/**
- * Weights are stored as relative numbers and renormalized at grade time, so a
- * raw "1" or "0.2" tells a teacher nothing. Everything on this panel is shown
- * as the share it actually carries.
- */
-function shareOf(
-  siblings: readonly { weight: number }[],
-  item: { weight: number },
-): string {
-  const total = siblings.reduce((sum, entry) => sum + entry.weight, 0)
-  return total > 0 ? `${Math.round((item.weight / total) * 100)}%` : '—'
-}
-
-/**
- * A step that cannot start yet. It names what is missing and carries the fix, so
- * the teacher never has to scroll back up to unblock themselves.
- */
-function NeedsPeriod({
-  classroomId,
-  courseSubjectId,
-  nextPosition,
-  periods,
-  children,
-}: {
-  classroomId: string
-  courseSubjectId: string
-  nextPosition: number
-  periods: readonly GradingPeriod[]
-  children: ReactNode
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--color-surface-3) px-3 py-2">
-      <p className="text-sm text-(--color-ink)">{children}</p>
-      <PeriodDialog
-        classroomId={classroomId}
-        courseSubjectId={courseSubjectId}
-        nextPosition={nextPosition}
-        siblings={periods}
-        trigger={
-          <Button size="sm" variant="secondary">
-            <PlusIcon className="size-4" /> Add a period
-          </Button>
-        }
-      />
-    </div>
-  )
-}
-
-/** Section heading that also says where this step sits in the sequence. */
-function Step({
-  index,
-  title,
-  hint,
-  action,
-}: {
-  index: number
-  title: string
-  hint?: string
-  action?: ReactNode
-}) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <div>
-        <h4 className="text-sm font-semibold text-(--color-ink)">
-          <span className="text-(--color-ink-faint)">{index}.</span> {title}
-        </h4>
-        {hint && <p className="mt-0.5 text-xs text-(--color-ink-muted)">{hint}</p>}
-      </div>
-      {action}
-    </div>
-  )
+function formatPercent(weight: number) {
+  return `${round2(weight * 100)}%`
 }
 
 export function StructurePanel({
@@ -130,11 +72,20 @@ export function StructurePanel({
   const deleteCategory = useDeleteCategory()
   const deleteComponent = useDeleteGradeComponent()
   const deleteActivity = useDeleteActivity()
+  const seedTemplate = useSeedGradeTemplate()
   const { toast } = useToast()
 
   const selectedPeriod =
     structure.periods.find((p) => p.id === activePeriodId) ?? structure.periods[0]
   const nextPeriodPosition = Math.max(-1, ...structure.periods.map((p) => p.position)) + 1
+  const periodWeightTotal = structure.periods.reduce(
+    (sum, period) => sum + period.weight,
+    0,
+  )
+  const componentWeightTotal = structure.components.reduce(
+    (sum, component) => sum + component.weight,
+    0,
+  )
 
   async function removePeriod(id: string) {
     try {
@@ -188,39 +139,96 @@ export function StructurePanel({
     }
   }
 
+  async function applyPreset(template: 'higher_education' | 'basic_education') {
+    try {
+      await seedTemplate.mutateAsync({ classroomId, courseSubjectId, template })
+      toast({ title: 'Grade preset applied', tone: 'success' })
+    } catch (error) {
+      toast({
+        title: 'Could not apply grade preset',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    }
+  }
+
+  const canApplyPreset =
+    structure.periods.length === 0 && structure.categories.length === 0
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Grade sheet structure</DialogTitle>
+      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+        <DialogHeader className="rounded-lg border border-(--color-border) bg-(--color-surface-1) p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Grade sheet structure</DialogTitle>
+              <DialogDescription>
+                Build a clear, complete formula for this subject.
+              </DialogDescription>
+            </div>
+            <Badge tone="accent">Exact 100% totals</Badge>
+          </div>
           <DialogDescription>
-            Manage grading periods, categories, and activities. Deletes cascade to any
-            scores recorded under them.
+            Manage periods, components, categories, and activities. Use an editor&apos;s
+            Save changes button to apply an update; destructive changes always ask for
+            confirmation.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {canApplyPreset && (
+            <section className="rounded-lg border border-(--color-border) bg-(--color-surface-2) p-4">
+              <SectionTitle>Start from a preset</SectionTitle>
+              <p className="mt-1 text-sm text-(--color-ink-muted)">
+                Presets are a starting point. You can edit the periods, categories, and
+                weights afterwards.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => void applyPreset('higher_education')}
+                  loading={seedTemplate.isPending}
+                >
+                  College 20 / 40 / 40
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void applyPreset('basic_education')}
+                  disabled={seedTemplate.isPending}
+                >
+                  School quarters
+                </Button>
+              </div>
+            </section>
+          )}
           {/* Grading periods */}
           <section className="space-y-3">
-            <Step
-              index={1}
-              title="Grading periods"
-              hint="Prelim, Midterm, Finals — the terms this subject is graded in."
-              action={
+            <div className="flex items-center justify-between">
+              <SectionTitle>Grading periods</SectionTitle>
+              <div className="flex items-center gap-2">
+                <Badge
+                  tone={
+                    hasExactWeightTotal(structure.periods.map((period) => period.weight))
+                      ? 'accent'
+                      : 'danger'
+                  }
+                >
+                  Σ {formatPercent(periodWeightTotal)}
+                </Badge>
                 <PeriodDialog
                   classroomId={classroomId}
                   courseSubjectId={courseSubjectId}
                   nextPosition={nextPeriodPosition}
-                  siblings={structure.periods}
                   trigger={
                     <Button size="sm" variant="secondary">
-                      <PlusIcon className="size-4" /> Add period
+                      <PlusIcon className="size-4" /> Add
                     </Button>
                   }
                 />
-              }
-            />
+              </div>
+            </div>
             {structure.periods.length === 0 ? (
               <p className="rounded-xl bg-(--color-surface-3) px-3 py-2 text-sm text-(--color-ink)">
                 Start here — everything below hangs off a grading period.
@@ -234,9 +242,7 @@ export function StructurePanel({
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-(--color-ink)">{period.name}</span>
-                      <Badge tone="neutral">
-                        {shareOf(structure.periods, period)} of the grade
-                      </Badge>
+                      <Badge tone="neutral">{formatPercent(period.weight)}</Badge>
                     </div>
                     <div className="flex items-center gap-1">
                       <PeriodDialog
@@ -252,6 +258,7 @@ export function StructurePanel({
                       />
                       <ConfirmDialog
                         title="Delete grading period?"
+                        confirmLabel="Confirm delete"
                         description={`"${period.name}" and all its activities and scores will be permanently removed.`}
                         onConfirm={() => removePeriod(period.id)}
                         trigger={
@@ -269,11 +276,20 @@ export function StructurePanel({
 
           {/* Components and period-scoped categories */}
           <section className="space-y-3">
-            <Step
-              index={2}
-              title="Grade components"
-              hint="The big buckets a final grade splits into, like Lecture and Laboratory."
-              action={
+            <div className="flex items-center justify-between">
+              <SectionTitle>Grade components</SectionTitle>
+              <div className="flex items-center gap-2">
+                <Badge
+                  tone={
+                    hasExactWeightTotal(
+                      structure.components.map((component) => component.weight),
+                    )
+                      ? 'accent'
+                      : 'danger'
+                  }
+                >
+                  Σ {formatPercent(componentWeightTotal)}
+                </Badge>
                 <GradeComponentDialog
                   classroomId={classroomId}
                   courseSubjectId={courseSubjectId}
@@ -284,19 +300,24 @@ export function StructurePanel({
                     </Button>
                   }
                 />
-              }
-            />
-            <div className="grid gap-2 sm:grid-cols-2">
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {structure.components.map((component) => (
                 <div
                   key={component.id}
-                  className="flex items-center justify-between rounded-md border border-(--color-border) px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-3"
                 >
-                  <span className="text-sm font-medium">{component.name}</span>
+                  <div>
+                    <span className="text-sm font-medium">{component.name}</span>
+                    <p className="mt-0.5 text-xs text-(--color-ink-faint)">
+                      {component.name === 'Overall'
+                        ? 'Primary subject final'
+                        : 'Weighted subject component'}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-1">
-                    <Badge tone="accent">
-                      {shareOf(structure.components, component)}
-                    </Badge>
+                    <Badge tone="accent">{formatPercent(component.weight)}</Badge>
                     {!component.id.startsWith('legacy-') && (
                       <>
                         <GradeComponentDialog
@@ -304,13 +325,20 @@ export function StructurePanel({
                           courseSubjectId={courseSubjectId}
                           component={component}
                           trigger={
-                            <IconButton label="Edit component" size="sm">
-                              <EditIcon className="size-4" />
-                            </IconButton>
+                            component.name === 'Overall' ? (
+                              <Button size="sm" variant="outline">
+                                <EditIcon className="size-4" /> Edit overall
+                              </Button>
+                            ) : (
+                              <IconButton label="Edit component" size="sm">
+                                <EditIcon className="size-4" />
+                              </IconButton>
+                            )
                           }
                         />
                         <ConfirmDialog
                           title="Delete grade component?"
+                          confirmLabel="Confirm delete"
                           description="Its categories must be moved or deleted first."
                           onConfirm={() => removeComponent(component.id)}
                           trigger={
@@ -329,28 +357,10 @@ export function StructurePanel({
                 </div>
               ))}
             </div>
-            <Step
-              index={3}
-              title={
-                selectedPeriod ? `Categories in ${selectedPeriod.name}` : 'Categories'
-              }
-              hint={
-                selectedPeriod
-                  ? 'How each component is split — quizzes, projects, exams.'
-                  : 'Add a grading period first; categories belong to one.'
-              }
-            />
-            {!selectedPeriod && (
-              <NeedsPeriod
-                classroomId={classroomId}
-                courseSubjectId={courseSubjectId}
-                nextPosition={nextPeriodPosition}
-                periods={structure.periods}
-              >
-                Categories are set per grading period, so they open up once you have one.
-              </NeedsPeriod>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <SectionTitle>
+              Categories for {selectedPeriod?.name ?? 'this period'}
+            </SectionTitle>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {structure.components.map((component) => {
                 const categories = structure.categories.filter(
                   (c) =>
@@ -358,18 +368,27 @@ export function StructurePanel({
                     (c.grading_period_id === selectedPeriod?.id ||
                       c.grading_period_id === null),
                 )
+                const weightSum = categories.reduce((sum, c) => sum + c.weight, 0)
+                const hasExactTotal = hasExactWeightTotal(
+                  categories.map((category) => category.weight),
+                )
                 return (
                   <div key={component.id} className="space-y-2">
                     <div className="flex items-baseline justify-between border-b border-(--color-border) pb-1">
                       <span className="text-sm font-medium text-(--color-ink)">
                         {component.name}
                       </span>
-                      {categories.length > 0 && (
-                        <span className="text-xs text-(--color-ink-faint)">
-                          {categories.length}{' '}
-                          {categories.length === 1 ? 'category' : 'categories'}
-                        </span>
-                      )}
+                      <Badge
+                        tone={
+                          categories.length === 0
+                            ? 'neutral'
+                            : hasExactTotal
+                              ? 'accent'
+                              : 'danger'
+                        }
+                      >
+                        Σ {formatPercent(weightSum)}
+                      </Badge>
                     </div>
                     {categories.length === 0 ? (
                       <p className="text-xs text-(--color-ink-faint)">
@@ -385,7 +404,7 @@ export function StructurePanel({
                             <span className="min-w-0 truncate text-sm text-(--color-ink-muted)">
                               {category.name}{' '}
                               <span className="text-(--color-ink-faint)">
-                                {shareOf(categories, category)}
+                                ({formatPercent(category.weight)})
                               </span>
                             </span>
                             <div className="flex items-center gap-1">
@@ -405,6 +424,7 @@ export function StructurePanel({
                               />
                               <ConfirmDialog
                                 title="Delete category?"
+                                confirmLabel="Confirm delete"
                                 description={`"${category.name}" and its activities and scores will be permanently removed.`}
                                 onConfirm={() => removeCategory(category.id)}
                                 trigger={
@@ -442,10 +462,12 @@ export function StructurePanel({
               })}
             </div>
             <p className="text-xs text-(--color-ink-faint)">
-              Percentages are worked out from the weights you set, so they always add up
-              to 100% within a component — you never have to make them balance yourself.
+              Each period and component needs a 100% total before Agilearn can publish a
+              final grade. The Σ badge turns red when a category set is incomplete.
             </p>
           </section>
+
+          <CombinedFinalsManager classroomId={classroomId} />
 
           {/* Activities for a selected period */}
           <section className="space-y-3">
@@ -565,6 +587,7 @@ export function StructurePanel({
                                 />
                                 <ConfirmDialog
                                   title="Delete activity?"
+                                  confirmLabel="Confirm delete"
                                   description={`"${activity.name}" and its scores will be permanently removed.`}
                                   onConfirm={() => removeActivity(activity.id)}
                                   trigger={
@@ -588,6 +611,17 @@ export function StructurePanel({
             )}
           </section>
         </div>
+        <DialogFooter className="sticky bottom-0 border-t border-(--color-border) bg-(--color-surface-2) pt-4">
+          <p className="mr-auto text-xs text-(--color-ink-faint)">
+            Changes are saved per editor.
+          </p>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => setOpen(false)}>
+            Save &amp; close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -82,7 +82,7 @@ export function ClassroomsPage() {
           title="Create your first teaching context"
           description="Start with a School Year and Semester, add a classroom cohort, then create its course subjects."
           preview={
-            <div className="grid gap-4 p-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
               {[0, 1].map((index) => (
                 <div
                   key={index}
@@ -138,7 +138,7 @@ export function ClassroomsPage() {
                     {period.status === 'active' ? 'Active' : 'Archived'}
                   </Badge>
                 </header>
-                <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 lg:grid-cols-2">
                   {periodClassrooms.map((classroom) => {
                     const classroomSubjects = (subjects.data ?? []).filter(
                       (subject) => subject.classroom_id === classroom.id,
@@ -170,7 +170,7 @@ export function ClassroomsPage() {
                   </p>
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {(classrooms.data ?? [])
                   .filter((classroom) => !classroom.academic_period_id)
                   .map((classroom) => (
