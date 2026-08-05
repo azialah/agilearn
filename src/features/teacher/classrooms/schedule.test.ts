@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatSchedule } from './ClassroomFormDialog'
+import { formatSchedule } from '@/features/teacher/calendar/calendar'
 
 describe('formatSchedule', () => {
   it('renders a 24-hour range in 12-hour form', () => {

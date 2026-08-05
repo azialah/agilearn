@@ -432,14 +432,9 @@ export type Database = {
           course_code: string
           course_name: string
           created_at: string
-          description: string
-          grading_template: string
           id: string
           owner_id: string
-          room: string
-          schedule: string
           school_level: Database['public']['Enums']['teaching_level'] | null
-          subject_code: string
           term_name: string
           updated_at: string
           year: string
@@ -450,17 +445,12 @@ export type Database = {
           block?: string
           cohort_name?: string
           color?: string | null
-          course_code: string
-          course_name: string
+          course_code?: string
+          course_name?: string
           created_at?: string
-          description?: string
-          grading_template?: string
           id?: string
           owner_id: string
-          room?: string
-          schedule?: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
-          subject_code?: string
           term_name?: string
           updated_at?: string
           year?: string
@@ -474,14 +464,9 @@ export type Database = {
           course_code?: string
           course_name?: string
           created_at?: string
-          description?: string
-          grading_template?: string
           id?: string
           owner_id?: string
-          room?: string
-          schedule?: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
-          subject_code?: string
           term_name?: string
           updated_at?: string
           year?: string
@@ -582,6 +567,7 @@ export type Database = {
           kind: Database['public']['Enums']['course_subject_kind']
           name: string
           position: number
+          session_type: Database['public']['Enums']['course_subject_session']
           room: string
           schedule: string
           subject_code: string
@@ -597,6 +583,7 @@ export type Database = {
           kind?: Database['public']['Enums']['course_subject_kind']
           name: string
           position?: number
+          session_type?: Database['public']['Enums']['course_subject_session']
           room?: string
           schedule?: string
           subject_code?: string
@@ -612,6 +599,7 @@ export type Database = {
           kind?: Database['public']['Enums']['course_subject_kind']
           name?: string
           position?: number
+          session_type?: Database['public']['Enums']['course_subject_session']
           room?: string
           schedule?: string
           subject_code?: string
@@ -1031,6 +1019,45 @@ export type Database = {
           },
         ]
       }
+      subject_meeting_slot_conflicts: {
+        Row: {
+          archived_at: string
+          course_subject_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          location_label: string
+          modality: Database['public']['Enums']['class_modality']
+          owner_id: string
+          starts_at: string
+          weekday: number
+        }
+        Insert: {
+          archived_at?: string
+          course_subject_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          location_label?: string
+          modality?: Database['public']['Enums']['class_modality']
+          owner_id: string
+          starts_at: string
+          weekday: number
+        }
+        Update: {
+          archived_at?: string
+          course_subject_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          location_label?: string
+          modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
+          starts_at?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
       subject_meeting_slots: {
         Row: {
           course_subject_id: string
@@ -1039,6 +1066,7 @@ export type Database = {
           id: string
           location_label: string
           modality: Database['public']['Enums']['class_modality']
+          owner_id: string
           starts_at: string
           weekday: number
         }
@@ -1049,6 +1077,7 @@ export type Database = {
           id?: string
           location_label?: string
           modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
           starts_at: string
           weekday: number
         }
@@ -1059,6 +1088,7 @@ export type Database = {
           id?: string
           location_label?: string
           modality?: Database['public']['Enums']['class_modality']
+          owner_id?: string
           starts_at?: string
           weekday?: number
         }
@@ -1068,6 +1098,13 @@ export type Database = {
             columns: ['course_subject_id']
             isOneToOne: false
             referencedRelation: 'course_subjects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'subject_meeting_slots_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -1346,6 +1383,7 @@ export type Database = {
       calendar_event_visibility: 'private' | 'organization'
       class_modality: 'face_to_face' | 'online' | 'hybrid'
       course_subject_kind: 'lecture' | 'laboratory' | 'other'
+      course_subject_session: 'single' | 'lecture_lab'
       grade_component: 'lecture' | 'laboratory'
       module_kind:
         'lesson_plan' | 'activity_story' | 'resource' | 'syllabus' | 'teaching_material'
@@ -1480,6 +1518,7 @@ export const Constants = {
       calendar_event_visibility: ['private', 'organization'],
       class_modality: ['face_to_face', 'online', 'hybrid'],
       course_subject_kind: ['lecture', 'laboratory', 'other'],
+      course_subject_session: ['single', 'lecture_lab'],
       grade_component: ['lecture', 'laboratory'],
       module_kind: [
         'lesson_plan',

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
+import { enqueueWrite } from '@/lib/offlineQueue'
 import type {
   AttendanceRecord,
   AttendanceRecordInsert,
@@ -166,6 +167,45 @@ function mergeRecords(
 }
 
 /**
+ * A failed write is not always a lost write. When the network is the reason,
+ * the edit is parked in IndexedDB and replayed on reconnect; the optimistic
+ * cache entry stays put so the teacher keeps seeing what they marked.
+ *
+ * Anything else — RLS, a constraint, a bad payload — is a real error and must
+ * surface, so it is rethrown.
+ */
+async function queueIfOffline(
+  inputs: AttendanceRecordInsert[],
+  existing: AttendanceRecord[] | undefined,
+  error: unknown,
+): Promise<boolean> {
+  const offline = !navigator.onLine || isNetworkError(error)
+  if (!offline) return false
+
+  for (const input of inputs) {
+    const previous = existing?.find((record) => record.student_id === input.student_id)
+    await enqueueWrite({
+      id: `attendance:${input.session_id}:${input.student_id}`,
+      table: 'attendance_records',
+      payload: { ...input },
+      onConflict: 'session_id,student_id',
+      baseUpdatedAt: previous?.updated_at ?? null,
+      queuedAt: Date.now(),
+      label: `Attendance for student ${input.student_id}`,
+    })
+  }
+  window.dispatchEvent(new Event('agilearn-queue-changed'))
+  return true
+}
+
+/** Supabase surfaces a dropped connection as a TypeError from fetch. */
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true
+  const message = error instanceof Error ? error.message : String(error)
+  return /fetch|network|Failed to fetch/i.test(message)
+}
+
+/**
  * Upsert one attendance record (status + remarks) with an optimistic cache
  * write and rollback on error. Also refreshes the classroom session list so
  * present/absent counts stay in sync.
@@ -191,7 +231,8 @@ export function useUpsertAttendance(sessionId: string, classroomId: string) {
       )
       return { previous }
     },
-    onError: (_error, _input, context) => {
+    onError: async (error, input, context) => {
+      if (await queueIfOffline([input], context?.previous, error)) return
       if (context?.previous) queryClient.setQueryData(key, context.previous)
     },
     onSettled: () => {
@@ -226,7 +267,8 @@ export function useBulkUpsertAttendance(sessionId: string, classroomId: string) 
       )
       return { previous }
     },
-    onError: (_error, _inputs, context) => {
+    onError: async (error, inputs, context) => {
+      if (await queueIfOffline(inputs, context?.previous, error)) return
       if (context?.previous) queryClient.setQueryData(key, context.previous)
     },
     onSettled: () => {

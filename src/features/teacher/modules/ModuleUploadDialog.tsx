@@ -153,7 +153,7 @@ export function ModuleUploadDialog({
               ) : (
                 <span className="text-(--color-ink-faint)">Choose a file to upload</span>
               )}
-              <span className="shrink-0 rounded-sm bg-(--color-surface-3) px-2 py-1 text-xs text-(--color-ink-muted)">
+              <span className="shrink-0 rounded-sm bg-(--color-surface-3) px-2 py-1 text-xs text-(--color-ink)">
                 Browse
               </span>
             </button>

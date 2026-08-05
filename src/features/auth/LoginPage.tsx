@@ -52,7 +52,18 @@ export function LoginPage() {
 
   return (
     <AuthShell
-      rail={{ eyebrow: t('authEyebrow'), title: t('authTitle'), body: t('authBody') }}
+      rail={{
+        eyebrow: t('authEyebrow'),
+        title: t('authTitle'),
+        body: t('authBody'),
+        // Below lg the rail is hidden and MobileWelcome carries this link, so
+        // desktop was the one width with no route to sign-up at all.
+        cta: {
+          label: t('newTeacher'),
+          action: t('createAccount'),
+          to: '/teacher/signup',
+        },
+      }}
       mobileBrandCentered
       mobileViewportLocked
       mobileFormTypography={showSignIn}

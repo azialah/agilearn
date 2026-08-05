@@ -12,9 +12,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
 }
 
+// No `focus-visible:outline-none` here: it used to suppress the global
+// :focus-visible outline in app.css without replacing it, leaving every button
+// in the app — Sign in, Save, Add student — with no keyboard focus indicator.
 const base =
   'inline-flex items-center justify-center gap-2 rounded-full font-medium ' +
-  'transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ' +
+  'transition-colors disabled:cursor-not-allowed disabled:opacity-50 ' +
   'whitespace-nowrap select-none'
 
 const variants: Record<ButtonVariant, string> = {

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent,
@@ -29,7 +30,8 @@ import { NAV_ITEMS } from './navItems'
 import { SETTINGS_SECTIONS } from './settingsSections'
 import { TeacherBreadcrumbs } from './TeacherBreadcrumbs'
 import { useClassrooms } from '@/lib/queries/classrooms'
-import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { readRecentClassrooms, sortByRecentVisit } from '@/lib/recentClassrooms'
+import { classroomColorClasses } from '@/lib/classroomColor'
 import { SettingsSearchBar } from '@/features/settings/SettingsSearchBar'
 
 function NavLinks({
@@ -138,9 +140,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const { data: profile } = useProfile()
   const { data: classrooms } = useClassrooms()
-  const { data: subjects } = useAllCourseSubjects()
   const isAdmin = profile?.role === 'admin'
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  // pathname is a dependency on purpose: opening a classroom should reorder this
+  // list by the time the teacher looks back at the sidebar.
+  const recentClassrooms = useMemo(
+    () => sortByRecentVisit(classrooms ?? [], readRecentClassrooms()).slice(0, 3),
+    [classrooms, pathname],
+  )
   const settingsMode = pathname.startsWith('/settings')
   // Collapse to the rail when the user pins it OR when the window is narrow
   // (roughly a shrunk desktop window); hovering the rail expands it back.
@@ -307,34 +314,38 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-ink-faint)">
               Recent classrooms
             </p>
-            <div className="space-y-2">
-              {classrooms?.slice(0, 3).map((classroom) => (
-                <div key={classroom.id} className="rounded-xl bg-(--color-surface-2) p-2">
+            <ul className="space-y-1">
+              {recentClassrooms.map((classroom) => (
+                <li key={classroom.id}>
                   <Link
                     to="/teacher/classrooms/$classroomId"
                     params={{ classroomId: classroom.id }}
-                    className="block truncate text-xs font-medium text-(--color-ink)"
+                    className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-(--color-surface-2)"
+                    activeProps={{ className: 'bg-(--color-surface-2)' }}
                   >
-                    {classroom.cohort_name || classroom.block || classroom.course_name}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'size-2 shrink-0 rounded-full',
+                        classroomColorClasses(classroom).dot,
+                      )}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-medium text-(--color-ink)">
+                        {classroom.cohort_name ||
+                          classroom.block ||
+                          classroom.course_name}
+                      </span>
+                      <span className="block truncate text-[11px] text-(--color-ink-faint)">
+                        {[classroom.year, `${classroom.student_count} students`]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
                   </Link>
-                  <div className="mt-1 space-y-1">
-                    {subjects
-                      ?.filter((subject) => subject.classroom_id === classroom.id)
-                      .slice(0, 3)
-                      .map((subject) => (
-                        <Link
-                          key={subject.id}
-                          to="/teacher/classrooms/$classroomId"
-                          params={{ classroomId: classroom.id }}
-                          className="block truncate pl-2 text-[11px] text-(--color-ink-muted) hover:text-(--color-accent-350)"
-                        >
-                          {subject.name}
-                        </Link>
-                      ))}
-                  </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
         {!settingsMode && !effectiveCompact && (
@@ -378,9 +389,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         )}
         <TeacherBreadcrumbs />
+        {/* Keyed by route: without this the element persists across navigation
+            and the enter animation only ever plays on the first page load. */}
         <main
+          key={pathname}
           className={cn(
-            'page-enter mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
+            'page-enter page-stagger mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6',
           )}
         >
           {children}

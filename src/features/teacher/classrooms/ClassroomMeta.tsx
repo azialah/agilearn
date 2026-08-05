@@ -1,35 +1,43 @@
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { PlusIcon } from '@/components/icons'
+import { IconButton } from '@/components/ui/IconButton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useToast } from '@/components/ui/toast'
+import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useStudentsPage } from '@/lib/queries/students'
+import { useDeleteMeetingSlot, useMeetingSlots } from '@/lib/queries/calendar'
 import { MeetingSlotDialog } from '@/features/teacher/calendar/MeetingSlotDialog'
+import { to12Hour, WEEKDAY_LABELS } from '@/features/teacher/calendar/calendar'
+import type { CourseSubject, SubjectMeetingSlot } from '@/types/domain'
+import { KIND_LABEL } from './SubjectFields'
 import { SubjectFormDialog } from './SubjectFormDialog'
 
 /**
- * Roster size, the subjects sharing that roster, and their weekly meetings.
- * Rendered under the header on every classroom tab so the context does not
- * disappear when you move from Roster to Grades or Attendance.
+ * The classroom's subjects and their weekly meetings — one list, not five.
  *
- * Page 0 of the roster query is reused purely for its exact count — the roster
- * table already holds it in cache, so this costs no extra request there.
+ * This used to render each subject three times over: a chip, a "Schedule
+ * <subject>" button, and a meeting row that repeated the name again. With real
+ * subject names running past seventy characters, one classroom filled the screen
+ * with the same string. Each subject now owns a single row that carries its
+ * identity, its meetings, and its actions.
  */
 export function ClassroomMeta({ classroomId }: { classroomId: string }) {
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const { data: roster } = useStudentsPage(classroomId, 0)
+  const { data: allSlots = [] } = useMeetingSlots()
 
   return (
-    <div className="rounded-2xl border border-(--color-border) bg-(--color-surface-1) px-4 py-3">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <p className="text-xs font-medium text-(--color-ink-faint)">
-          Course subjects · one shared roster
+    <section
+      aria-label="Course subjects"
+      className="rounded-2xl border border-(--color-border) bg-(--color-surface-1)"
+    >
+      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <p className="text-sm text-(--color-ink-muted)">
+          <span className="font-medium text-(--color-ink)">
+            {roster?.total ?? 0} students
+          </span>{' '}
+          shared by {subjects.length} {subjects.length === 1 ? 'subject' : 'subjects'}
         </p>
-        <Badge>{roster?.total ?? 0} students</Badge>
-        {subjects.map((subject) => (
-          <Badge key={subject.id} tone="accent">
-            {subject.name}
-          </Badge>
-        ))}
         <SubjectFormDialog
           classroomId={classroomId}
           trigger={
@@ -38,26 +46,121 @@ export function ClassroomMeta({ classroomId }: { classroomId: string }) {
             </Button>
           }
         />
-      </div>
+      </header>
 
       {subjects.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2 border-t border-(--color-border) pt-2">
+        <ul className="divide-y divide-(--color-border) border-t border-(--color-border)">
           {subjects.map((subject) => (
-            <MeetingSlotDialog
+            <SubjectRow
               key={subject.id}
               subject={subject}
-              trigger={
-                <Button variant="ghost" size="sm">
-                  <PlusIcon />
-                  {subjects.length > 1
-                    ? `Schedule ${subject.name}`
-                    : 'Schedule a meeting'}
-                </Button>
-              }
+              slots={allSlots.filter((slot) => slot.course_subject_id === subject.id)}
             />
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
+  )
+}
+
+function SubjectRow({
+  subject,
+  slots,
+}: {
+  subject: CourseSubject
+  slots: SubjectMeetingSlot[]
+}) {
+  return (
+    <li className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-(--color-accent-350)">
+            {KIND_LABEL[subject.kind]}
+          </span>
+          {subject.course_code && (
+            <span className="font-mono text-xs text-(--color-ink-muted)">
+              {subject.course_code}
+            </span>
+          )}
+        </div>
+        {/* Long names are the norm here, so one truncated line with the full
+            text on hover beats wrapping four lines of repeated words. */}
+        <p className="truncate text-sm text-(--color-ink)" title={subject.name}>
+          {subject.name}
+        </p>
+        {slots.length > 0 ? (
+          <ul className="mt-1 space-y-1">
+            {slots.map((slot) => (
+              <MeetingRow key={slot.id} slot={slot} subject={subject} />
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-xs text-(--color-ink-faint)">No meeting scheduled</p>
+        )}
+      </div>
+      <MeetingSlotDialog
+        subject={subject}
+        trigger={
+          <Button variant="ghost" size="sm">
+            <PlusIcon /> Meeting
+          </Button>
+        }
+      />
+    </li>
+  )
+}
+
+function MeetingRow({
+  slot,
+  subject,
+}: {
+  slot: SubjectMeetingSlot
+  subject: CourseSubject
+}) {
+  const remove = useDeleteMeetingSlot()
+  const { toast } = useToast()
+  const when = `${WEEKDAY_LABELS[slot.weekday]} ${to12Hour(slot.starts_at)}–${to12Hour(slot.ends_at)}`
+
+  async function handleDelete() {
+    try {
+      await remove.mutateAsync(slot)
+      toast({ title: 'Meeting removed', tone: 'success' })
+    } catch (error) {
+      toast({
+        title: 'Could not remove the meeting',
+        description: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
+    }
+  }
+
+  return (
+    <li className="group flex items-center gap-2 text-xs text-(--color-ink-muted)">
+      <span className="font-medium text-(--color-ink)">{when}</span>
+      {slot.location_label && <span>{slot.location_label}</span>}
+      {/* The row already names the subject, so these only need the time. */}
+      <span className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <MeetingSlotDialog
+          subject={subject}
+          slot={slot}
+          trigger={
+            <IconButton label={`Edit the ${when} meeting`} size="sm">
+              <EditIcon />
+            </IconButton>
+          }
+        />
+        <ConfirmDialog
+          title="Remove this meeting?"
+          description={`${subject.name} on ${when} disappears from your Calendar. The subject and its grades stay.`}
+          confirmLabel="Remove"
+          onConfirm={handleDelete}
+          trigger={
+            <IconButton label={`Remove the ${when} meeting`} size="sm" variant="danger">
+              <TrashIcon />
+            </IconButton>
+          }
+        />
+      </span>
+    </li>
   )
 }

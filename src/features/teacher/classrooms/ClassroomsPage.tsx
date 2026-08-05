@@ -24,6 +24,7 @@ import {
 } from '@/lib/queries/academicWorkspace'
 import { classroomColorClasses } from '@/lib/classroomColor'
 import { ClassroomColorMenu } from './ClassroomColorMenu'
+import { KIND_LABEL } from './SubjectFields'
 import { ClassroomFormDialog } from './ClassroomFormDialog'
 
 export function ClassroomsPage() {
@@ -259,7 +260,7 @@ function ClassroomGroup({
                   </span>
                 </span>
               </span>
-              <Badge tone="neutral">{subject.kind}</Badge>
+              <Badge tone="neutral">{KIND_LABEL[subject.kind]}</Badge>
             </Link>
           ))}
           {!subjects.length && (

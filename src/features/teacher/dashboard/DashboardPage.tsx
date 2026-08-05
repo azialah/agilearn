@@ -210,9 +210,16 @@ export function DashboardPage() {
         transition={{ duration: reducedMotion ? 0 : 0.34 }}
         className="relative isolate overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1) shadow-(--shadow-card)"
       >
+        {/* Decorative only, and 2.3 MB of it. Async decode keeps a 2172px-wide
+            PNG off the main thread, and low priority stops it competing with
+            the fonts and JS that the dashboard actually needs to render.
+            The real fix is re-encoding: it ships at 2172x724 but never renders
+            wider than ~1100 CSS px. */}
         <img
           src="/images/home-teaching-ritual.png"
           alt=""
+          decoding="async"
+          fetchPriority="low"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center] opacity-80"
         />
         <div className="absolute inset-0 -z-10 bg-linear-to-r from-(--color-surface-1) via-(--color-surface-1)/92 to-transparent" />

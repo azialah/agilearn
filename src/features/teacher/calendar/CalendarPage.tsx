@@ -12,14 +12,22 @@ import {
   ResponsiveDrawerHeader,
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/cn'
 import { useProfile } from '@/lib/queries/profiles'
-import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useAcademicPeriods, useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useClassrooms } from '@/lib/queries/classrooms'
 import {
   useCalendarEvents,
   useCreateCalendarEvent,
   useMeetingSlots,
 } from '@/lib/queries/calendar'
-import { addDays, startOfSundayWeek, toDateKey, WEEKDAY_LABELS } from './calendar'
+import {
+  addDays,
+  findSlotConflicts,
+  startOfSundayWeek,
+  toDateKey,
+  WEEKDAY_LABELS,
+} from './calendar'
 
 const MONTHS = Array.from({ length: 12 }, (_value, index) =>
   new Date(2026, index).toLocaleString(undefined, { month: 'long' }),
@@ -32,7 +40,31 @@ export function CalendarPage() {
   const [notes, setNotes] = useState('')
   const { data: profile } = useProfile()
   const { data: subjects = [] } = useAllCourseSubjects()
-  const { data: slots = [] } = useMeetingSlots()
+  const { data: allSlots = [] } = useMeetingSlots()
+  const { data: classrooms = [] } = useClassrooms()
+  const { data: periods = [] } = useAcademicPeriods()
+
+  // Slots from archived semesters would otherwise keep showing on every week.
+  const slots = useMemo(() => {
+    const activePeriods = new Set(
+      periods.filter((period) => period.status === 'active').map((period) => period.id),
+    )
+    const activeClassrooms = new Set(
+      classrooms
+        .filter(
+          (classroom) =>
+            !classroom.academic_period_id ||
+            activePeriods.has(classroom.academic_period_id),
+        )
+        .map((classroom) => classroom.id),
+    )
+    const activeSubjectIds = new Set(
+      subjects
+        .filter((subject) => activeClassrooms.has(subject.classroom_id))
+        .map((subject) => subject.id),
+    )
+    return allSlots.filter((slot) => activeSubjectIds.has(slot.course_subject_id))
+  }, [allSlots, subjects, classrooms, periods])
   const weekStart = startOfSundayWeek(selectedDate)
   const weekEnd = addDays(weekStart, 7)
   const events = useCalendarEvents(weekStart.toISOString(), weekEnd.toISOString())
@@ -201,14 +233,36 @@ export function CalendarPage() {
                     const subject = subjects.find(
                       (item) => item.id === slot.course_subject_id,
                     )
+                    // 0025 makes overlaps impossible going forward, but rows
+                    // predating it are still readable — show them rather than
+                    // stacking two boxes that silently hide each other.
+                    const clashes = findSlotConflicts(
+                      slot,
+                      daySlots.filter((other) => other.id !== slot.id),
+                    )
                     return (
                       <div
                         key={slot.id}
-                        className="mb-2 rounded-xl border border-(--color-border) bg-(--color-surface-2) p-2 text-[10px]"
+                        className={cn(
+                          'mb-2 rounded-xl border p-2 text-[10px]',
+                          clashes.length
+                            ? 'border-(--color-danger)/50 bg-(--color-danger)/10'
+                            : 'border-(--color-border) bg-(--color-surface-2)',
+                        )}
                       >
                         <p className="truncate font-semibold text-(--color-ink)">
                           {subject?.name ?? 'Course subject'}
                         </p>
+                        {subject && subject.kind !== 'other' && (
+                          <p className="mt-0.5 uppercase tracking-wide text-(--color-accent-350)">
+                            {subject.kind === 'lecture' ? 'Lecture' : 'Laboratory'}
+                          </p>
+                        )}
+                        {clashes.length > 0 && (
+                          <p className="mt-0.5 font-medium text-(--color-danger)">
+                            Overlaps another class
+                          </p>
+                        )}
                         <p className="mt-1 text-(--color-ink-muted)">
                           {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
                         </p>

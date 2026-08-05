@@ -68,6 +68,7 @@ export type TeachingModuleUpdate = TablesUpdate<'teaching_modules'>
 export type AppRole = Enums<'app_role'>
 export type AcademicPeriodStatus = Enums<'academic_period_status'>
 export type CourseSubjectKind = Enums<'course_subject_kind'>
+export type CourseSubjectSession = Enums<'course_subject_session'>
 export type ClassModality = Enums<'class_modality'>
 export type CalendarEventKind = Enums<'calendar_event_kind'>
 export type CalendarEventVisibility = Enums<'calendar_event_visibility'>

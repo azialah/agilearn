@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
 import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
+import { OfflineSyncBar } from './OfflineSyncBar'
 import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
@@ -137,6 +138,7 @@ export function AttendancePage({
     <div className="space-y-6">
       <ClassroomHeader classroomId={classroomId} />
       <ClassroomMeta classroomId={classroomId} />
+      <OfflineSyncBar />
       <ClassroomTabs classroomId={classroomId} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

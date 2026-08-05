@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import type { GradebookStructure } from '@/lib/grading'
-import { round2 } from '@/lib/grading'
+import type { GradingPeriod } from '@/types/domain'
 import {
   useDeleteActivity,
   useDeleteCategory,
@@ -26,14 +26,6 @@ import { CategoryDialog } from './CategoryDialog'
 import { ActivityDialog } from './ActivityDialog'
 import { GradeComponentDialog } from './GradeComponentDialog'
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h4 className="text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
-      {children}
-    </h4>
-  )
-}
-
 function belongsToComponent(
   category: GradebookStructure['categories'][number],
   componentId: string,
@@ -43,6 +35,79 @@ function belongsToComponent(
     (category.grade_component_id === null &&
       ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
         (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
+  )
+}
+
+/**
+ * Weights are stored as relative numbers and renormalized at grade time, so a
+ * raw "1" or "0.2" tells a teacher nothing. Everything on this panel is shown
+ * as the share it actually carries.
+ */
+function shareOf(
+  siblings: readonly { weight: number }[],
+  item: { weight: number },
+): string {
+  const total = siblings.reduce((sum, entry) => sum + entry.weight, 0)
+  return total > 0 ? `${Math.round((item.weight / total) * 100)}%` : '—'
+}
+
+/**
+ * A step that cannot start yet. It names what is missing and carries the fix, so
+ * the teacher never has to scroll back up to unblock themselves.
+ */
+function NeedsPeriod({
+  classroomId,
+  courseSubjectId,
+  nextPosition,
+  periods,
+  children,
+}: {
+  classroomId: string
+  courseSubjectId: string
+  nextPosition: number
+  periods: readonly GradingPeriod[]
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--color-surface-3) px-3 py-2">
+      <p className="text-sm text-(--color-ink)">{children}</p>
+      <PeriodDialog
+        classroomId={classroomId}
+        courseSubjectId={courseSubjectId}
+        nextPosition={nextPosition}
+        siblings={periods}
+        trigger={
+          <Button size="sm" variant="secondary">
+            <PlusIcon className="size-4" /> Add a period
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
+/** Section heading that also says where this step sits in the sequence. */
+function Step({
+  index,
+  title,
+  hint,
+  action,
+}: {
+  index: number
+  title: string
+  hint?: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div>
+        <h4 className="text-sm font-semibold text-(--color-ink)">
+          <span className="text-(--color-ink-faint)">{index}.</span> {title}
+        </h4>
+        {hint && <p className="mt-0.5 text-xs text-(--color-ink-muted)">{hint}</p>}
+      </div>
+      {action}
+    </div>
   )
 }
 
@@ -138,21 +203,28 @@ export function StructurePanel({
         <div className="space-y-6">
           {/* Grading periods */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <SectionTitle>Grading periods</SectionTitle>
-              <PeriodDialog
-                classroomId={classroomId}
-                courseSubjectId={courseSubjectId}
-                nextPosition={nextPeriodPosition}
-                trigger={
-                  <Button size="sm" variant="secondary">
-                    <PlusIcon className="size-4" /> Add
-                  </Button>
-                }
-              />
-            </div>
+            <Step
+              index={1}
+              title="Grading periods"
+              hint="Prelim, Midterm, Finals — the terms this subject is graded in."
+              action={
+                <PeriodDialog
+                  classroomId={classroomId}
+                  courseSubjectId={courseSubjectId}
+                  nextPosition={nextPeriodPosition}
+                  siblings={structure.periods}
+                  trigger={
+                    <Button size="sm" variant="secondary">
+                      <PlusIcon className="size-4" /> Add period
+                    </Button>
+                  }
+                />
+              }
+            />
             {structure.periods.length === 0 ? (
-              <p className="text-sm text-(--color-ink-muted)">No periods yet.</p>
+              <p className="rounded-xl bg-(--color-surface-3) px-3 py-2 text-sm text-(--color-ink)">
+                Start here — everything below hangs off a grading period.
+              </p>
             ) : (
               <ul className="divide-y divide-(--color-border) rounded-md border border-(--color-border)">
                 {structure.periods.map((period) => (
@@ -162,13 +234,16 @@ export function StructurePanel({
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-(--color-ink)">{period.name}</span>
-                      <Badge tone="neutral">w {round2(period.weight)}</Badge>
+                      <Badge tone="neutral">
+                        {shareOf(structure.periods, period)} of the grade
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-1">
                       <PeriodDialog
                         classroomId={classroomId}
                         courseSubjectId={courseSubjectId}
                         period={period}
+                        siblings={structure.periods}
                         trigger={
                           <IconButton label="Edit period" size="sm">
                             <EditIcon className="size-4" />
@@ -194,19 +269,23 @@ export function StructurePanel({
 
           {/* Components and period-scoped categories */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <SectionTitle>Grade components</SectionTitle>
-              <GradeComponentDialog
-                classroomId={classroomId}
-                courseSubjectId={courseSubjectId}
-                nextPosition={structure.components.length}
-                trigger={
-                  <Button size="sm" variant="secondary">
-                    <PlusIcon className="size-4" /> Add component
-                  </Button>
-                }
-              />
-            </div>
+            <Step
+              index={2}
+              title="Grade components"
+              hint="The big buckets a final grade splits into, like Lecture and Laboratory."
+              action={
+                <GradeComponentDialog
+                  classroomId={classroomId}
+                  courseSubjectId={courseSubjectId}
+                  nextPosition={structure.components.length}
+                  trigger={
+                    <Button size="sm" variant="secondary">
+                      <PlusIcon className="size-4" /> Add component
+                    </Button>
+                  }
+                />
+              }
+            />
             <div className="grid gap-2 sm:grid-cols-2">
               {structure.components.map((component) => (
                 <div
@@ -215,7 +294,9 @@ export function StructurePanel({
                 >
                   <span className="text-sm font-medium">{component.name}</span>
                   <div className="flex items-center gap-1">
-                    <Badge tone="accent">w {round2(component.weight)}</Badge>
+                    <Badge tone="accent">
+                      {shareOf(structure.components, component)}
+                    </Badge>
                     {!component.id.startsWith('legacy-') && (
                       <>
                         <GradeComponentDialog
@@ -248,9 +329,27 @@ export function StructurePanel({
                 </div>
               ))}
             </div>
-            <SectionTitle>
-              Categories for {selectedPeriod?.name ?? 'this period'}
-            </SectionTitle>
+            <Step
+              index={3}
+              title={
+                selectedPeriod ? `Categories in ${selectedPeriod.name}` : 'Categories'
+              }
+              hint={
+                selectedPeriod
+                  ? 'How each component is split — quizzes, projects, exams.'
+                  : 'Add a grading period first; categories belong to one.'
+              }
+            />
+            {!selectedPeriod && (
+              <NeedsPeriod
+                classroomId={classroomId}
+                courseSubjectId={courseSubjectId}
+                nextPosition={nextPeriodPosition}
+                periods={structure.periods}
+              >
+                Categories are set per grading period, so they open up once you have one.
+              </NeedsPeriod>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               {structure.components.map((component) => {
                 const categories = structure.categories.filter(
@@ -259,22 +358,23 @@ export function StructurePanel({
                     (c.grading_period_id === selectedPeriod?.id ||
                       c.grading_period_id === null),
                 )
-                const weightSum = round2(categories.reduce((sum, c) => sum + c.weight, 0))
                 return (
-                  <div
-                    key={component.id}
-                    className="space-y-2 rounded-md border border-(--color-border) p-3"
-                  >
-                    <div className="flex items-center justify-between">
+                  <div key={component.id} className="space-y-2">
+                    <div className="flex items-baseline justify-between border-b border-(--color-border) pb-1">
                       <span className="text-sm font-medium text-(--color-ink)">
                         {component.name}
                       </span>
-                      <Badge tone={categories.length === 0 ? 'neutral' : 'accent'}>
-                        Σ {weightSum}
-                      </Badge>
+                      {categories.length > 0 && (
+                        <span className="text-xs text-(--color-ink-faint)">
+                          {categories.length}{' '}
+                          {categories.length === 1 ? 'category' : 'categories'}
+                        </span>
+                      )}
                     </div>
                     {categories.length === 0 ? (
-                      <p className="text-xs text-(--color-ink-faint)">No categories.</p>
+                      <p className="text-xs text-(--color-ink-faint)">
+                        Nothing here yet — all of {component.name} comes from one pool.
+                      </p>
                     ) : (
                       <ul className="space-y-1">
                         {categories.map((category) => (
@@ -282,10 +382,10 @@ export function StructurePanel({
                             key={category.id}
                             className="flex items-center justify-between gap-2"
                           >
-                            <span className="text-sm text-(--color-ink-muted)">
+                            <span className="min-w-0 truncate text-sm text-(--color-ink-muted)">
                               {category.name}{' '}
                               <span className="text-(--color-ink-faint)">
-                                ({round2(category.weight)})
+                                {shareOf(categories, category)}
                               </span>
                             </span>
                             <div className="flex items-center gap-1">
@@ -342,45 +442,55 @@ export function StructurePanel({
               })}
             </div>
             <p className="text-xs text-(--color-ink-faint)">
-              Weights need not sum to exactly 1 — they are normalized per component when
-              grades are computed. The Σ badge is a convenience check.
+              Percentages are worked out from the weights you set, so they always add up
+              to 100% within a component — you never have to make them balance yourself.
             </p>
           </section>
 
           {/* Activities for a selected period */}
           <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <SectionTitle>Activities</SectionTitle>
-              {selectedPeriod && (
-                <ActivityDialog
-                  classroomId={classroomId}
-                  periodId={selectedPeriod.id}
-                  categories={structure.categories.filter(
-                    (category) =>
-                      category.grading_period_id === selectedPeriod.id ||
-                      category.grading_period_id === null,
-                  )}
-                  nextPosition={
-                    Math.max(
-                      -1,
-                      ...structure.activities
-                        .filter((a) => a.grading_period_id === selectedPeriod.id)
-                        .map((a) => a.position),
-                    ) + 1
-                  }
-                  trigger={
-                    <Button size="sm" variant="secondary">
-                      <PlusIcon className="size-4" /> Add activity
-                    </Button>
-                  }
-                />
-              )}
-            </div>
+            <Step
+              index={4}
+              title="Activities"
+              hint="The quizzes and projects students are actually scored on."
+              action={
+                selectedPeriod && (
+                  <ActivityDialog
+                    classroomId={classroomId}
+                    periodId={selectedPeriod.id}
+                    categories={structure.categories.filter(
+                      (category) =>
+                        category.grading_period_id === selectedPeriod.id ||
+                        category.grading_period_id === null,
+                    )}
+                    nextPosition={
+                      Math.max(
+                        -1,
+                        ...structure.activities
+                          .filter((a) => a.grading_period_id === selectedPeriod.id)
+                          .map((a) => a.position),
+                      ) + 1
+                    }
+                    trigger={
+                      <Button size="sm" variant="secondary">
+                        <PlusIcon className="size-4" /> Add activity
+                      </Button>
+                    }
+                  />
+                )
+              }
+            />
 
             {structure.periods.length === 0 ? (
-              <p className="text-sm text-(--color-ink-muted)">
-                Add a grading period first.
-              </p>
+              <NeedsPeriod
+                classroomId={classroomId}
+                courseSubjectId={courseSubjectId}
+                nextPosition={nextPeriodPosition}
+                periods={structure.periods}
+              >
+                Activities live inside a grading period, so there is nowhere to put one
+                yet.
+              </NeedsPeriod>
             ) : (
               <>
                 <div className="flex flex-wrap gap-1">
@@ -395,7 +505,7 @@ export function StructurePanel({
                           'rounded-md px-3 py-1 text-xs font-medium transition-colors ' +
                           (active
                             ? 'bg-(--color-accent-400) text-(--color-accent-fg)'
-                            : 'bg-(--color-surface-3) text-(--color-ink-muted) hover:text-(--color-ink)')
+                            : 'bg-(--color-surface-3) text-(--color-ink) hover:text-(--color-ink)')
                         }
                       >
                         {period.name}

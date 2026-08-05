@@ -91,7 +91,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* xs–md: top-center banner sliding down from the top (iOS-style).
           lg+: top-right corner stack sliding in from the right (Sonner-style). */}
+      {/* One persistent live region that outlives individual toasts. Announcing
+          from a node that mounts with its message is unreliable — some screen
+          readers need the region present before the text arrives. */}
       <div
+        aria-live="polite"
+        aria-atomic="false"
         className={cn(
           'pointer-events-none fixed inset-x-0 top-4 z-100 flex flex-col items-center gap-2 px-4',
           'lg:inset-x-auto lg:right-4 lg:items-end lg:px-0',
@@ -103,7 +108,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             return (
               <motion.div
                 key={item.id}
-                role="status"
                 layout
                 // lg+: enters and leaves through the right edge.
                 // Below lg: drops down from above on enter and retracts back up

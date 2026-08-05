@@ -33,10 +33,23 @@ import {
 import { useCreateMeetingSlot } from '@/lib/queries/calendar'
 import { cn } from '@/lib/cn'
 import { useTypewriter } from '@/lib/useTypewriter'
+import {
+  formatSchedule,
+  WEEKDAY_LABELS as SHORT_DAY_NAMES,
+} from '@/features/teacher/calendar/calendar'
+import {
+  draftToSlot,
+  EMPTY_MEETING_DRAFT,
+  MeetingSlotFields,
+  type MeetingSlotDraft,
+} from '@/features/teacher/calendar/MeetingSlotFields'
+import { useSlotConflicts } from '@/features/teacher/calendar/useSlotConflicts'
+import { meetingSlotErrorMessage } from '@/features/teacher/calendar/slotErrors'
 import { CLASSROOM_COLORS, CLASSROOM_COLOR_CLASSES } from '@/lib/classroomColor'
+import { kindsFor, SubjectFields, type SubjectDraft } from './SubjectFields'
 import type {
   Classroom,
-  CourseSubjectKind,
+  CourseSubjectSession,
   GradingTemplate,
   TeachingLevel,
 } from '@/types/domain'
@@ -52,13 +65,13 @@ const STEP_COPY: Record<Step, { title: string; description: string; label: strin
   },
   2: {
     title: 'Add the first course subject',
-    description: 'Lecture and laboratory are separate subjects, not grade weights.',
+    description: 'A major with a laboratory becomes two subjects over the same roster.',
     label: 'Course subject',
   },
   3: {
     title: 'Schedule the weekly meeting',
     description:
-      'Calendar weeks begin on Sunday. Overlapping meetings are allowed but will be visible together.',
+      'Calendar weeks begin on Sunday. A meeting cannot overlap another class you teach.',
     label: 'Weekly meeting',
   },
 }
@@ -156,29 +169,14 @@ export function composeCohortName(form: {
 }): string {
   const block = form.block.trim()
   if (form.schoolLevel === 'college') {
+    // Without a course there is no name to build. Returning the bare year digit
+    // produced classrooms called "3" — the course is not stored on the
+    // classroom, so editing an existing one starts with this empty.
+    if (!form.course.trim()) return ''
     const yearDigit = form.year.match(/\d/)?.[0] ?? ''
-    const suffix = `${yearDigit}${block}`
-    return [form.course.trim(), suffix].filter(Boolean).join(' ')
+    return [form.course.trim(), `${yearDigit}${block}`].filter(Boolean).join(' ')
   }
   return [form.year, block].filter(Boolean).join(' — ')
-}
-
-const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-
-/** "13:00" -> "1:00 PM"; anything unparseable is passed through untouched. */
-function to12Hour(value: string): string {
-  const [rawHour, minute] = value.split(':')
-  const hour = Number(rawHour)
-  if (!Number.isFinite(hour) || minute === undefined) return value
-  const suffix = hour < 12 ? 'AM' : 'PM'
-  const hour12 = hour % 12 === 0 ? 12 : hour % 12
-  return `${hour12}:${minute} ${suffix}`
-}
-
-/** Day + start + end as one display string: "Mon 10:00 AM–12:00 PM". */
-export function formatSchedule(day: string, start: string, end: string): string {
-  if (!day || !start || !end) return ''
-  return `${day} ${to12Hour(start)}–${to12Hour(end)}`
 }
 
 /** Height/opacity reveal for the fields that depend on the school level. */
@@ -192,17 +190,7 @@ function expand(reducedMotion: boolean | null) {
 }
 
 /** Animated placeholder samples — module-level so the cycle never restarts. */
-const SUBJECT_HINTS = ['CS Elective 2 Lecture', 'Physical Education 1'] as const
-
-const WEEKDAYS = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-]
+const SUBJECT_HINTS = ['CS Elective 2', 'Physical Education 1'] as const
 
 interface FormState {
   schoolYear: string
@@ -220,12 +208,8 @@ interface FormState {
   subjectName: string
   courseCode: string
   subjectCode: string
-  kind: CourseSubjectKind
+  sessionType: CourseSubjectSession
   description: string
-  schedule: string
-  scheduleDay: string
-  scheduleStart: string
-  scheduleEnd: string
   room: string
   gradingTemplate: GradingTemplate
 }
@@ -255,12 +239,8 @@ const templatePayloadSchema = z.object({
   subjectName: z.string().optional(),
   courseCode: z.string().optional(),
   subjectCode: z.string().optional(),
-  kind: z.enum(['lecture', 'laboratory', 'other']).optional(),
+  sessionType: z.enum(['single', 'lecture_lab']).optional(),
   description: z.string().optional(),
-  schedule: z.string().optional(),
-  scheduleDay: z.string().optional(),
-  scheduleStart: z.string().optional(),
-  scheduleEnd: z.string().optional(),
   room: z.string().optional(),
   gradingTemplate: z
     .enum(['basic_education', 'senior_high', 'higher_education', 'custom'])
@@ -286,18 +266,16 @@ function initialState(classroom?: Classroom): FormState {
     course: '',
     schoolLevel: classroom?.school_level ?? '',
     color: classroom?.color ?? '',
+    // Subject fields come from course_subjects, not from the classroom's old
+    // duplicate columns. When editing, the effect below fills them in from the
+    // primary subject once it has loaded.
     subjectName: classroom?.course_name ?? '',
     courseCode: classroom?.course_code ?? '',
-    subjectCode: classroom?.subject_code ?? '',
-    kind: 'other',
-    description: classroom?.description ?? '',
-    schedule: classroom?.schedule ?? '',
-    scheduleDay: '',
-    scheduleStart: '',
-    scheduleEnd: '',
-    room: classroom?.room ?? '',
-    gradingTemplate:
-      (classroom?.grading_template as GradingTemplate | undefined) ?? 'custom',
+    subjectCode: '',
+    sessionType: 'single',
+    description: '',
+    room: '',
+    gradingTemplate: 'custom',
   }
 }
 
@@ -323,16 +301,12 @@ export function ClassroomFormDialog({
   // Meeting fields sit outside FormState: a saved template describes the
   // subject, not a point-in-time timetable slot.
   const [addMeeting, setAddMeeting] = useState(true)
-  const [weekday, setWeekday] = useState('1')
-  const [startsAt, setStartsAt] = useState('08:00')
-  const [endsAt, setEndsAt] = useState('09:00')
-  const [modality, setModality] = useState<'face_to_face' | 'online' | 'hybrid'>(
-    'face_to_face',
-  )
-  const [meetingLocation, setMeetingLocation] = useState('')
-  // Renames for the classroom's existing subjects, applied on save.
-  const [subjectNames, setSubjectNames] = useState<Record<string, string>>({})
-  const meetingValid = !addMeeting || startsAt < endsAt
+  const [meetingDraft, setMeetingDraft] = useState<MeetingSlotDraft>(EMPTY_MEETING_DRAFT)
+  const [renaming, setRenaming] = useState(false)
+  const meetingConflicts = useSlotConflicts(draftToSlot(meetingDraft))
+  const meetingValid =
+    !addMeeting ||
+    (meetingDraft.startsAt < meetingDraft.endsAt && meetingConflicts.length === 0)
   // The row stores the school year as one text field ("2026–2027"); the two
   // selects are just a friendlier way to type it.
   const [startYear = String(CURRENT_YEAR), endYear = String(CURRENT_YEAR + 1)] =
@@ -346,10 +320,12 @@ export function ClassroomFormDialog({
   const courses =
     FIELDS_OF_STUDY.find((field) => field.name === form.fieldOfStudy)?.courses ?? []
   // Editing an older classroom keeps its stored name until the pickers are used.
-  const cohortName = composeCohortName(form) || form.cohortName
+  // Derived by default; an explicit rename wins so a school with its own
+  // naming ("Section Mabini", "BSCS 3-B AY26") is not forced into the pattern.
+  const derivedName = composeCohortName(form)
+  const cohortName = renaming ? form.cohortName : derivedName || form.cohortName
   // Falls back to whatever text the classroom already had until a day and both
   // times are picked.
-  const schedule = formatSchedule(form.scheduleDay, form.scheduleStart, form.scheduleEnd)
   const subjectHint = useTypewriter(SUBJECT_HINTS, open && step === 2)
   const { data: periods } = useAcademicPeriods()
   const { data: templates } = useClassroomTemplates()
@@ -389,14 +365,32 @@ export function ClassroomFormDialog({
       setNamingTemplate(false)
       setTemplateName('')
       setAddMeeting(true)
-      setWeekday('1')
-      setStartsAt('08:00')
-      setEndsAt('09:00')
-      setModality('face_to_face')
-      setMeetingLocation('')
-      setSubjectNames({})
+      setMeetingDraft(EMPTY_MEETING_DRAFT)
+      // An existing classroom whose name does not match the pattern was renamed
+      // at some point, so open in rename mode rather than silently rewriting it.
+      setRenaming(
+        !!classroom &&
+          (classroom.cohort_name || classroom.block || '') !==
+            composeCohortName(initialState(classroom)),
+      )
     }
   }, [open, classroom])
+
+  // Editing: fill the subject pane from the classroom's primary subject.
+  const primarySubject = existingSubjects[0]
+  useEffect(() => {
+    if (!open || !isEditing || !primarySubject) return
+    setForm((current) => ({
+      ...current,
+      subjectName: primarySubject.name,
+      courseCode: primarySubject.course_code,
+      subjectCode: primarySubject.subject_code,
+      sessionType: primarySubject.session_type,
+      description: primarySubject.description,
+      room: primarySubject.room,
+      gradingTemplate: primarySubject.grading_template as GradingTemplate,
+    }))
+  }, [open, isEditing, primarySubject])
 
   const pending =
     createPeriod.isPending ||
@@ -493,6 +487,9 @@ export function ClassroomFormDialog({
         })
         periodId = period.id
       }
+      // Subject fields are deliberately absent: course_name/course_code are
+      // maintained by the 0027 mirror trigger, and the rest live on
+      // course_subjects, which is the only source of truth for them.
       const classroomPayload = {
         owner_id: ownerId,
         academic_period_id: periodId,
@@ -503,55 +500,63 @@ export function ClassroomFormDialog({
         color: form.color || null,
         academic_year: form.schoolYear.trim(),
         term_name: form.semesterName.trim(),
-        course_name: form.subjectName.trim(),
-        course_code: form.courseCode.trim(),
-        subject_code: form.subjectCode.trim(),
-        description: form.description.trim(),
-        schedule: schedule || form.schedule.trim(),
-        room: form.room.trim(),
-        grading_template: form.gradingTemplate,
       }
       const savedClassroom = isEditing
         ? await updateClassroom.mutateAsync({ id: classroom.id, patch: classroomPayload })
         : await createClassroom.mutateAsync(classroomPayload)
 
       if (!isEditing) {
-        const subject = await createSubject.mutateAsync({
-          classroom_id: savedClassroom.id,
-          name: form.subjectName.trim(),
-          course_code: form.courseCode.trim(),
-          subject_code: form.subjectCode.trim(),
-          description: form.description.trim(),
-          kind: form.kind,
-          schedule: schedule || form.schedule.trim(),
-          room: form.room.trim(),
-          grading_template: form.gradingTemplate,
-        })
-        if (addMeeting) {
-          await createMeetingSlot.mutateAsync({
-            course_subject_id: subject.id,
-            weekday: Number(weekday),
-            starts_at: startsAt,
-            ends_at: endsAt,
-            modality,
-            location_label: meetingLocation.trim(),
+        // A major is two rows sharing a title; a minor is one. The meeting the
+        // teacher just described belongs to the lecture — a laboratory keeps its
+        // own schedule, added from the classroom page.
+        const kinds = kindsFor(form.sessionType)
+        for (const kind of kinds) {
+          const subject = await createSubject.mutateAsync({
+            classroom_id: savedClassroom.id,
+            name: form.subjectName.trim(),
+            course_code: form.courseCode.trim(),
+            subject_code: form.subjectCode.trim(),
+            description: form.description.trim(),
+            kind,
+            session_type: form.sessionType,
+            schedule:
+              addMeeting && kind !== 'laboratory'
+                ? formatSchedule(
+                    SHORT_DAY_NAMES[Number(meetingDraft.weekday)],
+                    meetingDraft.startsAt,
+                    meetingDraft.endsAt,
+                  )
+                : '',
+            room: form.room.trim(),
+            grading_template: form.gradingTemplate,
           })
+          if (addMeeting && kind !== 'laboratory') {
+            await createMeetingSlot.mutateAsync({
+              course_subject_id: subject.id,
+              weekday: Number(meetingDraft.weekday),
+              starts_at: meetingDraft.startsAt,
+              ends_at: meetingDraft.endsAt,
+              modality: meetingDraft.modality,
+              location_label: meetingDraft.location.trim(),
+            })
+          }
         }
       }
-      if (isEditing) {
-        await Promise.all(
-          existingSubjects
-            .filter((subject) => {
-              const name = subjectNames[subject.id]?.trim()
-              return name && name !== subject.name
-            })
-            .map((subject) =>
-              updateSubject.mutateAsync({
-                id: subject.id,
-                patch: { name: subjectNames[subject.id].trim() },
-              }),
-            ),
-        )
+      // The subject pane edits the primary subject; other subjects are edited
+      // from their own dialog in ClassroomMeta.
+      if (isEditing && primarySubject) {
+        await updateSubject.mutateAsync({
+          id: primarySubject.id,
+          patch: {
+            name: form.subjectName.trim(),
+            course_code: form.courseCode.trim(),
+            subject_code: form.subjectCode.trim(),
+            session_type: form.sessionType,
+            description: form.description.trim(),
+            room: form.room.trim(),
+            grading_template: form.gradingTemplate,
+          },
+        })
       }
       toast({
         title: isEditing ? 'Classroom updated' : 'Classroom and subject created',
@@ -561,7 +566,7 @@ export function ClassroomFormDialog({
     } catch (error) {
       toast({
         title: isEditing ? 'Could not update classroom' : 'Could not create classroom',
-        description: error instanceof Error ? error.message : undefined,
+        description: meetingSlotErrorMessage(error),
         tone: 'error',
       })
     }
@@ -587,12 +592,15 @@ export function ClassroomFormDialog({
           step={{ current: step, total: lastStep, label: STEP_COPY[step].label }}
         />
         <ResponsiveDrawerBody>
-          <AnimatePresence mode="wait" initial={false}>
+          {/* No mode="wait": pane 1 contains its own height-animating groups,
+              and waiting for those to finish exiting left the next pane
+              unmounted — the header advanced while the body stayed behind. */}
+          <AnimatePresence initial={false}>
             <motion.div
               key={step}
               initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
+              exit={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }}
               transition={{ duration: reducedMotion ? 0.01 : 0.18, ease: 'easeOut' }}
             >
               {step === 1 && (
@@ -707,17 +715,45 @@ export function ClassroomFormDialog({
                       />
                     </Field>
                   </div>
-                  {isEditing && (
+                  {renaming ? (
                     <Field label="Class name" htmlFor="class-name">
                       <Input
                         id="class-name"
                         value={form.cohortName}
-                        placeholder="e.g. BSCS 3B"
+                        placeholder={derivedName || 'e.g. BSCS 3B'}
                         onChange={(event) =>
                           setForm({ ...form, cohortName: event.target.value })
                         }
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRenaming(false)
+                          setForm({ ...form, cohortName: '' })
+                        }}
+                        className="mt-1 text-xs text-(--color-accent-350) underline-offset-2 hover:underline"
+                      >
+                        Use the name built from the pickers instead
+                      </button>
                     </Field>
+                  ) : (
+                    cohortName && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-(--color-surface-2) px-3 py-2">
+                        <p className="text-sm text-(--color-ink)">
+                          Listed as <span className="font-medium">{cohortName}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm({ ...form, cohortName })
+                            setRenaming(true)
+                          }}
+                          className="text-xs text-(--color-accent-350) underline-offset-2 hover:underline"
+                        >
+                          Rename
+                        </button>
+                      </div>
+                    )
                   )}
 
                   <div className="space-y-1.5">
@@ -921,174 +957,35 @@ export function ClassroomFormDialog({
                           </Link>
                         </div>
                       </motion.div>
-                    ) : cohortName ? (
-                      <motion.div
-                        key="cohort-preview"
-                        {...expand(reducedMotion)}
-                        className="overflow-hidden"
-                      >
-                        <p className="text-sm text-(--color-ink-muted)">
-                          This classroom will be listed as{' '}
-                          <span className="font-medium text-(--color-ink)">
-                            {cohortName}
-                          </span>
-                          .
-                        </p>
-                      </motion.div>
                     ) : null}
                   </AnimatePresence>
                 </div>
               )}
               {step === 2 && (
                 <div className="space-y-4">
-                  <Field
-                    label={isEditing ? 'Course name' : 'Course subject'}
-                    htmlFor="subject-name"
-                  >
-                    <Input
-                      id="subject-name"
-                      value={form.subjectName}
-                      placeholder={`e.g. ${subjectHint}`}
-                      onChange={(event) =>
-                        setForm({ ...form, subjectName: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Course code" htmlFor="course-code">
-                      <Input
-                        id="course-code"
-                        value={form.courseCode}
-                        placeholder="CSP313"
-                        onChange={(event) =>
-                          setForm({ ...form, courseCode: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Subject code" htmlFor="subject-code">
-                      <Input
-                        id="subject-code"
-                        value={form.subjectCode}
-                        placeholder="CS-ELEC2"
-                        onChange={(event) =>
-                          setForm({ ...form, subjectCode: event.target.value })
-                        }
-                      />
-                    </Field>
-                  </div>
-                  <Field label="Subject type" htmlFor="subject-kind">
-                    <select
-                      id="subject-kind"
-                      aria-label="Subject type"
-                      value={form.kind}
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          kind: event.target.value as CourseSubjectKind,
-                        })
-                      }
-                      className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                    >
-                      <option value="other">Other</option>
-                      <option value="lecture">Lecture</option>
-                      <option value="laboratory">Laboratory</option>
-                    </select>
-                  </Field>
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <Field label="Day" htmlFor="schedule-day">
-                      <select
-                        id="schedule-day"
-                        aria-label="Day"
-                        value={form.scheduleDay}
-                        onChange={(event) =>
-                          setForm({ ...form, scheduleDay: event.target.value })
-                        }
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                      >
-                        <option value="">Choose a day</option>
-                        {SHORT_DAYS.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Starts" htmlFor="schedule-start">
-                      <Input
-                        id="schedule-start"
-                        type="time"
-                        value={form.scheduleStart}
-                        onChange={(event) =>
-                          setForm({ ...form, scheduleStart: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Ends" htmlFor="schedule-end">
-                      <Input
-                        id="schedule-end"
-                        type="time"
-                        value={form.scheduleEnd}
-                        onChange={(event) =>
-                          setForm({ ...form, scheduleEnd: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="Room" htmlFor="subject-room">
-                      <Input
-                        id="subject-room"
-                        value={form.room}
-                        placeholder="Room 505"
-                        onChange={(event) =>
-                          setForm({ ...form, room: event.target.value })
-                        }
-                      />
-                    </Field>
-                  </div>
-                  {(schedule || form.schedule) && (
-                    <p className="text-sm text-(--color-ink-muted)">
-                      Schedule:{' '}
-                      <span className="font-medium text-(--color-ink)">
-                        {schedule || form.schedule}
-                      </span>
-                    </p>
-                  )}
-                  <Field label="Description" htmlFor="subject-description">
-                    <textarea
-                      id="subject-description"
-                      rows={3}
-                      value={form.description}
-                      placeholder="A short practical overview for this subject."
-                      onChange={(event) =>
-                        setForm({ ...form, description: event.target.value })
-                      }
-                      className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm"
-                    />
-                  </Field>
-                  {isEditing && existingSubjects.length > 0 && (
-                    <div className="space-y-3 rounded-xl border border-(--color-border) p-3">
-                      <p className="text-xs font-medium text-(--color-ink-faint)">
-                        Course subjects — these share the classroom’s roster
-                      </p>
-                      {existingSubjects.map((subject) => (
-                        <Field
-                          key={subject.id}
-                          label={subject.kind.replace('_', ' ')}
-                          htmlFor={`subject-name-${subject.id}`}
-                        >
-                          <Input
-                            id={`subject-name-${subject.id}`}
-                            value={subjectNames[subject.id] ?? subject.name}
-                            onChange={(event) =>
-                              setSubjectNames({
-                                ...subjectNames,
-                                [subject.id]: event.target.value,
-                              })
-                            }
-                          />
-                        </Field>
-                      ))}
-                    </div>
-                  )}
+                  <SubjectFields
+                    value={{
+                      name: form.subjectName,
+                      courseCode: form.courseCode,
+                      subjectCode: form.subjectCode,
+                      sessionType: form.sessionType,
+                      description: form.description,
+                      room: form.room,
+                    }}
+                    onChange={(next: SubjectDraft) =>
+                      setForm({
+                        ...form,
+                        subjectName: next.name,
+                        courseCode: next.courseCode,
+                        subjectCode: next.subjectCode,
+                        sessionType: next.sessionType,
+                        description: next.description,
+                        room: next.room,
+                      })
+                    }
+                    isCollege={isCollege}
+                    namePlaceholder={`e.g. ${subjectHint}`}
+                  />
                   {!isEditing && (
                     <div className="border-t border-(--color-border) pt-4">
                       {namingTemplate ? (
@@ -1167,72 +1064,12 @@ export function ClassroomFormDialog({
                     />
                     Add a weekly meeting to the Calendar
                   </label>
-                  <fieldset
+                  <MeetingSlotFields
+                    value={meetingDraft}
+                    onChange={setMeetingDraft}
+                    conflicts={addMeeting ? meetingConflicts : []}
                     disabled={!addMeeting}
-                    className="space-y-4 disabled:opacity-50"
-                  >
-                    <Field label="Day" htmlFor="meeting-weekday">
-                      <select
-                        id="meeting-weekday"
-                        aria-label="Meeting day"
-                        value={weekday}
-                        onChange={(event) => setWeekday(event.target.value)}
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                      >
-                        {WEEKDAYS.map((day, index) => (
-                          <option key={day} value={index}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Starts" htmlFor="meeting-starts">
-                        <Input
-                          id="meeting-starts"
-                          type="time"
-                          value={startsAt}
-                          onChange={(event) => setStartsAt(event.target.value)}
-                        />
-                      </Field>
-                      <Field label="Ends" htmlFor="meeting-ends">
-                        <Input
-                          id="meeting-ends"
-                          type="time"
-                          value={endsAt}
-                          onChange={(event) => setEndsAt(event.target.value)}
-                        />
-                      </Field>
-                    </div>
-                    <Field label="Class mode" htmlFor="meeting-modality">
-                      <select
-                        id="meeting-modality"
-                        aria-label="Class mode"
-                        value={modality}
-                        onChange={(event) =>
-                          setModality(event.target.value as typeof modality)
-                        }
-                        className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
-                      >
-                        <option value="face_to_face">Face-to-Face</option>
-                        <option value="online">Online Class</option>
-                        <option value="hybrid">Hybrid</option>
-                      </select>
-                    </Field>
-                    <Field label="Room or meeting label" htmlFor="meeting-location">
-                      <Input
-                        id="meeting-location"
-                        value={meetingLocation}
-                        placeholder="Room 505 or Meet link label"
-                        onChange={(event) => setMeetingLocation(event.target.value)}
-                      />
-                    </Field>
-                  </fieldset>
-                  {!meetingValid && (
-                    <p className="text-sm text-(--color-danger)">
-                      End time must be after start time.
-                    </p>
-                  )}
+                  />
                 </div>
               )}
             </motion.div>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
+import { clearQueue } from '@/lib/offlineQueue'
 import {
   composeFullName,
   type AppRole,
@@ -32,7 +33,14 @@ export function useSession() {
       // grades and attendance survive the sign-out and the next account on this
       // tab sees the previous teacher's rows until each query refetches.
       // clear() runs first: it would otherwise wipe the session we just wrote.
-      if (!session) queryClient.clear()
+      if (!session) {
+        queryClient.clear()
+        // The offline queue outlives the cache, so it must be dropped too. It
+        // holds one teacher's unsent attendance keyed by student; replaying it
+        // under the next account on this device would fail RLS anyway, but the
+        // pending list would still expose the previous teacher's rows.
+        void clearQueue()
+      }
       queryClient.setQueryData(keys.session, session)
     })
     return () => data.subscription.unsubscribe()

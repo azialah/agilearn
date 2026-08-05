@@ -72,7 +72,7 @@
 
   --color-ink: #33291f;
   --color-ink-muted: #7c6a54;
-  --color-ink-faint: #a8967c;
+  --color-ink-faint: #806e54;
 
   /* Accent scale. 300/350 double as on-surface text, so they are kept dark
      enough for AA contrast on cream; 400/500 are solid/tint oranges. */
@@ -108,7 +108,7 @@
 
   --color-ink: #f1e7d9;
   --color-ink-muted: #c0ae98;
-  --color-ink-faint: #8b7863;
+  --color-ink-faint: #917e69;
 
   --color-accent-50: #2a1608;
   --color-accent-100: #3d2109;
@@ -140,7 +140,7 @@
   --color-border-strong: #c7d1dc;
   --color-ink: #1f2933;
   --color-ink-muted: #65717e;
-  --color-ink-faint: #8b98a5;
+  --color-ink-faint: #687582;
   --color-accent-50: #fff7ed;
   --color-accent-100: #ffedd5;
   --color-accent-200: #fed7aa;
@@ -185,6 +185,37 @@
 }
 .stagger-enter > *:nth-child(4) {
   animation-delay: 165ms;
+}
+
+/* Route-level stagger. Every page renders one wrapper element inside <main>,
+   so the sections to animate are one level further down than .stagger-enter
+   reaches. Delay only — the content is mounted and interactive immediately,
+   never held back waiting for an animation. */
+.page-stagger > * > * {
+  animation: card-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.page-stagger > * > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.page-stagger > * > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.page-stagger > * > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.page-stagger > * > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+/* Capped: past the sixth section the wait would be felt, not noticed. */
+.page-stagger > * > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .stagger-enter > *,
+  .page-stagger > * > * {
+    animation: none;
+  }
 }
 @keyframes page-enter {
   from {
@@ -498,7 +529,7 @@ html.custom-cursor-active .app-cursor {
   height: 52px;
   text-align: center;
   transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.2s ease;
 }
 .pin-box.filled,

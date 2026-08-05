@@ -97,9 +97,12 @@ export interface AuthRailContent {
   title: string
   body: string
   milestones?: readonly AuthRailMilestone[]
+  /** Secondary route out of this screen — e.g. sign-up from the login page.
+   *  Lives on the rail so it never competes with the form's primary button. */
+  cta?: { label: string; action: string; to: '/teacher/signup' }
 }
 
-function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
+function AuthRail({ eyebrow, title, body, milestones, cta }: AuthRailContent) {
   const reduce = useReducedMotion()
   return (
     <BackgroundLines className="hidden min-h-dvh text-(--color-accent-300) lg:block">
@@ -186,14 +189,29 @@ function AuthRail({ eyebrow, title, body, milestones }: AuthRailContent) {
           )}
         </motion.div>
 
-        <motion.p
+        <motion.div
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.3 }}
-          className="max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--color-rail-fg)_58%,transparent)]"
+          className="space-y-5"
         >
-          One place for grades, attendance, and the materials that make class happen.
-        </motion.p>
+          {cta && (
+            <div className="max-w-xs border-t border-[color-mix(in_srgb,var(--color-rail-fg)_18%,transparent)] pt-5">
+              <p className="text-sm text-[color-mix(in_srgb,var(--color-rail-fg)_72%,transparent)]">
+                {cta.label}
+              </p>
+              <Link
+                to={cta.to}
+                className="mt-3 inline-flex h-9 items-center rounded-full border border-[color-mix(in_srgb,var(--color-rail-fg)_35%,transparent)] px-4 text-sm font-medium text-(--color-rail-fg) transition-colors hover:bg-[color-mix(in_srgb,var(--color-rail-fg)_12%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
+              >
+                {cta.action}
+              </Link>
+            </div>
+          )}
+          <p className="max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--color-rail-fg)_58%,transparent)]">
+            One place for grades, attendance, and the materials that make class happen.
+          </p>
+        </motion.div>
       </div>
     </BackgroundLines>
   )

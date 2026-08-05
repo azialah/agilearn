@@ -7,6 +7,7 @@ import type {
   CalendarEventUpdate,
   SubjectMeetingSlot,
   SubjectMeetingSlotInsert,
+  SubjectMeetingSlotUpdate,
 } from '@/types/domain'
 
 export function useMeetingSlots(subjectId?: string) {
@@ -49,6 +50,34 @@ export function useCreateMeetingSlot() {
       const { data, error } = await supabase
         .from('subject_meeting_slots')
         .insert(input)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: (slot) => {
+      queryClient.invalidateQueries({ queryKey: keys.calendar.allSlots })
+      queryClient.invalidateQueries({
+        queryKey: keys.calendar.slots(slot.course_subject_id),
+      })
+    },
+  })
+}
+
+export function useUpdateMeetingSlot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string
+      patch: SubjectMeetingSlotUpdate
+    }) => {
+      const { data, error } = await supabase
+        .from('subject_meeting_slots')
+        .update(patch)
+        .eq('id', id)
         .select()
         .single()
       if (error) throw error

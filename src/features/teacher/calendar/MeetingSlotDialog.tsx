@@ -1,7 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import {
   ResponsiveDrawer,
   ResponsiveDrawerBody,
@@ -11,49 +10,80 @@ import {
   ResponsiveDrawerTrigger,
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
-import { useCreateMeetingSlot } from '@/lib/queries/calendar'
-import type { CourseSubject } from '@/types/domain'
+import { useCreateMeetingSlot, useUpdateMeetingSlot } from '@/lib/queries/calendar'
+import type { CourseSubject, SubjectMeetingSlot } from '@/types/domain'
+import {
+  draftToSlot,
+  EMPTY_MEETING_DRAFT,
+  MeetingSlotFields,
+  type MeetingSlotDraft,
+} from './MeetingSlotFields'
+import { useSlotConflicts } from './useSlotConflicts'
+import { meetingSlotErrorMessage } from './slotErrors'
+
+function draftFromSlot(slot: SubjectMeetingSlot): MeetingSlotDraft {
+  return {
+    weekday: String(slot.weekday),
+    startsAt: slot.starts_at.slice(0, 5),
+    endsAt: slot.ends_at.slice(0, 5),
+    modality: slot.modality,
+    location: slot.location_label,
+  }
+}
 
 export function MeetingSlotDialog({
   subject,
+  slot,
   trigger,
 }: {
   subject: CourseSubject
+  /** Omit to add a new meeting; pass a slot to edit it. */
+  slot?: SubjectMeetingSlot
   trigger?: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  const [weekday, setWeekday] = useState('1')
-  const [startsAt, setStartsAt] = useState('08:00')
-  const [endsAt, setEndsAt] = useState('09:00')
-  const [modality, setModality] = useState<'face_to_face' | 'online' | 'hybrid'>(
-    'face_to_face',
+  const [draft, setDraft] = useState<MeetingSlotDraft>(
+    slot ? draftFromSlot(slot) : EMPTY_MEETING_DRAFT,
   )
-  const [location, setLocation] = useState('')
   const create = useCreateMeetingSlot()
+  const update = useUpdateMeetingSlot()
   const { toast } = useToast()
-  const valid = startsAt < endsAt
+  const isEditing = !!slot
+
+  useEffect(() => {
+    if (open) setDraft(slot ? draftFromSlot(slot) : EMPTY_MEETING_DRAFT)
+  }, [open, slot])
+
+  const conflicts = useSlotConflicts(draftToSlot(draft), slot?.id)
+  const valid = draft.startsAt < draft.endsAt && conflicts.length === 0
+
   async function submit(event?: FormEvent) {
     event?.preventDefault()
     if (!valid) return
+    const fields = {
+      weekday: Number(draft.weekday),
+      starts_at: draft.startsAt,
+      ends_at: draft.endsAt,
+      modality: draft.modality,
+      location_label: draft.location.trim(),
+    }
     try {
-      await create.mutateAsync({
-        course_subject_id: subject.id,
-        weekday: Number(weekday),
-        starts_at: startsAt,
-        ends_at: endsAt,
-        modality,
-        location_label: location.trim(),
-      })
+      if (slot) await update.mutateAsync({ id: slot.id, patch: fields })
+      else await create.mutateAsync({ course_subject_id: subject.id, ...fields })
       setOpen(false)
-      toast({ title: 'Meeting added to Calendar', tone: 'success' })
+      toast({
+        title: isEditing ? 'Meeting updated' : 'Meeting added to Calendar',
+        tone: 'success',
+      })
     } catch (error) {
       toast({
-        title: 'Could not add meeting',
-        description: error instanceof Error ? error.message : undefined,
+        title: isEditing ? 'Could not update meeting' : 'Could not add meeting',
+        description: meetingSlotErrorMessage(error),
         tone: 'error',
       })
     }
   }
+
   return (
     <ResponsiveDrawer open={open} onOpenChange={setOpen}>
       <ResponsiveDrawerTrigger asChild>
@@ -63,87 +93,20 @@ export function MeetingSlotDialog({
           </Button>
         )}
       </ResponsiveDrawerTrigger>
-      <ResponsiveDrawerContent>
+      <ResponsiveDrawerContent className="md:w-[min(32rem,calc(100%-3rem))] lg:w-[min(34rem,calc(100%-4rem))] xl:w-[min(34rem,calc(100%-8rem))]">
         <ResponsiveDrawerHeader
-          title={`Schedule ${subject.name}`}
-          description="Calendar weeks begin on Sunday. Overlapping meetings are allowed but will be visible together."
+          title={isEditing ? `Edit ${subject.name} meeting` : `Schedule ${subject.name}`}
+          description="Calendar weeks begin on Sunday. A meeting cannot overlap another class you teach."
         />
         <ResponsiveDrawerBody>
-          <form className="space-y-4" onSubmit={(event) => void submit(event)}>
-            <label className="block text-sm font-medium">
-              Day
-              <select
-                aria-label="Meeting day"
-                className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
-                value={weekday}
-                onChange={(event) => setWeekday(event.target.value)}
-              >
-                {[
-                  'Sunday',
-                  'Monday',
-                  'Tuesday',
-                  'Wednesday',
-                  'Thursday',
-                  'Friday',
-                  'Saturday',
-                ].map((day, index) => (
-                  <option key={day} value={index}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="text-sm font-medium">
-                Starts
-                <Input
-                  className="mt-1.5"
-                  type="time"
-                  value={startsAt}
-                  onChange={(event) => setStartsAt(event.target.value)}
-                />
-              </label>
-              <label className="text-sm font-medium">
-                Ends
-                <Input
-                  className="mt-1.5"
-                  type="time"
-                  value={endsAt}
-                  onChange={(event) => setEndsAt(event.target.value)}
-                />
-              </label>
-            </div>
-            <label className="block text-sm font-medium">
-              Class mode
-              <select
-                aria-label="Class mode"
-                className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3"
-                value={modality}
-                onChange={(event) => setModality(event.target.value as typeof modality)}
-              >
-                <option value="face_to_face">Face-to-Face</option>
-                <option value="online">Online Class</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </label>
-            <label className="block text-sm font-medium">
-              Room or meeting label
-              <Input
-                className="mt-1.5"
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                placeholder="Room 505 or Meet link label"
-              />
-            </label>
-            {!valid && (
-              <p className="text-sm text-red-500">End time must be after start time.</p>
-            )}
+          <form onSubmit={(event) => void submit(event)}>
+            <MeetingSlotFields value={draft} onChange={setDraft} conflicts={conflicts} />
           </form>
         </ResponsiveDrawerBody>
         <ResponsiveDrawerFooter
-          primaryLabel="Add meeting"
+          primaryLabel={isEditing ? 'Save meeting' : 'Add meeting'}
           primaryDisabled={!valid}
-          primaryLoading={create.isPending}
+          primaryLoading={create.isPending || update.isPending}
           onPrimary={() => void submit()}
           onSecondary={() => setOpen(false)}
         />

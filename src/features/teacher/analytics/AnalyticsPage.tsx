@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { BarChart3, TrendingUp } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useAcademicPeriods, useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
+import { useClassrooms } from '@/lib/queries/classrooms'
 import { useMeetingSlots } from '@/lib/queries/calendar'
 import { useAllClassSessions } from '@/lib/queries/attendance'
 import { useModules } from '@/lib/queries/modules'
@@ -37,8 +38,36 @@ function Bar({
 }
 
 export function AnalyticsPage() {
-  const { data: subjects = [] } = useAllCourseSubjects()
-  const { data: slots = [] } = useMeetingSlots()
+  const { data: allSubjects = [] } = useAllCourseSubjects()
+  const { data: allSlots = [] } = useMeetingSlots()
+  const { data: classrooms = [] } = useClassrooms()
+  const { data: periods = [] } = useAcademicPeriods()
+
+  // Only this term counts. useMeetingSlots() returns every slot the teacher has
+  // ever created, so without this the headline kept summing archived semesters
+  // and "scheduled this week" grew forever.
+  const { subjects, slots } = useMemo(() => {
+    const activePeriods = new Set(
+      periods.filter((period) => period.status === 'active').map((period) => period.id),
+    )
+    const activeClassrooms = new Set(
+      classrooms
+        .filter(
+          (classroom) =>
+            !classroom.academic_period_id ||
+            activePeriods.has(classroom.academic_period_id),
+        )
+        .map((classroom) => classroom.id),
+    )
+    const scopedSubjects = allSubjects.filter((subject) =>
+      activeClassrooms.has(subject.classroom_id),
+    )
+    const scopedSubjectIds = new Set(scopedSubjects.map((subject) => subject.id))
+    return {
+      subjects: scopedSubjects,
+      slots: allSlots.filter((slot) => scopedSubjectIds.has(slot.course_subject_id)),
+    }
+  }, [allSubjects, allSlots, classrooms, periods])
   const { data: modules = [] } = useModules()
   const { data: sessions = [] } = useAllClassSessions()
   const weeklyLoad = useMemo(
@@ -65,6 +94,7 @@ export function AnalyticsPage() {
     .slice(0, 7)
     .reverse()
     .map((session) => ({
+      id: session.id,
       label: new Date(`${session.session_date}T00:00`).toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
@@ -109,7 +139,9 @@ export function AnalyticsPage() {
             ) / 10}
             h
           </p>
-          <p className="mt-1 text-sm text-(--color-ink-muted)">scheduled this week</p>
+          <p className="mt-1 text-sm text-(--color-ink-muted)">
+            in a typical week this term
+          </p>
         </Card>
         <Card className="rounded-[1.75rem] p-5">
           <TrendingUp className="size-5 text-(--color-accent-350)" />
@@ -174,7 +206,7 @@ export function AnalyticsPage() {
           {attendanceRates.length ? (
             <div className="mt-6 flex h-40 items-end gap-3 border-b border-(--color-border) px-2">
               {attendanceRates.map((item) => (
-                <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+                <div key={item.id} className="flex flex-1 flex-col items-center gap-2">
                   <div
                     className="w-full rounded-t-xl bg-linear-to-t from-(--color-accent-350) to-(--color-accent-500)"
                     style={{ height: `${Math.max(6, item.rate)}%` }}

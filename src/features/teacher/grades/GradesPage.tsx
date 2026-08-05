@@ -233,6 +233,7 @@ export function GradesPage({
               classroomId={classroomId}
               courseSubjectId={activeSubjectId ?? ''}
               nextPosition={0}
+              siblings={periods}
               trigger={
                 <Button size="sm">
                   <PlusIcon className="size-4" /> Add first grading period
@@ -292,6 +293,7 @@ export function GradesPage({
                 classroomId={classroomId}
                 courseSubjectId={activeSubjectId ?? ''}
                 nextPosition={nextPeriodPosition}
+                siblings={periods}
                 trigger={
                   <Button variant="ghost" size="sm">
                     <PlusIcon className="size-4" /> Add grading period

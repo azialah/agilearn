@@ -15,10 +15,12 @@ export function NetworkStatusWatcher() {
     previous.current = status
 
     if (status === 'offline') {
+      // Attendance now queues on the device and replays on reconnect, so the
+      // old "changes may not save" warning was both alarming and wrong.
       toast({
-        title: 'No connection',
-        description: "You're offline — changes may not save.",
-        tone: 'error',
+        title: "You're offline",
+        description: 'Attendance you mark is saved here and syncs when you reconnect.',
+        tone: 'default',
       })
     } else if (status === 'slow') {
       toast({
@@ -27,7 +29,11 @@ export function NetworkStatusWatcher() {
         tone: 'default',
       })
     } else if (wasOffline) {
-      toast({ title: 'Back online', tone: 'success' })
+      toast({
+        title: 'Back online',
+        description: 'Syncing anything you saved offline.',
+        tone: 'success',
+      })
     }
   }, [status, toast])
 

@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/toast'
+import { OfflineSyncBar } from './OfflineSyncBar'
 import { cn } from '@/lib/cn'
 import { ChevronRightIcon, UsersIcon } from '@/components/icons'
 import { useStudents } from '@/lib/queries/students'
@@ -125,6 +126,9 @@ export function SessionPage({
 
   return (
     <div className="space-y-6">
+      {/* Marking happens here, so this is where a stranded change must be
+          visible — not one screen back. */}
+      <OfflineSyncBar />
       <div className="space-y-2">
         <Link
           to="/teacher/classrooms/$classroomId/attendance"
