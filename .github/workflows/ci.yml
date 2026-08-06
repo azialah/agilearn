@@ -8,6 +8,13 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      # Structurally-valid placeholders only — no test hits a live project.
+      # src/lib/supabase.ts calls createClient() eagerly at module scope, so
+      # any module that imports it (even indirectly, for an unrelated pure
+      # helper) throws at import time without these.
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
 
