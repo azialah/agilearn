@@ -24,6 +24,7 @@ import {
   useSeedGradeTemplate,
 } from '@/lib/queries/grades'
 import type { GradingPeriod } from '@/types/domain'
+import { useLocale } from '@/lib/locale'
 import { PeriodDialog } from './PeriodDialog'
 import { CategoryDialog } from './CategoryDialog'
 import { ActivityDialog } from './ActivityDialog'
@@ -55,6 +56,7 @@ function NeedsPeriod({
   periods: readonly GradingPeriod[]
   children: ReactNode
 }) {
+  const { t } = useLocale()
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--color-surface-3) px-3 py-2">
       <p className="text-sm text-(--color-ink)">{children}</p>
@@ -65,7 +67,7 @@ function NeedsPeriod({
         siblings={periods}
         trigger={
           <Button size="sm" variant="secondary">
-            <PlusIcon className="size-4" /> Add a period
+            <PlusIcon className="size-4" /> {t('gradesAddPeriodPrompt')}
           </Button>
         }
       />
@@ -110,6 +112,7 @@ export function StructurePanel({
   const deleteActivity = useDeleteActivity()
   const seedTemplate = useSeedGradeTemplate()
   const { toast } = useToast()
+  const { t } = useLocale()
 
   const selectedPeriod =
     structure.periods.find((p) => p.id === activePeriodId) ?? structure.periods[0]
@@ -126,10 +129,10 @@ export function StructurePanel({
   async function removePeriod(id: string) {
     try {
       await deletePeriod.mutateAsync({ id, classroomId })
-      toast({ title: 'Period deleted', tone: 'success' })
+      toast({ title: t('gradesPeriodDeletedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete period',
+        title: t('gradesPeriodDeleteErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -139,10 +142,10 @@ export function StructurePanel({
   async function removeCategory(id: string) {
     try {
       await deleteCategory.mutateAsync({ id, classroomId })
-      toast({ title: 'Category deleted', tone: 'success' })
+      toast({ title: t('gradesCategoryDeletedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete category',
+        title: t('gradesCategoryDeleteErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -152,10 +155,10 @@ export function StructurePanel({
   async function removeActivity(id: string) {
     try {
       await deleteActivity.mutateAsync({ id, classroomId })
-      toast({ title: 'Activity deleted', tone: 'success' })
+      toast({ title: t('gradesActivityDeletedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete activity',
+        title: t('gradesActivityDeleteErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -165,10 +168,10 @@ export function StructurePanel({
   async function removeComponent(id: string) {
     try {
       await deleteComponent.mutateAsync({ id, classroomId })
-      toast({ title: 'Component deleted', tone: 'success' })
+      toast({ title: t('gradesComponentDeletedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete component',
+        title: t('gradesComponentDeleteErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -180,10 +183,10 @@ export function StructurePanel({
   ) {
     try {
       await seedTemplate.mutateAsync({ classroomId, courseSubjectId, template })
-      toast({ title: 'Grade preset applied', tone: 'success' })
+      toast({ title: t('gradesPresetAppliedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not apply grade preset',
+        title: t('gradesPresetErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -200,27 +203,22 @@ export function StructurePanel({
         <DialogHeader className="rounded-lg border border-(--color-border) bg-(--color-surface-1) p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <DialogTitle>Grade sheet structure</DialogTitle>
+              <DialogTitle>{t('gradesStructureDialogTitle')}</DialogTitle>
               <DialogDescription>
-                Build a clear, complete formula for this subject.
+                {t('gradesStructureDialogDescription')}
               </DialogDescription>
             </div>
-            <Badge tone="accent">Exact 100% totals</Badge>
+            <Badge tone="accent">{t('gradesExactTotalsBadge')}</Badge>
           </div>
-          <DialogDescription>
-            Manage periods, components, categories, and activities. Use an editor&apos;s
-            Save changes button to apply an update; destructive changes always ask for
-            confirmation.
-          </DialogDescription>
+          <DialogDescription>{t('gradesStructureManageDescription')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {canApplyPreset && (
             <section className="rounded-lg border border-(--color-border) bg-(--color-surface-2) p-4">
-              <SectionTitle>Start from a preset</SectionTitle>
+              <SectionTitle>{t('gradesPresetSectionTitle')}</SectionTitle>
               <p className="mt-1 text-sm text-(--color-ink-muted)">
-                Presets are a starting point. You can edit the periods, categories, and
-                weights afterwards.
+                {t('gradesPresetSectionDescription')}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
@@ -228,7 +226,7 @@ export function StructurePanel({
                   onClick={() => void applyPreset('higher_education')}
                   loading={seedTemplate.isPending}
                 >
-                  College 20 / 40 / 40
+                  {t('gradesPresetCollegeButton')}
                 </Button>
                 <Button
                   size="sm"
@@ -236,7 +234,7 @@ export function StructurePanel({
                   onClick={() => void applyPreset('basic_education')}
                   disabled={seedTemplate.isPending}
                 >
-                  School quarters
+                  {t('gradesPresetSchoolButton')}
                 </Button>
                 <Button
                   size="sm"
@@ -244,7 +242,7 @@ export function StructurePanel({
                   onClick={() => void applyPreset('senior_high')}
                   disabled={seedTemplate.isPending}
                 >
-                  Senior high semesters
+                  {t('gradesPresetSeniorHighButton')}
                 </Button>
               </div>
             </section>
@@ -252,7 +250,7 @@ export function StructurePanel({
           {/* Grading periods */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <SectionTitle>Grading periods</SectionTitle>
+              <SectionTitle>{t('gradesPeriodsSectionTitle')}</SectionTitle>
               <div className="flex items-center gap-2">
                 <Badge
                   tone={
@@ -261,7 +259,9 @@ export function StructurePanel({
                       : 'danger'
                   }
                 >
-                  Σ {formatPercent(periodWeightTotal)}
+                  {t('gradesWeightTotalBadge', {
+                    percent: formatPercent(periodWeightTotal),
+                  })}
                 </Badge>
                 <PeriodDialog
                   classroomId={classroomId}
@@ -269,7 +269,7 @@ export function StructurePanel({
                   nextPosition={nextPeriodPosition}
                   trigger={
                     <Button size="sm" variant="secondary">
-                      <PlusIcon className="size-4" /> Add
+                      <PlusIcon className="size-4" /> {t('commonAdd')}
                     </Button>
                   }
                 />
@@ -277,7 +277,7 @@ export function StructurePanel({
             </div>
             {structure.periods.length === 0 ? (
               <p className="rounded-xl bg-(--color-surface-3) px-3 py-2 text-sm text-(--color-ink)">
-                Start here — everything below hangs off a grading period.
+                {t('gradesPeriodsEmptyHint')}
               </p>
             ) : (
               <ul className="divide-y divide-(--color-border) rounded-md border border-(--color-border)">
@@ -297,25 +297,36 @@ export function StructurePanel({
                         period={period}
                         siblings={structure.periods}
                         trigger={
-                          <IconButton label="Edit period" size="sm">
+                          <IconButton label={t('gradesEditPeriodLabel')} size="sm">
                             <EditIcon className="size-4" />
                           </IconButton>
                         }
                       />
                       <ConfirmDialog
-                        title="Delete grading period?"
-                        confirmLabel="Confirm delete"
+                        title={t('gradesDeletePeriodTitle')}
+                        confirmLabel={t('commonConfirmDelete')}
                         description={(() => {
                           const count = structure.activities.filter(
                             (a) => a.grading_period_id === period.id,
                           ).length
                           return count > 0
-                            ? `"${period.name}" and its ${count} ${count === 1 ? 'activity' : 'activities'} — and every student's scores for them — will be permanently removed.`
-                            : `"${period.name}" will be permanently removed.`
+                            ? t('gradesDeleteWithActivitiesDescription', {
+                                name: period.name,
+                                count,
+                                activityWord:
+                                  count === 1
+                                    ? t('gradesActivitySingular')
+                                    : t('gradesActivityPlural'),
+                              })
+                            : t('gradesDeleteSimpleDescription', { name: period.name })
                         })()}
                         onConfirm={() => removePeriod(period.id)}
                         trigger={
-                          <IconButton label="Delete period" size="sm" variant="danger">
+                          <IconButton
+                            label={t('gradesDeletePeriodLabel')}
+                            size="sm"
+                            variant="danger"
+                          >
                             <TrashIcon className="size-4" />
                           </IconButton>
                         }
@@ -330,7 +341,7 @@ export function StructurePanel({
           {/* Components and period-scoped categories */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <SectionTitle>Grade components</SectionTitle>
+              <SectionTitle>{t('gradesComponentsSectionTitle')}</SectionTitle>
               <div className="flex items-center gap-2">
                 <Badge
                   tone={
@@ -341,7 +352,9 @@ export function StructurePanel({
                       : 'danger'
                   }
                 >
-                  Σ {formatPercent(componentWeightTotal)}
+                  {t('gradesWeightTotalBadge', {
+                    percent: formatPercent(componentWeightTotal),
+                  })}
                 </Badge>
                 <GradeComponentDialog
                   classroomId={classroomId}
@@ -349,7 +362,7 @@ export function StructurePanel({
                   nextPosition={structure.components.length}
                   trigger={
                     <Button size="sm" variant="secondary">
-                      <PlusIcon className="size-4" /> Add component
+                      <PlusIcon className="size-4" /> {t('gradesAddComponentButton')}
                     </Button>
                   }
                 />
@@ -365,8 +378,8 @@ export function StructurePanel({
                     <span className="text-sm font-medium">{component.name}</span>
                     <p className="mt-0.5 text-xs text-(--color-ink-faint)">
                       {component.name === 'Overall'
-                        ? 'Primary subject final'
-                        : 'Weighted subject component'}
+                        ? t('gradesOverallComponentDescription')
+                        : t('gradesWeightedComponentDescription')}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -380,23 +393,24 @@ export function StructurePanel({
                           trigger={
                             component.name === 'Overall' ? (
                               <Button size="sm" variant="outline">
-                                <EditIcon className="size-4" /> Edit overall
+                                <EditIcon className="size-4" />{' '}
+                                {t('gradesEditOverallButton')}
                               </Button>
                             ) : (
-                              <IconButton label="Edit component" size="sm">
+                              <IconButton label={t('gradesEditComponentLabel')} size="sm">
                                 <EditIcon className="size-4" />
                               </IconButton>
                             )
                           }
                         />
                         <ConfirmDialog
-                          title="Delete grade component?"
-                          confirmLabel="Confirm delete"
-                          description="Its categories must be moved or deleted first."
+                          title={t('gradesDeleteComponentTitle')}
+                          confirmLabel={t('commonConfirmDelete')}
+                          description={t('gradesDeleteComponentDescription')}
                           onConfirm={() => removeComponent(component.id)}
                           trigger={
                             <IconButton
-                              label="Delete component"
+                              label={t('gradesDeleteComponentLabel')}
                               size="sm"
                               variant="danger"
                             >
@@ -411,7 +425,9 @@ export function StructurePanel({
               ))}
             </div>
             <SectionTitle>
-              Categories for {selectedPeriod?.name ?? 'this period'}
+              {t('gradesCategoriesForPeriod', {
+                period: selectedPeriod?.name ?? t('gradesThisPeriodFallback'),
+              })}
             </SectionTitle>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {structure.components.map((component) => {
@@ -440,12 +456,14 @@ export function StructurePanel({
                               : 'danger'
                         }
                       >
-                        Σ {formatPercent(weightSum)}
+                        {t('gradesWeightTotalBadge', {
+                          percent: formatPercent(weightSum),
+                        })}
                       </Badge>
                     </div>
                     {categories.length === 0 ? (
                       <p className="text-xs text-(--color-ink-faint)">
-                        Nothing here yet — all of {component.name} comes from one pool.
+                        {t('gradesCategoriesEmptyHint', { component: component.name })}
                       </p>
                     ) : (
                       <ul className="space-y-1">
@@ -470,26 +488,38 @@ export function StructurePanel({
                                 components={structure.components}
                                 category={category}
                                 trigger={
-                                  <IconButton label="Edit category" size="sm">
+                                  <IconButton
+                                    label={t('gradesEditCategoryLabel')}
+                                    size="sm"
+                                  >
                                     <EditIcon className="size-4" />
                                   </IconButton>
                                 }
                               />
                               <ConfirmDialog
-                                title="Delete category?"
-                                confirmLabel="Confirm delete"
+                                title={t('gradesDeleteCategoryTitle')}
+                                confirmLabel={t('commonConfirmDelete')}
                                 description={(() => {
                                   const count = structure.activities.filter(
                                     (a) => a.category_id === category.id,
                                   ).length
                                   return count > 0
-                                    ? `"${category.name}" and its ${count} ${count === 1 ? 'activity' : 'activities'} — and every student's scores for them — will be permanently removed.`
-                                    : `"${category.name}" will be permanently removed.`
+                                    ? t('gradesDeleteWithActivitiesDescription', {
+                                        name: category.name,
+                                        count,
+                                        activityWord:
+                                          count === 1
+                                            ? t('gradesActivitySingular')
+                                            : t('gradesActivityPlural'),
+                                      })
+                                    : t('gradesDeleteSimpleDescription', {
+                                        name: category.name,
+                                      })
                                 })()}
                                 onConfirm={() => removeCategory(category.id)}
                                 trigger={
                                   <IconButton
-                                    label="Delete category"
+                                    label={t('gradesDeleteCategoryLabel')}
                                     size="sm"
                                     variant="danger"
                                   >
@@ -511,8 +541,10 @@ export function StructurePanel({
                         defaultComponentId={component.id}
                         trigger={
                           <Button size="sm" variant="ghost" className="w-full">
-                            <PlusIcon className="size-4" /> Add{' '}
-                            {component.name.toLowerCase()} category
+                            <PlusIcon className="size-4" />{' '}
+                            {t('gradesAddCategoryButton', {
+                              component: component.name.toLowerCase(),
+                            })}
                           </Button>
                         }
                       />
@@ -522,8 +554,7 @@ export function StructurePanel({
               })}
             </div>
             <p className="text-xs text-(--color-ink-faint)">
-              Each period and component needs a 100% total before Agilearn can publish a
-              final grade. The Σ badge turns red when a category set is incomplete.
+              {t('gradesStructureFooterHint')}
             </p>
           </section>
 
@@ -532,7 +563,7 @@ export function StructurePanel({
           {/* Activities for a selected period */}
           <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <SectionTitle>Activities</SectionTitle>
+              <SectionTitle>{t('gradesActivitiesSectionTitle')}</SectionTitle>
               {selectedPeriod && (
                 <ActivityDialog
                   classroomId={classroomId}
@@ -552,7 +583,7 @@ export function StructurePanel({
                   }
                   trigger={
                     <Button size="sm" variant="secondary">
-                      <PlusIcon className="size-4" /> Add activity
+                      <PlusIcon className="size-4" /> {t('gradesAddActivityButton')}
                     </Button>
                   }
                 />
@@ -566,8 +597,7 @@ export function StructurePanel({
                 nextPosition={nextPeriodPosition}
                 periods={structure.periods}
               >
-                Activities live inside a grading period, so there is nowhere to put one
-                yet.
+                {t('gradesActivitiesNeedPeriodHint')}
               </NeedsPeriod>
             ) : (
               <>
@@ -600,7 +630,9 @@ export function StructurePanel({
                     if (activities.length === 0) {
                       return (
                         <p className="text-sm text-(--color-ink-muted)">
-                          No activities in {selectedPeriod.name} yet.
+                          {t('gradesNoActivitiesInPeriod', {
+                            period: selectedPeriod.name,
+                          })}
                         </p>
                       )
                     }
@@ -620,8 +652,8 @@ export function StructurePanel({
                                   {activity.name}
                                 </p>
                                 <p className="text-xs text-(--color-ink-faint)">
-                                  {category?.name ?? 'Uncategorized'} · max{' '}
-                                  {activity.max_score}
+                                  {category?.name ?? t('gradesUncategorized')} ·{' '}
+                                  {t('gradesMaxScoreLabel', { max: activity.max_score })}
                                   {activity.date ? ` · ${activity.date}` : ''}
                                 </p>
                               </div>
@@ -636,19 +668,24 @@ export function StructurePanel({
                                   )}
                                   activity={activity}
                                   trigger={
-                                    <IconButton label="Edit activity" size="sm">
+                                    <IconButton
+                                      label={t('gradesEditActivityLabel')}
+                                      size="sm"
+                                    >
                                       <EditIcon className="size-4" />
                                     </IconButton>
                                   }
                                 />
                                 <ConfirmDialog
-                                  title="Delete activity?"
-                                  confirmLabel="Confirm delete"
-                                  description={`"${activity.name}" and every student's score for it will be permanently removed.`}
+                                  title={t('gradesDeleteActivityTitle')}
+                                  confirmLabel={t('commonConfirmDelete')}
+                                  description={t('gradesDeleteActivityDescription', {
+                                    name: activity.name,
+                                  })}
                                   onConfirm={() => removeActivity(activity.id)}
                                   trigger={
                                     <IconButton
-                                      label="Delete activity"
+                                      label={t('gradesDeleteActivityLabel')}
                                       size="sm"
                                       variant="danger"
                                     >
@@ -669,13 +706,13 @@ export function StructurePanel({
         </div>
         <DialogFooter className="sticky bottom-0 border-t border-(--color-border) bg-(--color-surface-2) pt-4">
           <p className="mr-auto text-xs text-(--color-ink-faint)">
-            Changes are saved per editor.
+            {t('gradesFooterSavedHint')}
           </p>
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t('commonCancel')}
           </Button>
           <Button type="button" onClick={() => setOpen(false)}>
-            Save &amp; close
+            {t('gradesSaveAndCloseButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -10,6 +10,7 @@ import {
   ResponsiveDrawerTrigger,
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { useCreateMeetingSlot, useUpdateMeetingSlot } from '@/lib/queries/calendar'
 import type { CourseSubject, SubjectMeetingSlot } from '@/types/domain'
 import {
@@ -48,6 +49,7 @@ export function MeetingSlotDialog({
   const create = useCreateMeetingSlot()
   const update = useUpdateMeetingSlot()
   const { toast } = useToast()
+  const { t } = useLocale()
   const isEditing = !!slot
 
   useEffect(() => {
@@ -72,12 +74,16 @@ export function MeetingSlotDialog({
       else await create.mutateAsync({ course_subject_id: subject.id, ...fields })
       setOpen(false)
       toast({
-        title: isEditing ? 'Meeting updated' : 'Meeting added to Calendar',
+        title: isEditing
+          ? t('calendarMeetingUpdatedToast')
+          : t('calendarMeetingAddedToast'),
         tone: 'success',
       })
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update meeting' : 'Could not add meeting',
+        title: isEditing
+          ? t('calendarMeetingUpdateErrorToast')
+          : t('calendarMeetingAddErrorToast'),
         description: meetingSlotErrorMessage(error),
         tone: 'error',
       })
@@ -89,14 +95,18 @@ export function MeetingSlotDialog({
       <ResponsiveDrawerTrigger asChild>
         {trigger ?? (
           <Button size="sm" variant="outline">
-            <Plus className="size-4" /> Schedule
+            <Plus className="size-4" /> {t('calendarScheduleButton')}
           </Button>
         )}
       </ResponsiveDrawerTrigger>
       <ResponsiveDrawerContent className="md:w-[min(32rem,calc(100%-3rem))] lg:w-[min(34rem,calc(100%-4rem))] xl:w-[min(34rem,calc(100%-8rem))]">
         <ResponsiveDrawerHeader
-          title={isEditing ? `Edit ${subject.name} meeting` : `Schedule ${subject.name}`}
-          description="Calendar weeks begin on Sunday. A meeting cannot overlap another class you teach."
+          title={
+            isEditing
+              ? t('calendarEditMeetingTitle', { name: subject.name })
+              : t('calendarScheduleMeetingTitle', { name: subject.name })
+          }
+          description={t('calendarMeetingDialogDescription')}
         />
         <ResponsiveDrawerBody>
           <form onSubmit={(event) => void submit(event)}>
@@ -104,7 +114,7 @@ export function MeetingSlotDialog({
           </form>
         </ResponsiveDrawerBody>
         <ResponsiveDrawerFooter
-          primaryLabel={isEditing ? 'Save meeting' : 'Add meeting'}
+          primaryLabel={isEditing ? t('calendarSaveMeeting') : t('calendarAddMeeting')}
           primaryDisabled={!valid}
           primaryLoading={create.isPending || update.isPending}
           onPrimary={() => void submit()}

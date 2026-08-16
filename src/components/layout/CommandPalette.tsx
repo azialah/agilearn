@@ -51,7 +51,7 @@ export function CommandPalette({
     }))
     const subjectItems = subjects.slice(0, 10).map((subject) => ({
       to: `/teacher/classrooms/${subject.classroom_id}`,
-      label: `Subject · ${subject.name}`,
+      label: t('shellSubjectLabel', { name: subject.name }),
       icon: SubjectIcon,
     }))
     return [
@@ -124,7 +124,7 @@ export function CommandPalette({
           inputRef.current?.focus()
         }}
       >
-        <DialogTitle className="sr-only">Jump to a page</DialogTitle>
+        <DialogTitle className="sr-only">{t('shellJumpToPage')}</DialogTitle>
         <div className="flex h-full flex-col lg:h-auto">
           <div className="flex items-center gap-3 border-b border-(--color-border) px-4 py-3.5">
             <SearchIcon
@@ -138,12 +138,12 @@ export function CommandPalette({
               aria-controls="command-palette-list"
               aria-activedescendant={activeId}
               aria-autocomplete="list"
-              aria-label="Search pages"
+              aria-label={t('shellSearchPagesAriaLabel')}
               autoComplete="off"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              placeholder="Search pages, classrooms, subjects…"
+              placeholder={t('shellSearchPagesPlaceholder')}
               className="h-7 w-full bg-transparent text-base text-(--color-ink) placeholder:text-(--color-ink-faint) focus-visible:outline-none"
             />
             <kbd className="hidden shrink-0 rounded border border-(--color-border) px-1.5 py-0.5 text-[10px] text-(--color-ink-faint) sm:block">
@@ -154,12 +154,12 @@ export function CommandPalette({
           <ul
             id="command-palette-list"
             role="listbox"
-            aria-label="Pages"
+            aria-label={t('shellPagesListAriaLabel')}
             className="flex-1 overflow-y-auto p-2 scrollbar-none lg:max-h-72 lg:flex-none [&::-webkit-scrollbar]:hidden"
           >
             {filtered.length === 0 && (
               <li className="px-3 py-6 text-center text-sm text-(--color-ink-faint)">
-                No matching pages.
+                {t('shellNoMatchingPages')}
               </li>
             )}
             {filtered.map((item, index) => {
@@ -189,10 +189,10 @@ export function CommandPalette({
 
           <div className="border-t border-(--color-border) px-4 py-2 text-xs text-(--color-ink-faint)">
             <kbd className="rounded border border-(--color-border) px-1">↑</kbd>{' '}
-            <kbd className="rounded border border-(--color-border) px-1">↓</kbd> to
-            navigate ·{' '}
-            <kbd className="rounded border border-(--color-border) px-1">Enter</kbd> to
-            select
+            <kbd className="rounded border border-(--color-border) px-1">↓</kbd>{' '}
+            {t('shellToNavigate')} ·{' '}
+            <kbd className="rounded border border-(--color-border) px-1">Enter</kbd>{' '}
+            {t('shellToSelect')}
           </div>
         </div>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useLocale } from '@/lib/locale'
 import { Button } from '@/components/ui/Button'
 import {
   Select,
@@ -53,6 +54,7 @@ function bucketFor(final: number): string {
  */
 export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
   const navigate = useNavigate()
+  const { t } = useLocale()
   const [periodName, setPeriodName] = useState<string>(ALL_PERIODS)
   const [showAll, setShowAll] = useState(false)
 
@@ -115,18 +117,18 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
     <div className="mt-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-medium">Grade distribution</p>
+          <p className="text-sm font-medium">{t('dashboardGradeDistribution')}</p>
           <p className="mt-1 text-sm text-(--color-ink-muted)">
-            How each class is spread across grade bands.
+            {t('dashboardGradeDistributionDescription')}
           </p>
         </div>
         <div className="w-44">
           <Select value={periodName} onValueChange={setPeriodName}>
-            <SelectTrigger aria-label="Grading period">
+            <SelectTrigger aria-label={t('dashboardGradingPeriodLabel')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_PERIODS}>All periods</SelectItem>
+              <SelectItem value={ALL_PERIODS}>{t('dashboardAllPeriods')}</SelectItem>
               {periodNames.map((name) => (
                 <SelectItem key={name} value={name}>
                   {name}
@@ -155,21 +157,21 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
                   })
                 }
               >
-                Grades
+                {t('dashboardGrades')}
               </Button>
             </div>
 
             {!hasGradebook ? (
               <p className="mt-2 text-xs text-(--color-ink-faint)">
-                Open this classroom&apos;s grade sheet to view subject-specific grades.
+                {t('dashboardNoGradebook')}
               </p>
             ) : missingPeriod ? (
               <p className="mt-2 text-xs text-(--color-ink-faint)">
-                No {periodName} period in this class.
+                {t('dashboardMissingPeriod', { period: periodName })}
               </p>
             ) : graded === 0 ? (
               <p className="mt-2 text-xs text-(--color-ink-faint)">
-                No graded students yet.
+                {t('dashboardNoGradedStudents')}
               </p>
             ) : (
               <ul className="mt-2 grid grid-cols-5 items-end gap-2">
@@ -181,7 +183,12 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
                       key={label}
                       className="flex flex-col items-center gap-1"
                       // The visual bar is decorative; this carries the meaning.
-                      aria-label={`${label}: ${count} of ${graded} students (${percent}%)`}
+                      aria-label={t('dashboardBucketAriaLabel', {
+                        label,
+                        count,
+                        graded,
+                        percent,
+                      })}
                     >
                       <div
                         aria-hidden
@@ -210,7 +217,9 @@ export function GradeDistribution({ classrooms, students, gradebooks }: Props) {
       {rows.length > INITIAL_VISIBLE && (
         <div className="mt-3 text-center">
           <Button variant="ghost" size="sm" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? 'Show fewer' : `Show all ${rows.length} classes`}
+            {showAll
+              ? t('dashboardShowFewer')
+              : t('dashboardShowAllClasses', { n: rows.length })}
           </Button>
         </div>
       )}

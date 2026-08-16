@@ -1,11 +1,20 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useLocale } from '@/lib/locale'
 
 const TABS = [
-  { label: 'Roster', to: '/teacher/classrooms/$classroomId', exact: true },
-  { label: 'Grades', to: '/teacher/classrooms/$classroomId/grades', exact: false },
   {
-    label: 'Attendance',
+    labelKey: 'classroomsRosterHeading',
+    to: '/teacher/classrooms/$classroomId',
+    exact: true,
+  },
+  {
+    labelKey: 'classroomsTabGrades',
+    to: '/teacher/classrooms/$classroomId/grades',
+    exact: false,
+  },
+  {
+    labelKey: 'classroomsTabAttendance',
     to: '/teacher/classrooms/$classroomId/attendance',
     exact: false,
   },
@@ -21,6 +30,7 @@ const ACTIVE_TAB_CLASS =
  * in the same place instead of reading as a jump to an unrelated page.
  */
 export function ClassroomTabs({ classroomId }: { classroomId: string }) {
+  const { t } = useLocale()
   const navigate = useNavigate()
   const onSlideshow = useRouterState({
     select: (state) => state.location.pathname.includes('/slideshow'),
@@ -37,15 +47,15 @@ export function ClassroomTabs({ classroomId }: { classroomId: string }) {
           className={TAB_CLASS}
           activeProps={{ className: ACTIVE_TAB_CLASS }}
         >
-          {tab.label}
+          {t(tab.labelKey)}
         </Link>
       ))}
       {/* Slideshow takes over the screen for presenting, so it is confirmed
           rather than entered on a stray click mid-class. */}
       <ConfirmDialog
-        title="Start the slideshow?"
-        description="This replaces the classroom view with the full-screen grade presentation. You can leave it at any time."
-        confirmLabel="Start slideshow"
+        title={t('classroomsSlideshowConfirmTitle')}
+        description={t('classroomsSlideshowConfirmDescription')}
+        confirmLabel={t('classroomsSlideshowConfirmButton')}
         confirmVariant="primary"
         onConfirm={() =>
           navigate({
@@ -55,7 +65,7 @@ export function ClassroomTabs({ classroomId }: { classroomId: string }) {
         }
         trigger={
           <button type="button" className={onSlideshow ? ACTIVE_TAB_CLASS : TAB_CLASS}>
-            Slideshow
+            {t('classroomsTabSlideshow')}
           </button>
         }
       />

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { useLocale } from '@/lib/locale'
 import type { CourseSubject, CourseSubjectKind } from '@/types/domain'
 
 export const KIND_LABEL: Record<CourseSubjectKind, string> = {
@@ -31,9 +32,14 @@ export function SubjectTabs({
   value: string
   onChange: (subjectId: string) => void
 }) {
+  const { t } = useLocale()
   if (subjects.length <= 1) return null
   return (
-    <div role="group" aria-label="Course subject" className="flex flex-wrap gap-2">
+    <div
+      role="group"
+      aria-label={t('classroomsSubjectTabsLabel')}
+      className="flex flex-wrap gap-2"
+    >
       {subjects.map((subject) => {
         const active = value === subject.id
         return (

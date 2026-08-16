@@ -1,6 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronRight } from 'lucide-react'
 import { useClassrooms } from '@/lib/queries/classrooms'
+import { useLocale } from '@/lib/locale'
 
 type StaticTeacherRoute =
   | '/teacher/dashboard'
@@ -44,12 +45,13 @@ function BreadcrumbTarget({ crumb }: { crumb: Crumb }) {
 export function TeacherBreadcrumbs() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const { data: classrooms } = useClassrooms()
+  const { t } = useLocale()
   if (!pathname.startsWith('/teacher/') || pathname === '/teacher/dashboard') return null
   const classroomId = pathname.match(/\/teacher\/classrooms\/([^/]+)/)?.[1]
   const classroom = classrooms?.find((item) => item.id === classroomId)
-  const crumbs: Crumb[] = [{ label: 'Home', to: '/teacher/dashboard' }]
+  const crumbs: Crumb[] = [{ label: t('dashboard'), to: '/teacher/dashboard' }]
   if (pathname.startsWith('/teacher/classrooms')) {
-    crumbs.push({ label: 'Classrooms', to: '/teacher/classrooms' })
+    crumbs.push({ label: t('classrooms'), to: '/teacher/classrooms' })
     if (classroom)
       crumbs.push({
         label: classroom.cohort_name || classroom.block || classroom.course_name,
@@ -58,25 +60,27 @@ export function TeacherBreadcrumbs() {
     if (classroom) {
       // The classroom index is the Roster tab, so name it rather than ending on
       // the cohort twice.
-      if (pathname.includes('/grades')) crumbs.push({ label: 'Grades' })
-      else if (pathname.includes('/attendance')) crumbs.push({ label: 'Attendance' })
-      else if (pathname.includes('/slideshow')) crumbs.push({ label: 'Slideshow' })
-      else crumbs.push({ label: 'Roster' })
+      if (pathname.includes('/grades')) crumbs.push({ label: t('shellGrades') })
+      else if (pathname.includes('/attendance'))
+        crumbs.push({ label: t('shellAttendance') })
+      else if (pathname.includes('/slideshow'))
+        crumbs.push({ label: t('shellSlideshow') })
+      else crumbs.push({ label: t('shellRoster') })
     }
   } else if (pathname.startsWith('/teacher/modules')) {
-    crumbs.push({ label: 'Materials', to: '/teacher/modules' })
+    crumbs.push({ label: t('shellNavMaterials'), to: '/teacher/modules' })
   } else if (pathname.startsWith('/teacher/calendar')) {
-    crumbs.push({ label: 'Calendar', to: '/teacher/calendar' })
+    crumbs.push({ label: t('calendar'), to: '/teacher/calendar' })
   } else if (pathname.startsWith('/teacher/analytics')) {
-    crumbs.push({ label: 'Analytics', to: '/teacher/analytics' })
+    crumbs.push({ label: t('analytics'), to: '/teacher/analytics' })
   } else if (pathname.startsWith('/teacher/usage')) {
-    crumbs.push({ label: 'Usage', to: '/teacher/usage' })
+    crumbs.push({ label: t('usage'), to: '/teacher/usage' })
   } else if (pathname.startsWith('/teacher/profile')) {
-    crumbs.push({ label: 'Profile', to: '/teacher/profile' })
+    crumbs.push({ label: t('profile'), to: '/teacher/profile' })
   }
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t('shellBreadcrumbNav')}
       className="mx-auto hidden w-full max-w-6xl items-center gap-1 px-4 pt-4 text-xs text-(--color-ink-faint) lg:flex lg:px-6"
     >
       {crumbs.map((crumb, index) => {

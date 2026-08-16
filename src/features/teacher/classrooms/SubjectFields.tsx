@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
+import { useLocale } from '@/lib/locale'
 import type {
   CourseSubjectKind,
   CourseSubjectSession,
@@ -81,12 +82,13 @@ export function SubjectFields({
   /** Editing one half of an existing pair — the split is already decided. */
   lockSessionType?: boolean
 }) {
+  const { t } = useLocale()
   return (
     <div className="space-y-4">
       <Field
-        label="Subject title"
+        label={t('subjectDialogTitleLabel')}
         htmlFor={`${idPrefix}-name`}
-        hint="Just the title — leave “(Lecture)” and “(Laboratory)” out, the app labels those for you."
+        hint={t('subjectDialogTitleHint')}
       >
         <Input
           id={`${idPrefix}-name`}
@@ -99,20 +101,20 @@ export function SubjectFields({
       {isCollege && !lockSessionType && (
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-(--color-ink-muted)">
-            How is it taught?
+            {t('subjectDialogHowTaughtLegend')}
           </legend>
           <div className="grid gap-2 sm:grid-cols-2">
             <ChoiceButton
               selected={value.sessionType === 'single'}
               onSelect={() => onChange({ ...value, sessionType: 'single' })}
-              title="One session"
-              detail="A minor, or any subject without a separate lab."
+              title={t('subjectDialogSingleSessionTitle')}
+              detail={t('subjectDialogSingleSessionDetail')}
             />
             <ChoiceButton
               selected={value.sessionType === 'lecture_lab'}
               onSelect={() => onChange({ ...value, sessionType: 'lecture_lab' })}
-              title="Lecture + laboratory"
-              detail="A major. Creates both, each with its own grades and schedule."
+              title={t('subjectDialogLectureLabTitle')}
+              detail={t('subjectDialogLectureLabDetail')}
             />
           </div>
         </fieldset>
@@ -120,19 +122,25 @@ export function SubjectFields({
 
       {isCollege ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Course code" htmlFor={`${idPrefix}-course-code`}>
+          <Field
+            label={t('subjectDialogCourseCodeLabel')}
+            htmlFor={`${idPrefix}-course-code`}
+          >
             <Input
               id={`${idPrefix}-course-code`}
               value={value.courseCode}
-              placeholder="CSP313"
+              placeholder={t('subjectDialogCourseCodePlaceholder')}
               onChange={(event) => onChange({ ...value, courseCode: event.target.value })}
             />
           </Field>
-          <Field label="Subject code" htmlFor={`${idPrefix}-subject-code`}>
+          <Field
+            label={t('subjectDialogSubjectCodeLabel')}
+            htmlFor={`${idPrefix}-subject-code`}
+          >
             <Input
               id={`${idPrefix}-subject-code`}
               value={value.subjectCode}
-              placeholder="CS-ELEC2"
+              placeholder={t('subjectDialogSubjectCodePlaceholderCollege')}
               onChange={(event) =>
                 onChange({ ...value, subjectCode: event.target.value })
               }
@@ -141,23 +149,23 @@ export function SubjectFields({
         </div>
       ) : (
         <Field
-          label="Subject code (optional)"
+          label={t('subjectDialogSubjectCodeOptionalLabel')}
           htmlFor={`${idPrefix}-subject-code`}
-          hint="If your school uses short subject codes, add one here."
+          hint={t('subjectDialogSubjectCodeHint')}
         >
           <Input
             id={`${idPrefix}-subject-code`}
             value={value.subjectCode}
-            placeholder="MATH7"
+            placeholder={t('subjectDialogSubjectCodePlaceholder')}
             onChange={(event) => onChange({ ...value, subjectCode: event.target.value })}
           />
         </Field>
       )}
 
       <Field
-        label="Report-card grade"
+        label={t('subjectDialogGradingLabel')}
         htmlFor={`${idPrefix}-grading-template`}
-        hint="Converts the computed percentage into what the report card shows. Leave as percentage only for a raw number."
+        hint={t('subjectDialogGradingHint')}
       >
         <Select
           value={value.gradingTemplate}
@@ -191,26 +199,29 @@ export function SubjectFields({
         </Select>
       </Field>
 
-      <Field label="Description" htmlFor={`${idPrefix}-description`}>
+      <Field
+        label={t('subjectDialogDescriptionLabel')}
+        htmlFor={`${idPrefix}-description`}
+      >
         <textarea
           id={`${idPrefix}-description`}
           rows={3}
           value={value.description}
-          placeholder="A short practical overview for this subject."
+          placeholder={t('subjectDialogDescriptionPlaceholder')}
           onChange={(event) => onChange({ ...value, description: event.target.value })}
           className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm"
         />
       </Field>
 
       <Field
-        label="Room"
+        label={t('subjectDialogRoomLabel')}
         htmlFor={`${idPrefix}-room`}
-        hint="Day and time live on the meeting schedule, so the Calendar and this page always agree."
+        hint={t('subjectDialogRoomHint')}
       >
         <Input
           id={`${idPrefix}-room`}
           value={value.room}
-          placeholder="Room 505"
+          placeholder={t('subjectDialogRoomPlaceholder')}
           onChange={(event) => onChange({ ...value, room: event.target.value })}
         />
       </Field>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useLocale } from '@/lib/locale'
 import { motion } from 'motion/react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardBody } from '@/components/ui/Card'
@@ -82,6 +83,7 @@ function ModuleCard({
   onImport: (module: ModuleWithRelations) => void
 }) {
   const meta = MODULE_KIND_META[module.kind]
+  const { t } = useLocale()
   return (
     <motion.div
       layout
@@ -99,17 +101,23 @@ function ModuleCard({
                 <ModuleEditDialog
                   module={module}
                   trigger={
-                    <IconButton label="Edit module" size="sm">
+                    <IconButton label={t('modulesEditModuleAriaLabel')} size="sm">
                       <EditIcon />
                     </IconButton>
                   }
                 />
                 <ConfirmDialog
-                  title="Delete module?"
-                  description={`This permanently removes "${module.title}" and its file.`}
+                  title={t('modulesDeleteConfirmTitle')}
+                  description={t('modulesDeleteConfirmDescription', {
+                    title: module.title,
+                  })}
                   onConfirm={() => onDelete(module)}
                   trigger={
-                    <IconButton label="Delete module" size="sm" variant="danger">
+                    <IconButton
+                      label={t('modulesDeleteModuleAriaLabel')}
+                      size="sm"
+                      variant="danger"
+                    >
                       <TrashIcon />
                     </IconButton>
                   }
@@ -126,7 +134,7 @@ function ModuleCard({
               </p>
             ) : (
               <p className="mt-1 text-sm italic text-(--color-ink-faint)">
-                No description
+                {t('modulesNoDescription')}
               </p>
             )}
           </div>
@@ -144,7 +152,7 @@ function ModuleCard({
 
             <div className="flex items-center justify-between gap-2 text-xs text-(--color-ink-faint)">
               <span className="min-w-0 truncate">
-                {module.owner?.full_name ?? 'Unknown'}
+                {module.owner?.full_name ?? t('modulesUnknownOwner')}
               </span>
               <span className="shrink-0 tabular-nums">
                 {formatFileSize(module.file_size)}
@@ -161,10 +169,10 @@ function ModuleCard({
                 onClick={() => onDownload(module)}
               >
                 {!downloading && <DownloadIcon />}
-                Download
+                {t('modulesDownloadButton')}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => onImport(module)}>
-                Import to subject
+                {t('modulesImportToSubjectButton')}
               </Button>
             </div>
           </div>
@@ -175,6 +183,7 @@ function ModuleCard({
 }
 
 export function ModulesPage() {
+  const { t } = useLocale()
   const { data: profile } = useProfile()
   const { data: modules, isLoading } = useModules()
   const deleteModule = useDeleteModule()
@@ -212,7 +221,7 @@ export function ModulesPage() {
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (error) {
       toast({
-        title: 'Could not start download',
+        title: t('modulesDownloadErrorTitle'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -224,10 +233,10 @@ export function ModulesPage() {
   async function handleDelete(module: ModuleWithRelations) {
     try {
       await deleteModule.mutateAsync(module)
-      toast({ title: 'Module deleted', tone: 'success' })
+      toast({ title: t('modulesDeletedToastTitle'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete module',
+        title: t('modulesDeleteErrorTitle'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -238,12 +247,12 @@ export function ModulesPage() {
     if (!importingModule || !subjectId) return
     try {
       await importModule.mutateAsync({ moduleId: importingModule.id, subjectId })
-      toast({ title: 'Material imported to course subject', tone: 'success' })
+      toast({ title: t('modulesImportSuccessTitle'), tone: 'success' })
       setImportingModule(null)
       setSubjectId('')
     } catch (error) {
       toast({
-        title: 'Could not import material',
+        title: t('modulesImportErrorTitle'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -255,8 +264,8 @@ export function ModulesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Teaching modules"
-        description="Your private repository of lesson plans, activity stories, and teaching resources."
+        title={t('modulesPageTitle')}
+        description={t('modulesPageDescription')}
         actions={
           // Hidden while empty — the empty state hosts the upload CTA, so the
           // header button returns only once there are modules.
@@ -266,7 +275,7 @@ export function ModulesPage() {
               ownerId={profile.id}
               trigger={
                 <Button>
-                  <PlusIcon /> Upload module
+                  <PlusIcon /> {t('modulesUploadButton')}
                 </Button>
               }
             />
@@ -279,10 +288,10 @@ export function ModulesPage() {
           <div className="sm:max-w-xs sm:flex-1">
             <Input
               type="search"
-              placeholder="Search by title, description, or owner"
+              placeholder={t('modulesSearchPlaceholder')}
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              aria-label="Search modules"
+              aria-label={t('modulesSearchAriaLabel')}
             />
           </div>
           <div className="w-full sm:w-48">
@@ -292,11 +301,11 @@ export function ModulesPage() {
                 setFilters({ ...filters, kind: value as ModuleKind | 'all' })
               }
             >
-              <SelectTrigger aria-label="Filter by kind">
+              <SelectTrigger aria-label={t('modulesFilterByKindAriaLabel')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All kinds</SelectItem>
+                <SelectItem value="all">{t('modulesAllKinds')}</SelectItem>
                 {MODULE_KINDS.map((kind) => (
                   <SelectItem key={kind} value={kind}>
                     {MODULE_KIND_META[kind].label}
@@ -310,7 +319,7 @@ export function ModulesPage() {
             onClick={() => setFilters({ ...filters, mineOnly: !filters.mineOnly })}
             aria-pressed={filters.mineOnly}
           >
-            Mine only
+            {t('modulesMineOnly')}
           </Button>
         </div>
       )}
@@ -324,8 +333,8 @@ export function ModulesPage() {
       ) : !hasModules ? (
         <EmptyState
           icon={<ModuleIcon />}
-          title="No modules yet"
-          description="Upload a lesson plan, activity story, or resource, then link it to the course subjects that need it."
+          title={t('modulesEmptyStateTitle')}
+          description={t('modulesEmptyStateDescription')}
           preview={
             <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((index) => (
@@ -351,7 +360,7 @@ export function ModulesPage() {
                 ownerId={profile.id}
                 trigger={
                   <Button>
-                    <PlusIcon /> Upload module
+                    <PlusIcon /> {t('modulesUploadButton')}
                   </Button>
                 }
               />
@@ -361,8 +370,8 @@ export function ModulesPage() {
       ) : visible.length === 0 ? (
         <EmptyState
           icon={<ModuleIcon />}
-          title="No matches"
-          description="No modules match the current filters. Try clearing the search or changing the kind."
+          title={t('modulesNoMatchesTitle')}
+          description={t('modulesNoMatchesDescription')}
         />
       ) : (
         <motion.div
@@ -388,17 +397,20 @@ export function ModulesPage() {
       >
         <ResponsiveDrawerContent className="md:w-[min(34rem,calc(100%-3rem))]">
           <ResponsiveDrawerHeader
-            title="Import material to a subject"
-            description="The private repository file stays in one place; Agilearn links it to the selected subject."
+            title={t('modulesImportDialogTitle')}
+            description={t('modulesImportDialogDescription')}
           />
           <ResponsiveDrawerBody>
             <div className="space-y-2">
               <label htmlFor="import-subject" className="text-sm font-medium">
-                Course subject
+                {t('modulesCourseSubjectLabel')}
               </label>
               <Select value={subjectId} onValueChange={setSubjectId}>
-                <SelectTrigger id="import-subject" aria-label="Course subject">
-                  <SelectValue placeholder="Choose a course subject" />
+                <SelectTrigger
+                  id="import-subject"
+                  aria-label={t('modulesCourseSubjectLabel')}
+                >
+                  <SelectValue placeholder={t('modulesChooseCourseSubjectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {(subjects ?? []).map((subject) => (
@@ -411,7 +423,7 @@ export function ModulesPage() {
             </div>
           </ResponsiveDrawerBody>
           <ResponsiveDrawerFooter
-            primaryLabel="Import material"
+            primaryLabel={t('modulesImportMaterialButton')}
             primaryDisabled={!subjectId}
             primaryLoading={importModule.isPending}
             onPrimary={() => void handleImport()}

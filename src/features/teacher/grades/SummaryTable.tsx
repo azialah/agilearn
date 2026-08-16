@@ -10,6 +10,7 @@ import {
   type TransmutationTable,
 } from '@/lib/grading'
 import { studentFullName, type GradingTemplate, type Student } from '@/types/domain'
+import { useLocale, type MessageKey } from '@/lib/locale'
 
 function fmt(value: number | null | undefined) {
   return value == null ? '—' : round2(value).toFixed(2)
@@ -20,12 +21,15 @@ const STICKY =
 /** Report-card label for the Final column, matching what's actually shown —
  * a raw percentage reads as ambiguous once it might be a transmuted DepEd
  * grade or a CHED 1.00-5.00 instead. */
-export function finalColumnLabel(gradingTemplate?: GradingTemplate): string {
+export function finalColumnLabel(
+  t: (key: MessageKey, params?: Record<string, string | number>) => string,
+  gradingTemplate?: GradingTemplate,
+): string {
   if (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') {
-    return 'Final (transmuted)'
+    return t('gradesFinalTransmutedLabel')
   }
-  if (gradingTemplate === 'higher_education') return 'Final (1.00–5.00)'
-  return 'Final'
+  if (gradingTemplate === 'higher_education') return t('gradesFinalChedLabel')
+  return t('gradesFinalLabel')
 }
 
 export function SummaryTable({
@@ -46,6 +50,7 @@ export function SummaryTable({
   /** Only consulted for 'higher_education'. */
   chedIncrement?: number
 }) {
+  const { t } = useLocale()
   const rows = useMemo(
     () =>
       students.map((student) => {
@@ -75,7 +80,7 @@ export function SummaryTable({
               rowSpan={2}
               className={cn(STICKY, 'whitespace-nowrap px-3 py-2 text-left font-medium')}
             >
-              Student
+              {t('gradesStudentColumnHeader')}
             </th>
             {structure.periods.map((period) => (
               <th
@@ -90,7 +95,7 @@ export function SummaryTable({
               colSpan={structure.components.length + 1}
               className="px-3 py-2 text-center font-medium uppercase tracking-wide"
             >
-              Overall
+              {t('gradesOverallColumnHeader')}
             </th>
           </tr>
           <tr className="border-b border-(--color-border)">
@@ -113,7 +118,7 @@ export function SummaryTable({
               </th>
             ))}
             <th className="whitespace-nowrap px-3 py-1.5 text-right font-medium">
-              {finalColumnLabel(gradingTemplate)}
+              {finalColumnLabel(t, gradingTemplate)}
             </th>
           </tr>
         </thead>

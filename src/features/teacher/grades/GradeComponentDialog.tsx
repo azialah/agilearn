@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
 import { useCreateGradeComponent, useUpdateGradeComponent } from '@/lib/queries/grades'
+import { useLocale } from '@/lib/locale'
 import type { GradeComponentRecord } from '@/types/domain'
 
 export function GradeComponentDialog({
@@ -33,6 +34,7 @@ export function GradeComponentDialog({
   const create = useCreateGradeComponent()
   const update = useUpdateGradeComponent()
   const { toast } = useToast()
+  const { t } = useLocale()
   useEffect(() => {
     if (open) {
       setName(component?.name ?? '')
@@ -64,13 +66,15 @@ export function GradeComponentDialog({
           position: nextPosition,
         })
       toast({
-        title: component ? 'Component updated' : 'Component added',
+        title: component
+          ? t('componentDialogUpdatedToast')
+          : t('componentDialogAddedToast'),
         tone: 'success',
       })
       setOpen(false)
     } catch (error) {
       toast({
-        title: 'Could not save component',
+        title: t('componentDialogSaveErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -82,21 +86,21 @@ export function GradeComponentDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {component ? 'Edit grade component' : 'New grade component'}
+            {component ? t('componentDialogEditTitle') : t('componentDialogNewTitle')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="component-name">Name</Label>
+            <Label htmlFor="component-name">{t('commonName')}</Label>
             <Input
               id="component-name"
               value={name}
-              placeholder="e.g. Performance"
+              placeholder={t('componentDialogNamePlaceholder')}
               onChange={(event) => setName(event.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="component-weight">Weight (%)</Label>
+            <Label htmlFor="component-weight">{t('commonWeightLabel')}</Label>
             <Input
               id="component-weight"
               type="number"
@@ -108,18 +112,18 @@ export function GradeComponentDialog({
             />
           </div>
           <p className="text-xs text-(--color-ink-faint)">
-            Component weights must total 100% before Agilearn calculates a final grade.
+            {t('componentDialogWeightHint')}
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button
               type="submit"
               loading={create.isPending || update.isPending}
               disabled={!valid}
             >
-              {component ? 'Save changes' : 'Add component'}
+              {component ? t('commonSaveChanges') : t('componentDialogSubmitAdd')}
             </Button>
           </DialogFooter>
         </form>

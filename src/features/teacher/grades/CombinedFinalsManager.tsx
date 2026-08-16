@@ -22,6 +22,7 @@ import {
   useSubjectGradeCombinations,
   type SubjectGradeCombinationWithItems,
 } from '@/lib/queries/grades'
+import { useLocale } from '@/lib/locale'
 
 function defaultWeights(subjectIds: string[]) {
   return Object.fromEntries(
@@ -44,6 +45,7 @@ function CombinationDialog({
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const save = useSaveSubjectGradeCombination()
   const { toast } = useToast()
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -111,13 +113,15 @@ function CombinationDialog({
         })),
       })
       toast({
-        title: combination ? 'Combined final updated' : 'Combined final created',
+        title: combination
+          ? t('combinedFinalsUpdatedToast')
+          : t('combinedFinalsCreatedToast'),
         tone: 'success',
       })
       setOpen(false)
     } catch (error) {
       toast({
-        title: 'Could not save combined final',
+        title: t('combinedFinalsSaveErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -130,21 +134,23 @@ function CombinationDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {combination ? 'Edit combined final' : 'New combined final'}
+            {combination ? t('combinedFinalsEditTitle') : t('combinedFinalsNewTitle')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="combined-grade-name">Name</Label>
+            <Label htmlFor="combined-grade-name">{t('commonName')}</Label>
             <Input
               id="combined-grade-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Lecture + Laboratory final"
+              placeholder={t('combinedFinalsNamePlaceholder')}
             />
           </div>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Subjects and weights</legend>
+            <legend className="text-sm font-medium">
+              {t('combinedFinalsSubjectsLegend')}
+            </legend>
             {subjects.map((subject) => {
               const selected = selectedIds.includes(subject.id)
               return (
@@ -164,7 +170,9 @@ function CombinationDialog({
                   </Label>
                   {selected && (
                     <Input
-                      aria-label={`${subject.name} combined final weight percent`}
+                      aria-label={t('combinedFinalsWeightAriaLabel', {
+                        subject: subject.name,
+                      })}
                       type="number"
                       min={1}
                       max={100}
@@ -188,15 +196,17 @@ function CombinationDialog({
               total === 100 ? 'text-xs text-(--color-ink-muted)' : 'text-xs text-red-600'
             }
           >
-            Combined weight total: {total}%{' '}
-            {total === 100 ? '— ready to calculate.' : '— must equal 100%.'}
+            {t('combinedFinalsWeightTotal', { total })}{' '}
+            {total === 100
+              ? t('combinedFinalsReadyToCalculate')
+              : t('combinedFinalsMustEqual')}
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button type="submit" loading={save.isPending} disabled={!valid}>
-              {combination ? 'Save changes' : 'Create combined final'}
+              {combination ? t('commonSaveChanges') : t('combinedFinalsSubmitCreate')}
             </Button>
           </DialogFooter>
         </form>
@@ -210,14 +220,15 @@ export function CombinedFinalsManager({ classroomId }: { classroomId: string }) 
   const remove = useDeleteSubjectGradeCombination()
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const { toast } = useToast()
+  const { t } = useLocale()
 
   async function removeCombination(id: string) {
     try {
       await remove.mutateAsync({ id, classroomId })
-      toast({ title: 'Combined final removed', tone: 'success' })
+      toast({ title: t('combinedFinalsRemovedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not remove combined final',
+        title: t('combinedFinalsRemoveErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -225,27 +236,25 @@ export function CombinedFinalsManager({ classroomId }: { classroomId: string }) 
   }
 
   const subjectName = (id: string) =>
-    subjects.find((subject) => subject.id === id)?.name ?? 'Subject'
+    subjects.find((subject) => subject.id === id)?.name ??
+    t('combinedFinalsSubjectFallback')
 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
-          Combined finals
+          {t('combinedFinalsHeading')}
         </h4>
         <CombinationDialog
           classroomId={classroomId}
           trigger={
             <Button size="sm" variant="secondary">
-              <PlusIcon className="size-4" /> Add combined final
+              <PlusIcon className="size-4" /> {t('combinedFinalsAddButton')}
             </Button>
           }
         />
       </div>
-      <p className="text-xs text-(--color-ink-faint)">
-        Combine separate subject finals, such as Lecture and Laboratory, only when your
-        school requires one reported number.
-      </p>
+      <p className="text-xs text-(--color-ink-faint)">{t('combinedFinalsDescription')}</p>
       {(combinations.data ?? []).map((combination) => (
         <div
           key={combination.id}
@@ -268,17 +277,23 @@ export function CombinedFinalsManager({ classroomId }: { classroomId: string }) 
               classroomId={classroomId}
               combination={combination}
               trigger={
-                <IconButton label="Edit combined final" size="sm">
+                <IconButton label={t('combinedFinalsEditButtonLabel')} size="sm">
                   <EditIcon className="size-4" />
                 </IconButton>
               }
             />
             <ConfirmDialog
-              title="Delete combined final?"
-              description={`This removes the “${combination.name}” formula, not any subject grades.`}
+              title={t('combinedFinalsDeleteConfirmTitle')}
+              description={t('combinedFinalsDeleteConfirmDescription', {
+                name: combination.name,
+              })}
               onConfirm={() => void removeCombination(combination.id)}
               trigger={
-                <IconButton label="Delete combined final" size="sm" variant="danger">
+                <IconButton
+                  label={t('combinedFinalsDeleteButtonLabel')}
+                  size="sm"
+                  variant="danger"
+                >
                   <TrashIcon className="size-4" />
                 </IconButton>
               }

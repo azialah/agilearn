@@ -19,6 +19,7 @@ import {
   type ScoreMap,
 } from '@/lib/grading'
 import { studentFullName, type Student } from '@/types/domain'
+import { useLocale } from '@/lib/locale'
 
 type ReportPeriod = 'overall' | string
 type Recipient = 'student' | 'guardian'
@@ -38,6 +39,7 @@ export function GradeReportDialog({
   scores: ScoreMap
   students: Student[]
 }) {
+  const { t } = useLocale()
   const [studentId, setStudentId] = useState(students[0]?.id ?? '')
   const [period, setPeriod] = useState<ReportPeriod>('overall')
   const [recipient, setRecipient] = useState<Recipient>('student')
@@ -56,8 +58,9 @@ export function GradeReportDialog({
         : null
   const label =
     period === 'overall'
-      ? 'Overall'
-      : (structure.periods.find((item) => item.id === period)?.name ?? 'Grade')
+      ? t('reportDialogOverallLabel')
+      : (structure.periods.find((item) => item.id === period)?.name ??
+        t('reportDialogGradeFallback'))
   const incomplete =
     grade === null ||
     !student ||
@@ -69,25 +72,32 @@ export function GradeReportDialog({
     )
   const compose = () => {
     if (!student || !email || incomplete) return
-    const body = `Hello,\n\nHere is the ${label.toLowerCase()} grade report for ${studentFullName(student)} in ${classroomName}.\n\n${label} grade: ${round2(grade).toFixed(2)}\n\nPlease contact your teacher if you have questions.\n`
-    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`${classroomName} — ${label} grade report`)}&body=${encodeURIComponent(body)}`
+    const body = t('reportDialogEmailBody', {
+      periodLower: label.toLowerCase(),
+      studentName: studentFullName(student),
+      classroom: classroomName,
+      periodLabel: label,
+      grade: round2(grade).toFixed(2),
+    })
+    const subject = t('reportDialogEmailSubject', {
+      classroom: classroomName,
+      period: label,
+    })
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Preview grade report</DialogTitle>
-          <DialogDescription>
-            Review one private learner report before opening your mail app. Incomplete
-            grades cannot be composed.
-          </DialogDescription>
+          <DialogTitle>{t('reportDialogTitle')}</DialogTitle>
+          <DialogDescription>{t('reportDialogDescription')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="report-student">Learner</Label>
+            <Label htmlFor="report-student">{t('reportDialogLearnerLabel')}</Label>
             <select
               id="report-student"
-              aria-label="Learner"
+              aria-label={t('reportDialogLearnerLabel')}
               value={student?.id ?? ''}
               onChange={(event) => setStudentId(event.target.value)}
               className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
@@ -101,15 +111,15 @@ export function GradeReportDialog({
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="report-period">Report period</Label>
+              <Label htmlFor="report-period">{t('reportDialogPeriodLabel')}</Label>
               <select
                 id="report-period"
-                aria-label="Report period"
+                aria-label={t('reportDialogPeriodLabel')}
                 value={period}
                 onChange={(event) => setPeriod(event.target.value)}
                 className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
-                <option value="overall">Overall grade</option>
+                <option value="overall">{t('reportDialogOverallOption')}</option>
                 {structure.periods.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -118,39 +128,44 @@ export function GradeReportDialog({
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="report-recipient">Recipient</Label>
+              <Label htmlFor="report-recipient">{t('reportDialogRecipientLabel')}</Label>
               <select
                 id="report-recipient"
-                aria-label="Grade report recipient"
+                aria-label={t('reportDialogRecipientAriaLabel')}
                 value={recipient}
                 onChange={(event) => setRecipient(event.target.value as Recipient)}
                 className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-base md:text-sm"
               >
-                <option value="student">Student email</option>
-                <option value="guardian">Guardian email</option>
+                <option value="student">{t('reportDialogStudentEmailOption')}</option>
+                <option value="guardian">{t('reportDialogGuardianEmailOption')}</option>
               </select>
             </div>
           </div>
           <div className="rounded-md bg-(--color-surface-2) p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-(--color-ink-faint)">
-              {label} grade
+              {t('reportDialogGradeHeading', { period: label })}
             </p>
             <p className="mt-1 text-3xl font-semibold">
-              {incomplete ? 'Incomplete' : round2(grade).toFixed(2)}
+              {incomplete ? t('reportDialogIncompleteLabel') : round2(grade).toFixed(2)}
             </p>
             <p className="mt-2 text-xs text-(--color-ink-muted)">
               {email
-                ? `Ready for ${email}`
-                : `No ${recipient} email saved for this learner.`}
+                ? t('reportDialogReadyFor', { email })
+                : t('reportDialogNoEmailSaved', {
+                    recipient:
+                      recipient === 'student'
+                        ? t('reportDialogStudentWord')
+                        : t('reportDialogGuardianWord'),
+                  })}
             </p>
           </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Close
+            {t('commonClose')}
           </Button>
           <Button type="button" disabled={!email || incomplete} onClick={compose}>
-            <Send className="size-4" /> Compose privately
+            <Send className="size-4" /> {t('reportDialogCompose')}
           </Button>
         </DialogFooter>
       </DialogContent>

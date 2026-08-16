@@ -27,6 +27,7 @@ import {
   shouldNotifyLowAverage,
 } from '@/features/teacher/notifications/evaluators'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 const ExportMenu = lazy(() =>
   import('@/features/teacher/io/ExportMenu').then((module) => ({
     default: module.ExportMenu,
@@ -54,6 +55,7 @@ export function GradesPage({
    *  this component doesn't need to import its own route. */
   onSubjectChange?: (subjectId: string) => void
 }) {
+  const { t } = useLocale()
   const classroomQuery = useClassroom(classroomId)
   const subjectsQuery = useCourseSubjects(classroomId)
   const [subjectId, setSubjectId] = useState(initialSubjectId ?? '')
@@ -153,7 +155,7 @@ export function GradesPage({
     void Promise.all(evaluations).catch((error: unknown) => {
       if (!cancelled) {
         toast({
-          title: 'Could not refresh student alerts',
+          title: t('gradesAlertsRefreshErrorToast'),
           description: error instanceof Error ? error.message : undefined,
           tone: 'error',
         })
@@ -173,7 +175,7 @@ export function GradesPage({
           structure={structure}
           trigger={
             <Button variant="outline" size="sm">
-              Structure
+              {t('gradesStructureLabel')}
             </Button>
           }
         />
@@ -183,7 +185,7 @@ export function GradesPage({
           <Button variant="outline" size="sm" disabled>
             <span className="flex items-center gap-2">
               <span className="inline-block h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
-              Export
+              {t('gradesExportButton')}
             </span>
           </Button>
         }
@@ -191,7 +193,7 @@ export function GradesPage({
         <ExportMenu classroomId={classroomId} />
       </Suspense>
       <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
-        <Mail className="size-4" /> Preview report
+        <Mail className="size-4" /> {t('gradesPreviewReportButton')}
       </Button>
     </div>
   )
@@ -203,11 +205,13 @@ export function GradesPage({
       <ClassroomTabs classroomId={classroomId} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-(--color-ink-muted)">Grade sheet</h2>
+          <h2 className="text-sm font-medium text-(--color-ink-muted)">
+            {t('gradesSheetTitle')}
+          </h2>
           <p className="text-sm text-(--color-ink-faint)">
             {activeSubject
-              ? `${activeSubject.name} · Record scores and compute configured grades.`
-              : 'Record activity scores and compute configured grades.'}
+              ? t('gradesSheetDescriptionWithSubject', { subject: activeSubject.name })
+              : t('gradesSheetDescriptionDefault')}
           </p>
         </div>
         {!loading && structure ? toolbar : null}
@@ -215,7 +219,7 @@ export function GradesPage({
 
       {(subjectsQuery.data?.length ?? 0) > 1 && (
         <div>
-          <p className="mb-1.5 text-sm font-medium">Course subject</p>
+          <p className="mb-1.5 text-sm font-medium">{t('gradesCourseSubjectLabel')}</p>
           <SubjectTabs
             subjects={subjectsQuery.data ?? []}
             value={activeSubjectId ?? ''}
@@ -229,23 +233,23 @@ export function GradesPage({
       ) : structureQuery.isError ? (
         <EmptyState
           icon={<GradeIcon />}
-          title="Could not load the grade sheet"
+          title={t('gradesLoadErrorTitle')}
           description={
             structureQuery.error instanceof Error
               ? structureQuery.error.message
-              : 'Please try again.'
+              : t('gradesLoadErrorFallback')
           }
           action={
             <Button size="sm" onClick={() => structureQuery.refetch()}>
-              Retry
+              {t('commonRetry')}
             </Button>
           }
         />
       ) : periods.length === 0 ? (
         <EmptyState
           icon={<GradeIcon />}
-          title="Set up your grade sheet"
-          description="Create grading periods, activity categories, and activities to start recording scores."
+          title={t('gradesSetupTitle')}
+          description={t('gradesSetupDescription')}
           action={
             <PeriodDialog
               classroomId={classroomId}
@@ -254,7 +258,7 @@ export function GradesPage({
               siblings={periods}
               trigger={
                 <Button size="sm">
-                  <PlusIcon className="size-4" /> Add first grading period
+                  <PlusIcon className="size-4" /> {t('gradesAddFirstPeriodButton')}
                 </Button>
               }
             />
@@ -263,8 +267,8 @@ export function GradesPage({
       ) : students.length === 0 ? (
         <EmptyState
           icon={<GradeIcon />}
-          title="No students yet"
-          description="Add students to this classroom to start recording their scores."
+          title={t('gradesNoStudentsTitle')}
+          description={t('gradesNoStudentsDescription')}
         />
       ) : (
         <div className="space-y-4">
@@ -320,9 +324,11 @@ export function GradesPage({
 
           {structure!.categories.length === 0 && (
             <p className="text-sm text-(--color-ink-muted)">
-              Add activity categories from the{' '}
-              <span className="font-medium text-(--color-ink)">Structure</span> panel
-              before recording scores.
+              {t('gradesAddCategoriesHintPrefix')}{' '}
+              <span className="font-medium text-(--color-ink)">
+                {t('gradesStructureLabel')}
+              </span>{' '}
+              {t('gradesAddCategoriesHintSuffix')}
             </p>
           )}
 
@@ -335,7 +341,7 @@ export function GradesPage({
                 siblings={periods}
                 trigger={
                   <Button variant="ghost" size="sm">
-                    <PlusIcon className="size-4" /> Add grading period
+                    <PlusIcon className="size-4" /> {t('gradesAddPeriodButton')}
                   </Button>
                 }
               />
@@ -366,6 +372,7 @@ function ViewTabs({
   view: View
   onChange: (view: View) => void
 }) {
+  const { t } = useLocale()
   return (
     <div
       role="tablist"
@@ -387,7 +394,7 @@ function ViewTabs({
         active={view.kind === 'summary'}
         onClick={() => onChange({ kind: 'summary' })}
       >
-        Summary
+        {t('gradesSummaryTabLabel')}
       </TabButton>
     </div>
   )

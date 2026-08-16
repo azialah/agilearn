@@ -33,6 +33,7 @@ import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { reconcileNotificationIncident } from '@/lib/queries/notifications'
 import { studentFullName } from '@/types/domain'
 import { consecutiveUnexcusedAbsences } from '@/features/teacher/notifications/evaluators'
+import { useLocale } from '@/lib/locale'
 
 function formatSessionDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`)
@@ -78,6 +79,7 @@ export function AttendancePage({
   const { data: students, isLoading: studentsLoading } = useStudents(classroomId)
   const deleteSession = useDeleteSession()
   const { toast } = useToast()
+  const { t } = useLocale()
 
   useEffect(() => {
     const allSessions = allSessionsQuery.data
@@ -104,7 +106,7 @@ export function AttendancePage({
     void Promise.all(evaluations).catch((error: unknown) => {
       if (!cancelled) {
         toast({
-          title: 'Could not refresh attendance alerts',
+          title: t('attendanceAlertsRefreshError'),
           description: error instanceof Error ? error.message : undefined,
           tone: 'error',
         })
@@ -118,10 +120,10 @@ export function AttendancePage({
   async function handleDelete(id: string) {
     try {
       await deleteSession.mutateAsync({ id, classroomId })
-      toast({ title: 'Session deleted', tone: 'success' })
+      toast({ title: t('attendanceSessionDeleted'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not delete session',
+        title: t('attendanceDeleteSessionError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -134,7 +136,7 @@ export function AttendancePage({
       courseSubjectId={subjectId}
       trigger={
         <Button>
-          <PlusIcon /> New session
+          <PlusIcon /> {t('attendanceNewSession')}
         </Button>
       }
     />
@@ -156,9 +158,11 @@ export function AttendancePage({
       <ClassroomTabs classroomId={classroomId} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-(--color-ink-muted)">Attendance</h2>
+          <h2 className="text-sm font-medium text-(--color-ink-muted)">
+            {t('attendancePageTitle')}
+          </h2>
           <p className="text-sm text-(--color-ink-faint)">
-            Track class sessions and per-student attendance.
+            {t('attendancePageDescription')}
           </p>
         </div>
         {newSessionButton}
@@ -166,7 +170,7 @@ export function AttendancePage({
 
       {subjects.length > 1 && (
         <div>
-          <p className="mb-1.5 text-sm font-medium">Course subject</p>
+          <p className="mb-1.5 text-sm font-medium">{t('attendanceCourseSubject')}</p>
           <SubjectTabs
             subjects={subjects}
             value={subjectId}
@@ -184,8 +188,8 @@ export function AttendancePage({
       ) : !sessions || sessions.length === 0 ? (
         <EmptyState
           icon={<CalendarIcon />}
-          title="No sessions yet"
-          description="Create a class session to start marking attendance."
+          title={t('attendanceNoSessions')}
+          description={t('attendanceNoSessionsDescription')}
           action={newSessionButton}
         />
       ) : (
@@ -221,10 +225,11 @@ function SessionCard({
   session: ClassSessionWithRecords
   onDelete: () => void
 }) {
+  const { t } = useLocale()
   const counts = tallyStatuses(session.attendance_records)
   const present = counts.present + counts.late
   const absent = counts.absent
-  const title = session.title.trim() || 'Untitled session'
+  const title = session.title.trim() || t('attendanceUntitledSession')
 
   return (
     <Card className="transition-colors hover:border-(--color-border-strong)">
@@ -243,8 +248,8 @@ function SessionCard({
             </p>
           </div>
           <div className="hidden items-center gap-2 sm:flex">
-            <Badge tone="success">{present} present</Badge>
-            <Badge tone="danger">{absent} absent</Badge>
+            <Badge tone="success">{t('attendancePresentCount', { n: present })}</Badge>
+            <Badge tone="danger">{t('attendanceAbsentCount', { n: absent })}</Badge>
           </div>
           <ChevronRightIcon className="shrink-0 text-(--color-ink-faint)" />
         </Link>
@@ -254,17 +259,17 @@ function SessionCard({
             courseSubjectId={session.course_subject_id}
             session={session}
             trigger={
-              <IconButton label="Edit session" size="sm">
+              <IconButton label={t('attendanceEditSession')} size="sm">
                 <EditIcon />
               </IconButton>
             }
           />
           <ConfirmDialog
-            title="Delete session?"
-            description={`This permanently removes "${title}" and its attendance records.`}
+            title={t('attendanceDeleteSessionTitle')}
+            description={t('attendanceDeleteSessionDescription', { title })}
             onConfirm={onDelete}
             trigger={
-              <IconButton label="Delete session" size="sm" variant="danger">
+              <IconButton label={t('attendanceDeleteSession')} size="sm" variant="danger">
                 <TrashIcon />
               </IconButton>
             }

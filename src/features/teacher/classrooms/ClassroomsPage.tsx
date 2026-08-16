@@ -15,6 +15,7 @@ import { Card, CardBody } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { useProfile } from '@/lib/queries/profiles'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import {
@@ -28,6 +29,7 @@ import { KIND_LABEL } from './SubjectFields'
 import { ClassroomFormDialog } from './ClassroomFormDialog'
 
 export function ClassroomsPage() {
+  const { t } = useLocale()
   const { data: profile } = useProfile()
   const classrooms = useClassrooms()
   const periods = useAcademicPeriods()
@@ -39,10 +41,10 @@ export function ClassroomsPage() {
   async function adoptClassroom(classroomId: string) {
     try {
       await adopt.mutateAsync(classroomId)
-      toast({ title: 'Classroom organized into the academic workspace', tone: 'success' })
+      toast({ title: t('classroomsAdoptSuccess'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not organize classroom',
+        title: t('classroomsAdoptError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -52,8 +54,8 @@ export function ClassroomsPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        title="Classrooms"
-        description="School Year and Semester first, then cohorts and their course subjects."
+        title={t('classrooms')}
+        description={t('classroomsPageDescription')}
         actions={
           // Hidden while empty — the empty state hosts the create CTA, so the
           // header button returns only once there are classrooms.
@@ -63,7 +65,7 @@ export function ClassroomsPage() {
               ownerId={profile.id}
               trigger={
                 <Button>
-                  <Plus className="size-4" /> New classroom
+                  <Plus className="size-4" /> {t('classroomsNewButton')}
                 </Button>
               }
             />
@@ -79,8 +81,8 @@ export function ClassroomsPage() {
       ) : !classrooms.data?.length ? (
         <EmptyState
           icon={<GraduationCap />}
-          title="Create your first teaching context"
-          description="Start with a School Year and Semester, add a classroom cohort, then create its course subjects."
+          title={t('classroomsEmptyTitle')}
+          description={t('classroomsEmptyDescription')}
           preview={
             <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
               {[0, 1].map((index) => (
@@ -104,7 +106,7 @@ export function ClassroomsPage() {
                 ownerId={profile.id}
                 trigger={
                   <Button>
-                    <Plus className="size-4" /> Create classroom
+                    <Plus className="size-4" /> {t('classroomsCreateButton')}
                   </Button>
                 }
               />
@@ -127,15 +129,24 @@ export function ClassroomsPage() {
                 <header className="flex flex-wrap items-center justify-between gap-3 border-b border-(--color-border) px-5 py-4 sm:px-6">
                   <div>
                     <h2 className="font-semibold">
-                      {period.semester_name} — SY {period.school_year}
+                      {t('classroomsPeriodHeading', {
+                        semester: period.semester_name,
+                        year: period.school_year,
+                      })}
                     </h2>
                     <p className="mt-1 text-xs text-(--color-ink-faint)">
-                      {periodClassrooms.length} classroom
-                      {periodClassrooms.length === 1 ? '' : 's'}
+                      {t(
+                        periodClassrooms.length === 1
+                          ? 'classroomsCountOne'
+                          : 'classroomsCountOther',
+                        { n: periodClassrooms.length },
+                      )}
                     </p>
                   </div>
                   <Badge tone={period.status === 'active' ? 'success' : 'neutral'}>
-                    {period.status === 'active' ? 'Active' : 'Archived'}
+                    {period.status === 'active'
+                      ? t('classroomsStatusActive')
+                      : t('classroomsStatusArchived')}
                   </Badge>
                 </header>
                 <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 lg:grid-cols-2">
@@ -163,10 +174,9 @@ export function ClassroomsPage() {
                   <Archive className="size-4" />
                 </span>
                 <div>
-                  <h2 className="font-medium">Imported classrooms</h2>
+                  <h2 className="font-medium">{t('classroomsImportedTitle')}</h2>
                   <p className="text-sm text-(--color-ink-muted)">
-                    Organize legacy classes without changing their roster, scores, or
-                    attendance.
+                    {t('classroomsImportedDescription')}
                   </p>
                 </div>
               </div>
@@ -189,7 +199,7 @@ export function ClassroomsPage() {
                           loading={adopt.isPending}
                           onClick={() => void adoptClassroom(classroom.id)}
                         >
-                          <Sparkles className="size-4" /> Organize
+                          <Sparkles className="size-4" /> {t('classroomsOrganizeButton')}
                         </Button>
                       </CardBody>
                     </Card>
@@ -210,13 +220,16 @@ function ClassroomGroup({
   classroom: NonNullable<ReturnType<typeof useClassrooms>['data']>[number]
   subjects: NonNullable<ReturnType<typeof useAllCourseSubjects>['data']>
 }) {
+  const { t } = useLocale()
   const color = classroomColorClasses(classroom)
   return (
     <ClassroomColorMenu
       classroom={classroom}
       button={({ onClick }) => (
         <IconButton
-          label={`Classroom options for ${classroom.cohort_name || classroom.course_name}`}
+          label={t('classroomsOptionsLabel', {
+            name: classroom.cohort_name || classroom.course_name,
+          })}
           size="sm"
           className="absolute right-3 top-3"
           onClick={onClick}
@@ -235,11 +248,13 @@ function ClassroomGroup({
               {classroom.cohort_name || classroom.block || classroom.course_name}
             </h3>
             <p className="mt-1 text-xs text-(--color-ink-faint)">
-              {classroom.year || 'Year level not set'} · {classroom.student_count}{' '}
-              students
+              {classroom.year || t('classroomsYearNotSet')} · {classroom.student_count}{' '}
+              {t('students')}
             </p>
           </div>
-          <Badge className="mr-9">{subjects.length} subjects</Badge>
+          <Badge className="mr-9">
+            {t('classroomsSubjectsCount', { n: subjects.length })}
+          </Badge>
         </div>
         <div className="mt-4 space-y-2">
           {subjects.map((subject) => (
@@ -265,7 +280,7 @@ function ClassroomGroup({
           ))}
           {!subjects.length && (
             <p className="rounded-xl bg-(--color-surface-2) px-3 py-3 text-sm text-(--color-ink-muted)">
-              No course subjects yet.
+              {t('classroomsNoSubjects')}
             </p>
           )}
         </div>

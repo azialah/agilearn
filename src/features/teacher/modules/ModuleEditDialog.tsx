@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useUpdateModule, type ModuleWithRelations } from '@/lib/queries/modules'
 import type { ModuleKind } from '@/types/domain'
@@ -48,6 +49,7 @@ export function ModuleEditDialog({
   module: ModuleWithRelations
   trigger: ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(() => initialState(module))
   const { data: classrooms } = useClassrooms()
@@ -71,11 +73,11 @@ export function ModuleEditDialog({
           classroom_id: form.classroomId === NO_CLASSROOM ? null : form.classroomId,
         },
       })
-      toast({ title: 'Module updated', tone: 'success' })
+      toast({ title: t('modulesUpdatedToastTitle'), tone: 'success' })
       setOpen(false)
     } catch (error) {
       toast({
-        title: 'Could not update module',
+        title: t('modulesUpdateErrorTitle'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -87,13 +89,13 @@ export function ModuleEditDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit module</DialogTitle>
+          <DialogTitle>{t('modulesEditDialogTitle')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-module-kind">Kind</Label>
+              <Label htmlFor="edit-module-kind">{t('modulesKindLabel')}</Label>
               <Select
                 value={form.kind}
                 onValueChange={(value) => setForm({ ...form, kind: value as ModuleKind })}
@@ -112,7 +114,9 @@ export function ModuleEditDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="edit-module-classroom">Classroom (optional)</Label>
+              <Label htmlFor="edit-module-classroom">
+                {t('modulesClassroomOptionalLabel')}
+              </Label>
               <Select
                 value={form.classroomId}
                 onValueChange={(value) => setForm({ ...form, classroomId: value })}
@@ -121,7 +125,9 @@ export function ModuleEditDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_CLASSROOM}>No classroom</SelectItem>
+                  <SelectItem value={NO_CLASSROOM}>
+                    {t('modulesNoClassroomOption')}
+                  </SelectItem>
                   {(classrooms ?? []).map((classroom) => (
                     <SelectItem key={classroom.id} value={classroom.id}>
                       {classroom.course_code} · {classroom.course_name}
@@ -133,7 +139,7 @@ export function ModuleEditDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="edit-module-title">Title</Label>
+            <Label htmlFor="edit-module-title">{t('modulesTitleLabel')}</Label>
             <Input
               id="edit-module-title"
               required
@@ -143,7 +149,9 @@ export function ModuleEditDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="edit-module-description">Description</Label>
+            <Label htmlFor="edit-module-description">
+              {t('modulesDescriptionLabel')}
+            </Label>
             <textarea
               id="edit-module-description"
               rows={3}
@@ -155,14 +163,14 @@ export function ModuleEditDialog({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button
               type="submit"
               loading={updateModule.isPending}
               disabled={!form.title.trim()}
             >
-              Save changes
+              {t('modulesSaveChangesButton')}
             </Button>
           </DialogFooter>
         </form>

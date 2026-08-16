@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { useCreateStudent, useUpdateStudent } from '@/lib/queries/students'
 import { toInitial } from '@/features/teacher/io/parsing'
 import type { Student } from '@/types/domain'
@@ -44,6 +45,7 @@ export function StudentFormDialog({
   student?: Student
   trigger: ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [raw, setForm] = useState<FormState>(initialState(student))
   const createStudent = useCreateStudent()
@@ -69,7 +71,7 @@ export function StudentFormDialog({
             guardian_email: form.guardian_email || null,
           },
         })
-        toast({ title: 'Student updated', tone: 'success' })
+        toast({ title: t('studentDialogUpdateSuccess'), tone: 'success' })
       } else {
         await createStudent.mutateAsync({
           ...form,
@@ -77,12 +79,12 @@ export function StudentFormDialog({
           guardian_email: form.guardian_email || null,
           classroom_id: classroomId,
         })
-        toast({ title: 'Student added', tone: 'success' })
+        toast({ title: t('studentDialogAddSuccess'), tone: 'success' })
       }
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update student' : 'Could not add student',
+        title: isEditing ? t('studentDialogUpdateError') : t('studentDialogAddError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -96,11 +98,13 @@ export function StudentFormDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit student' : 'Add student'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? t('studentDialogEditTitle') : t('studentDialogAddTitle')}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="student_no">Student number</Label>
+            <Label htmlFor="student_no">{t('studentDialogStudentNoLabel')}</Label>
             <Input
               id="student_no"
               required
@@ -111,38 +115,41 @@ export function StudentFormDialog({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="student_email">
-                Student email{' '}
-                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
+                {t('studentDialogStudentEmailLabel')}{' '}
+                <span className="font-normal text-(--color-ink-faint)">
+                  {t('commonOptional')}
+                </span>
               </Label>
               <Input
                 id="student_email"
                 type="email"
-                placeholder="student@example.com"
+                placeholder={t('studentDialogStudentEmailPlaceholder')}
                 value={raw.student_email}
                 onChange={(e) => setForm({ ...raw, student_email: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="guardian_email">
-                Guardian email{' '}
-                <span className="font-normal text-(--color-ink-faint)">(optional)</span>
+                {t('studentDialogGuardianEmailLabel')}{' '}
+                <span className="font-normal text-(--color-ink-faint)">
+                  {t('commonOptional')}
+                </span>
               </Label>
               <Input
                 id="guardian_email"
                 type="email"
-                placeholder="guardian@example.com"
+                placeholder={t('studentDialogGuardianEmailPlaceholder')}
                 value={raw.guardian_email}
                 onChange={(e) => setForm({ ...raw, guardian_email: e.target.value })}
               />
             </div>
           </div>
           <p className="text-xs leading-5 text-(--color-ink-faint)">
-            Contacts are optional and only used when you choose to compose a private grade
-            report.
+            {t('studentDialogContactsHint')}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="last_name">Last name</Label>
+              <Label htmlFor="last_name">{t('studentDialogLastNameLabel')}</Label>
               <Input
                 id="last_name"
                 required
@@ -151,7 +158,7 @@ export function StudentFormDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="first_name">First name</Label>
+              <Label htmlFor="first_name">{t('studentDialogFirstNameLabel')}</Label>
               <Input
                 id="first_name"
                 required
@@ -161,7 +168,7 @@ export function StudentFormDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="middle_initial">Middle name</Label>
+            <Label htmlFor="middle_initial">{t('studentDialogMiddleNameLabel')}</Label>
             <Input
               id="middle_initial"
               value={raw.middle_initial}
@@ -170,10 +177,12 @@ export function StudentFormDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button type="submit" loading={pending}>
-              {isEditing ? 'Save changes' : 'Add student'}
+              {isEditing
+                ? t('studentDialogSaveChangesButton')
+                : t('studentDialogAddButton')}
             </Button>
           </DialogFooter>
         </form>

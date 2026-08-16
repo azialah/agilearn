@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
 import { useCreateCategory, useUpdateCategory } from '@/lib/queries/grades'
+import { useLocale } from '@/lib/locale'
 import type { ActivityCategory, GradeComponentRecord } from '@/types/domain'
 
 interface CategoryForm {
@@ -62,6 +63,7 @@ export function CategoryDialog({
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
   const { toast } = useToast()
+  const { t } = useLocale()
   const isEditing = !!category
   const isLegacyCategory = category?.grade_component_id === null
 
@@ -93,7 +95,7 @@ export function CategoryDialog({
                 weight,
               }
         await updateCategory.mutateAsync({ id: category.id, patch })
-        toast({ title: 'Category updated', tone: 'success' })
+        toast({ title: t('categoryDialogUpdatedToast'), tone: 'success' })
       } else {
         await createCategory.mutateAsync({
           classroom_id: classroomId,
@@ -104,12 +106,14 @@ export function CategoryDialog({
           grading_period_id: periodId,
           weight,
         })
-        toast({ title: 'Category added', tone: 'success' })
+        toast({ title: t('categoryDialogAddedToast'), tone: 'success' })
       }
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update category' : 'Could not add category',
+        title: isEditing
+          ? t('categoryDialogUpdateErrorToast')
+          : t('categoryDialogAddErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -123,29 +127,35 @@ export function CategoryDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit category' : 'New category'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? t('categoryDialogEditTitle') : t('categoryDialogNewTitle')}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="category-name">Name</Label>
+            <Label htmlFor="category-name">{t('commonName')}</Label>
             <Input
               id="category-name"
               required
               autoFocus
-              placeholder="Quizzes"
+              placeholder={t('categoryDialogNamePlaceholder')}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="category-component">Component</Label>
+              <Label htmlFor="category-component">
+                {t('categoryDialogComponentLabel')}
+              </Label>
               {isLegacyCategory ? (
                 <p
                   id="category-component"
                   className="flex h-10 items-center rounded-md border border-(--color-border) bg-(--color-surface-2) px-3 text-sm text-(--color-ink-muted)"
                 >
-                  {category.component === 'lecture' ? 'Lecture' : 'Laboratory'}
+                  {category.component === 'lecture'
+                    ? t('categoryDialogLecture')
+                    : t('categoryDialogLaboratory')}
                 </p>
               ) : (
                 <Select
@@ -168,7 +178,7 @@ export function CategoryDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="category-weight">Weight (%)</Label>
+              <Label htmlFor="category-weight">{t('commonWeightLabel')}</Label>
               <Input
                 id="category-weight"
                 type="number"
@@ -182,15 +192,14 @@ export function CategoryDialog({
             </div>
           </div>
           <p className="text-xs text-(--color-ink-faint)">
-            Categories in this period and component must total 100% before a final grade
-            is available.
+            {t('categoryDialogWeightHint')}
           </p>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button type="submit" loading={pending} disabled={!valid}>
-              {isEditing ? 'Save changes' : 'Add category'}
+              {isEditing ? t('commonSaveChanges') : t('categoryDialogSubmitAdd')}
             </Button>
           </DialogFooter>
         </form>

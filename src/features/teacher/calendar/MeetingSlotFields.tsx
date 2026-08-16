@@ -1,15 +1,6 @@
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
-
-const DAY_NAMES = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-] as const
+import { useLocale } from '@/lib/locale'
 
 export interface MeetingSlotDraft {
   weekday: string
@@ -54,21 +45,31 @@ export function MeetingSlotFields({
   idPrefix?: string
   disabled?: boolean
 }) {
+  const { t } = useLocale()
+  const dayNames = [
+    t('calendarWeekdaySunday'),
+    t('calendarWeekdayMonday'),
+    t('calendarWeekdayTuesday'),
+    t('calendarWeekdayWednesday'),
+    t('calendarWeekdayThursday'),
+    t('calendarWeekdayFriday'),
+    t('calendarWeekdaySaturday'),
+  ]
   const timesBackwards =
     !!value.startsAt && !!value.endsAt && value.startsAt >= value.endsAt
 
   return (
     <fieldset disabled={disabled} className="space-y-4 disabled:opacity-50">
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-weekday`}>Day</Label>
+        <Label htmlFor={`${idPrefix}-weekday`}>{t('calendarDayLabel')}</Label>
         <select
           id={`${idPrefix}-weekday`}
-          aria-label="Meeting day"
+          aria-label={t('calendarMeetingDayAria')}
           value={value.weekday}
           onChange={(event) => onChange({ ...value, weekday: event.target.value })}
           className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
         >
-          {DAY_NAMES.map((day, index) => (
+          {dayNames.map((day, index) => (
             <option key={day} value={index}>
               {day}
             </option>
@@ -78,7 +79,7 @@ export function MeetingSlotFields({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor={`${idPrefix}-starts`}>Starts</Label>
+          <Label htmlFor={`${idPrefix}-starts`}>{t('calendarStartsLabel')}</Label>
           <Input
             id={`${idPrefix}-starts`}
             type="time"
@@ -87,7 +88,7 @@ export function MeetingSlotFields({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`${idPrefix}-ends`}>Ends</Label>
+          <Label htmlFor={`${idPrefix}-ends`}>{t('calendarEndsLabel')}</Label>
           <Input
             id={`${idPrefix}-ends`}
             type="time"
@@ -98,10 +99,10 @@ export function MeetingSlotFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-modality`}>Class mode</Label>
+        <Label htmlFor={`${idPrefix}-modality`}>{t('calendarClassModeLabel')}</Label>
         <select
           id={`${idPrefix}-modality`}
-          aria-label="Class mode"
+          aria-label={t('calendarClassModeLabel')}
           value={value.modality}
           onChange={(event) =>
             onChange({
@@ -111,25 +112,25 @@ export function MeetingSlotFields({
           }
           className="h-9 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 text-sm"
         >
-          <option value="face_to_face">Face-to-Face</option>
-          <option value="online">Online Class</option>
-          <option value="hybrid">Hybrid</option>
+          <option value="face_to_face">{t('calendarModalityFaceToFace')}</option>
+          <option value="online">{t('calendarModalityOnlineClass')}</option>
+          <option value="hybrid">{t('calendarModalityHybrid')}</option>
         </select>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-location`}>Room or meeting label</Label>
+        <Label htmlFor={`${idPrefix}-location`}>{t('calendarLocationLabel')}</Label>
         <Input
           id={`${idPrefix}-location`}
           value={value.location}
-          placeholder="Room 505 or Meet link label"
+          placeholder={t('calendarLocationPlaceholder')}
           onChange={(event) => onChange({ ...value, location: event.target.value })}
         />
       </div>
 
       {timesBackwards && (
         <p role="alert" className="text-sm text-(--color-danger)">
-          End time must be after start time.
+          {t('calendarTimesBackwardsError')}
         </p>
       )}
 
@@ -139,7 +140,7 @@ export function MeetingSlotFields({
           className="space-y-1 rounded-xl border border-(--color-danger)/40 bg-(--color-danger)/10 p-3"
         >
           <p className="text-sm font-medium text-(--color-ink)">
-            This clashes with a class you already teach
+            {t('calendarConflictHeading')}
           </p>
           {conflicts.map((reason) => (
             <p key={reason} className="text-sm text-(--color-ink-muted)">

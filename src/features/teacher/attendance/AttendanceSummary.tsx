@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { STUDENTS_PAGE_SIZE } from '@/lib/queries/students'
 import { studentFullName, type Student } from '@/types/domain'
 import type { ClassSessionWithRecords } from '@/lib/queries/attendance'
+import { useLocale } from '@/lib/locale'
 import {
   computeClassAttendanceRate,
   computeClassSummary,
@@ -15,7 +16,7 @@ import {
   type StudentAttendanceSummary,
   type SummarySort,
 } from './summary'
-import { STATUS_META } from './status'
+import { getStatusMeta } from './status'
 
 function rateTone(rate: number | null) {
   if (rate === null) return 'var(--color-ink-faint)'
@@ -78,6 +79,8 @@ export function AttendanceSummary({
   sessions: ClassSessionWithRecords[]
   focusStudentId?: string
 }) {
+  const { t } = useLocale()
+  const statusMeta = getStatusMeta(t)
   const [sort, setSort] = useState<SummarySort>('name')
   const [page, setPage] = useState(0)
 
@@ -127,10 +130,16 @@ export function AttendanceSummary({
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-4">
         <div className="space-y-1">
-          <CardTitle>Attendance report</CardTitle>
+          <CardTitle>{t('attendanceReportTitle')}</CardTitle>
           <p className="text-sm text-(--color-ink-muted)">
-            Per-student rates across {sessions.length}{' '}
-            {sessions.length === 1 ? 'session' : 'sessions'}.
+            {t('attendanceSummaryDescription', {
+              n: sessions.length,
+              unit: t(
+                sessions.length === 1
+                  ? 'attendanceSessionSingular'
+                  : 'attendanceSessionPlural',
+              ),
+            })}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -142,20 +151,22 @@ export function AttendanceSummary({
             >
               {formatRate(classRate)}
             </p>
-            <p className="text-xs text-(--color-ink-faint)">class average</p>
+            <p className="text-xs text-(--color-ink-faint)">
+              {t('attendanceClassAverage')}
+            </p>
           </div>
         </div>
       </CardHeader>
       <CardBody className="p-0">
         <div className="flex items-center gap-2 border-b border-(--color-border) px-5 py-3 text-xs text-(--color-ink-muted)">
-          <span>Sort by</span>
+          <span>{t('attendanceSortBy')}</span>
           <SortToggle
-            label="Name"
+            label={t('attendanceSortName')}
             active={sort === 'name'}
             onClick={() => changeSort('name')}
           />
           <SortToggle
-            label="Rate"
+            label={t('attendanceSortRate')}
             active={sort === 'rate'}
             onClick={() => changeSort('rate')}
           />
@@ -164,19 +175,19 @@ export function AttendanceSummary({
           <Table>
             <THead>
               <TR>
-                <TH>Student</TH>
-                <TH className="w-14 text-center">{STATUS_META.present.short}</TH>
-                <TH className="w-14 text-center">{STATUS_META.late.short}</TH>
-                <TH className="w-14 text-center">{STATUS_META.excused.short}</TH>
-                <TH className="w-14 text-center">{STATUS_META.absent.short}</TH>
-                <TH className="w-56">Attendance</TH>
+                <TH>{t('attendanceStudentColumn')}</TH>
+                <TH className="w-14 text-center">{statusMeta.present.short}</TH>
+                <TH className="w-14 text-center">{statusMeta.late.short}</TH>
+                <TH className="w-14 text-center">{statusMeta.excused.short}</TH>
+                <TH className="w-14 text-center">{statusMeta.absent.short}</TH>
+                <TH className="w-56">{t('attendanceAttendanceColumn')}</TH>
               </TR>
             </THead>
             <TBody>
               {visibleRows.map((row) => (
                 <SummaryRow
                   key={row.studentId}
-                  name={nameById.get(row.studentId) ?? 'Unknown student'}
+                  name={nameById.get(row.studentId) ?? t('attendanceUnknownStudent')}
                   summary={row}
                   focused={row.studentId === focusStudentId}
                 />
@@ -187,7 +198,7 @@ export function AttendanceSummary({
         {rows.length > STUDENTS_PAGE_SIZE && (
           <div className="flex items-center justify-between gap-3 border-t border-(--color-border) px-5 py-3">
             <p className="text-sm text-(--color-ink-muted)">
-              Page {page + 1} of {pageCount}
+              {t('commonPageOf', { current: page + 1, total: pageCount })}
             </p>
             <div className="flex gap-2">
               <Button
@@ -196,7 +207,7 @@ export function AttendanceSummary({
                 disabled={page === 0}
                 onClick={() => setPage((current) => current - 1)}
               >
-                Previous
+                {t('commonPrevious')}
               </Button>
               <Button
                 size="sm"
@@ -204,7 +215,7 @@ export function AttendanceSummary({
                 disabled={page + 1 >= pageCount}
                 onClick={() => setPage((current) => current + 1)}
               >
-                Next
+                {t('commonNext')}
               </Button>
             </div>
           </div>
@@ -255,6 +266,7 @@ function SummaryRow({
   summary: StudentAttendanceSummary
   focused: boolean
 }) {
+  const { t } = useLocale()
   return (
     <TR
       className={
@@ -266,7 +278,9 @@ function SummaryRow({
       <TD className="font-medium">
         <div className="flex items-center gap-2">
           <span className="truncate">{name}</span>
-          {summary.recorded === 0 && <Badge tone="neutral">no records</Badge>}
+          {summary.recorded === 0 && (
+            <Badge tone="neutral">{t('attendanceNoRecords')}</Badge>
+          )}
         </div>
       </TD>
       <CountCell value={summary.counts.present} muted={summary.counts.present === 0} />
