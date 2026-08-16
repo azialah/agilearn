@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
+import { useLocale, type MessageKey } from '@/lib/locale'
 import {
   useClassrooms,
   useCreateClassroom,
@@ -71,27 +72,49 @@ type Step = 1 | 2 | 3
  *  form's own state keeps '' as its canonical unset value throughout. */
 const UNSET = '__unset__'
 
-const STEP_COPY: Record<Step, { title: string; description: string; label: string }> = {
+const STEP_KEYS: Record<
+  Step,
+  { title: MessageKey; description: MessageKey; label: MessageKey }
+> = {
   1: {
-    title: 'Which class is this, and for which term?',
-    description:
-      'Start with the school level and class details, then the school year and semester.',
-    label: 'Class and term',
+    title: 'classroomDialogStep1Title',
+    description: 'classroomDialogStep1Description',
+    label: 'classroomDialogStep1Label',
   },
   2: {
-    title: 'Add the first course subject',
-    description: 'A major with a laboratory becomes two subjects over the same roster.',
-    label: 'Course subject',
+    title: 'classroomDialogStep2Title',
+    description: 'classroomDialogStep2Description',
+    label: 'classroomDialogStep2Label',
   },
   3: {
-    title: 'Schedule the weekly meeting',
-    description:
-      'Calendar weeks begin on Sunday. A meeting cannot overlap another class you teach.',
-    label: 'Weekly meeting',
+    title: 'classroomDialogStep3Title',
+    description: 'classroomDialogStep3Description',
+    label: 'classroomDialogStep3Label',
   },
 }
 
 const SEMESTERS = ['1st Semester', '2nd Semester', '3rd Semester'] as const
+
+/** Display-only translation — the stored `semester_name` value stays the
+ *  literal English string from SEMESTERS above. */
+const SEMESTER_LABEL_KEYS: Record<(typeof SEMESTERS)[number], MessageKey> = {
+  '1st Semester': 'classroomDialogSemester1st',
+  '2nd Semester': 'classroomDialogSemester2nd',
+  '3rd Semester': 'classroomDialogSemester3rd',
+}
+
+/** Display-only translation for the colour-swatch aria-labels — the stored
+ *  `classroom.color` value stays the literal CLASSROOM_COLORS token. */
+const COLOR_LABEL_KEYS: Record<(typeof CLASSROOM_COLORS)[number], MessageKey> = {
+  slate: 'classroomDialogColorSlate',
+  orange: 'classroomDialogColorOrange',
+  amber: 'classroomDialogColorAmber',
+  green: 'classroomDialogColorGreen',
+  teal: 'classroomDialogColorTeal',
+  blue: 'classroomDialogColorBlue',
+  plum: 'classroomDialogColorPlum',
+  rose: 'classroomDialogColorRose',
+}
 
 /** School years on offer: the last ten, this one, and the next ten. */
 const CURRENT_YEAR = new Date().getFullYear()
@@ -315,6 +338,7 @@ export function ClassroomFormDialog({
   classroom?: Classroom
   trigger: ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>(1)
   // +1 forward, -1 back — the pane slides in from the side you came from.
@@ -480,7 +504,7 @@ export function ClassroomFormDialog({
     if (!template) return
     const parsed = templatePayloadSchema.safeParse(template.payload)
     if (!parsed.success) {
-      toast({ title: 'That template could not be read', tone: 'error' })
+      toast({ title: t('classroomDialogTemplateReadError'), tone: 'error' })
       return
     }
     setForm({ ...initialState(), ...parsed.data, periodId: '' })
@@ -489,7 +513,7 @@ export function ClassroomFormDialog({
   async function handleSaveTemplate() {
     const name = templateName.trim()
     if (!name) {
-      toast({ title: 'Give the template a name first', tone: 'error' })
+      toast({ title: t('classroomDialogTemplateNameRequired'), tone: 'error' })
       return
     }
     const overwriting = templates?.some(
@@ -504,12 +528,14 @@ export function ClassroomFormDialog({
       setNamingTemplate(false)
       setTemplateName('')
       toast({
-        title: overwriting ? `Updated “${name}”` : `Saved “${name}” as a template`,
+        title: overwriting
+          ? t('classroomDialogTemplateUpdated', { name })
+          : t('classroomDialogTemplateSaved', { name }),
         tone: 'success',
       })
     } catch (error) {
       toast({
-        title: 'Could not save the template',
+        title: t('classroomDialogTemplateSaveError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -609,7 +635,9 @@ export function ClassroomFormDialog({
         })
       }
       toast({
-        title: isEditing ? 'Classroom updated' : 'Classroom and subject created',
+        title: isEditing
+          ? t('classroomDialogUpdateSuccess')
+          : t('classroomDialogCreateSuccess'),
         tone: 'success',
       })
       setOpen(false)
@@ -624,7 +652,9 @@ export function ClassroomFormDialog({
       }
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update classroom' : 'Could not create classroom',
+        title: isEditing
+          ? t('classroomDialogUpdateError')
+          : t('classroomDialogCreateError'),
         description: meetingSlotErrorMessage(error),
         tone: 'error',
       })
@@ -641,14 +671,16 @@ export function ClassroomFormDialog({
       >
         <ResponsiveDrawerHeader
           title={
-            isEditing && step === 2 ? 'Course name and codes' : STEP_COPY[step].title
+            isEditing && step === 2
+              ? t('classroomDialogEditSubjectTitle')
+              : t(STEP_KEYS[step].title)
           }
           description={
             isEditing && step === 2
-              ? 'This is the name shown across the classroom, grades and attendance.'
-              : STEP_COPY[step].description
+              ? t('classroomDialogEditSubjectDescription')
+              : t(STEP_KEYS[step].description)
           }
-          step={{ current: step, total: lastStep, label: STEP_COPY[step].label }}
+          step={{ current: step, total: lastStep, label: t(STEP_KEYS[step].label) }}
         />
         <ResponsiveDrawerBody>
           {/* No mode="wait": pane 1 contains its own height-animating groups,
@@ -668,7 +700,10 @@ export function ClassroomFormDialog({
                       year/semester that already has a period silently tries
                       to create a second one, which the database rejects. */}
                   {(periods?.length ?? 0) > 0 && (
-                    <Field label="Use an existing semester" htmlFor="academic-period">
+                    <Field
+                      label={t('classroomDialogExistingSemesterLabel')}
+                      htmlFor="academic-period"
+                    >
                       <Select
                         value={form.periodId || UNSET}
                         onValueChange={(value) =>
@@ -680,7 +715,7 @@ export function ClassroomFormDialog({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={UNSET}>
-                            Set up a new semester below
+                            {t('classroomDialogNewSemesterOption')}
                           </SelectItem>
                           {periods?.map((period) => (
                             <SelectItem key={period.id} value={period.id}>
@@ -699,8 +734,8 @@ export function ClassroomFormDialog({
                         className="text-xs font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
                       >
                         {showQuickStart
-                          ? 'Hide templates'
-                          : '+ Start from a saved template'}
+                          ? t('classroomDialogHideTemplates')
+                          : t('classroomDialogShowTemplates')}
                       </button>
                       <AnimatePresence initial={false}>
                         {showQuickStart && (
@@ -710,7 +745,7 @@ export function ClassroomFormDialog({
                             className="overflow-hidden"
                           >
                             <Field
-                              label="Start from a template"
+                              label={t('classroomDialogTemplateFieldLabel')}
                               htmlFor="classroom-template"
                             >
                               <Select
@@ -724,7 +759,7 @@ export function ClassroomFormDialog({
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value={UNSET}>
-                                    Start from a blank classroom
+                                    {t('classroomDialogBlankTemplateOption')}
                                   </SelectItem>
                                   {templates?.map((template) => (
                                     <SelectItem key={template.id} value={template.id}>
@@ -740,7 +775,10 @@ export function ClassroomFormDialog({
                     </div>
                   )}
 
-                  <Field label="School level" htmlFor="school-level">
+                  <Field
+                    label={t('classroomDialogSchoolLevelLabel')}
+                    htmlFor="school-level"
+                  >
                     <Select
                       value={form.schoolLevel || UNSET}
                       onValueChange={(value) => {
@@ -766,11 +804,21 @@ export function ClassroomFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={UNSET}>Choose level</SelectItem>
-                        <SelectItem value="preschool">Preschool</SelectItem>
-                        <SelectItem value="elementary">Elementary</SelectItem>
-                        <SelectItem value="high_school">High school</SelectItem>
-                        <SelectItem value="college">College</SelectItem>
+                        <SelectItem value={UNSET}>
+                          {t('classroomDialogChooseLevelOption')}
+                        </SelectItem>
+                        <SelectItem value="preschool">
+                          {t('classroomDialogLevelPreschool')}
+                        </SelectItem>
+                        <SelectItem value="elementary">
+                          {t('classroomDialogLevelElementary')}
+                        </SelectItem>
+                        <SelectItem value="high_school">
+                          {t('classroomDialogLevelHighSchool')}
+                        </SelectItem>
+                        <SelectItem value="college">
+                          {t('classroomDialogLevelCollege')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>
@@ -782,7 +830,10 @@ export function ClassroomFormDialog({
                         {...expand(reducedMotion)}
                         className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
                       >
-                        <Field label="Field of study" htmlFor="field-of-study">
+                        <Field
+                          label={t('classroomDialogFieldOfStudyLabel')}
+                          htmlFor="field-of-study"
+                        >
                           <Select
                             value={form.fieldOfStudy || UNSET}
                             onValueChange={(value) =>
@@ -797,7 +848,9 @@ export function ClassroomFormDialog({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={UNSET}>Choose a field</SelectItem>
+                              <SelectItem value={UNSET}>
+                                {t('classroomDialogChooseFieldOption')}
+                              </SelectItem>
                               {FIELDS_OF_STUDY.map((field) => (
                                 <SelectItem key={field.name} value={field.name}>
                                   {field.name}
@@ -806,7 +859,7 @@ export function ClassroomFormDialog({
                             </SelectContent>
                           </Select>
                         </Field>
-                        <Field label="Course" htmlFor="course">
+                        <Field label={t('classroomDialogCourseLabel')} htmlFor="course">
                           {courses.length > 0 ? (
                             <Select
                               value={form.course || UNSET}
@@ -821,7 +874,9 @@ export function ClassroomFormDialog({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value={UNSET}>Choose a course</SelectItem>
+                                <SelectItem value={UNSET}>
+                                  {t('classroomDialogChooseCourseOption')}
+                                </SelectItem>
                                 {courses.map((course) => (
                                   <SelectItem key={course.code} value={course.code}>
                                     {course.code} ({course.name})
@@ -833,7 +888,7 @@ export function ClassroomFormDialog({
                             <Input
                               id="course"
                               value={form.course}
-                              placeholder="e.g. BSCS"
+                              placeholder={t('classroomDialogCoursePlaceholder')}
                               onChange={(event) =>
                                 setForm({ ...form, course: event.target.value })
                               }
@@ -852,7 +907,11 @@ export function ClassroomFormDialog({
                         className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
                       >
                         <Field
-                          label={isCollege ? 'Year level' : 'Grade level'}
+                          label={
+                            isCollege
+                              ? t('classroomDialogYearLevelLabel')
+                              : t('classroomDialogGradeLevelLabel')
+                          }
                           htmlFor="year-level"
                         >
                           <Select
@@ -865,7 +924,9 @@ export function ClassroomFormDialog({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={UNSET}>Choose level</SelectItem>
+                              <SelectItem value={UNSET}>
+                                {t('classroomDialogChooseLevelOption')}
+                              </SelectItem>
                               {(() => {
                                 const groups = LEVEL_GROUPS[form.schoolLevel]
                                 if (!groups) {
@@ -890,13 +951,21 @@ export function ClassroomFormDialog({
                           </Select>
                         </Field>
                         <Field
-                          label={isCollege ? 'Block (optional)' : 'Section (optional)'}
+                          label={
+                            isCollege
+                              ? t('classroomDialogBlockLabel')
+                              : t('classroomDialogSectionLabel')
+                          }
                           htmlFor="block"
                         >
                           <Input
                             id="block"
                             value={form.block}
-                            placeholder={isCollege ? 'e.g. B' : 'e.g. Rizal'}
+                            placeholder={
+                              isCollege
+                                ? t('classroomDialogBlockPlaceholder')
+                                : t('classroomDialogSectionPlaceholder')
+                            }
                             onChange={(event) =>
                               setForm({ ...form, block: event.target.value })
                             }
@@ -907,7 +976,10 @@ export function ClassroomFormDialog({
                   </AnimatePresence>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <Field label="School year starts" htmlFor="school-year-start">
+                    <Field
+                      label={t('classroomDialogSchoolYearStartLabel')}
+                      htmlFor="school-year-start"
+                    >
                       <Select
                         value={startYear}
                         onValueChange={(value) => setSchoolYear(value, endYear)}
@@ -924,7 +996,10 @@ export function ClassroomFormDialog({
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="School year ends" htmlFor="school-year-end">
+                    <Field
+                      label={t('classroomDialogSchoolYearEndLabel')}
+                      htmlFor="school-year-end"
+                    >
                       <Select
                         value={endYear}
                         onValueChange={(value) => setSchoolYear(startYear, value)}
@@ -941,7 +1016,7 @@ export function ClassroomFormDialog({
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Semester" htmlFor="semester">
+                    <Field label={t('classroomDialogSemesterLabel')} htmlFor="semester">
                       <Select
                         value={form.semesterName}
                         onValueChange={(value) =>
@@ -954,7 +1029,7 @@ export function ClassroomFormDialog({
                         <SelectContent>
                           {SEMESTERS.map((semester) => (
                             <SelectItem key={semester} value={semester}>
-                              {semester}
+                              {t(SEMESTER_LABEL_KEYS[semester])}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -969,8 +1044,8 @@ export function ClassroomFormDialog({
                       className="text-xs font-medium text-(--color-accent-350) underline-offset-2 hover:underline"
                     >
                       {showSemesterDates || form.startsOn || form.endsOn
-                        ? 'Hide semester dates'
-                        : '+ Add semester start and end dates (optional)'}
+                        ? t('classroomDialogHideSemesterDates')
+                        : t('classroomDialogShowSemesterDates')}
                     </button>
                     <AnimatePresence initial={false}>
                       {(showSemesterDates || form.startsOn || form.endsOn) && (
@@ -979,7 +1054,10 @@ export function ClassroomFormDialog({
                           {...expand(reducedMotion)}
                           className="grid grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2"
                         >
-                          <Field label="Semester starts" htmlFor="semester-start">
+                          <Field
+                            label={t('classroomDialogSemesterStartLabel')}
+                            htmlFor="semester-start"
+                          >
                             <DateInput
                               id="semester-start"
                               value={form.startsOn}
@@ -988,7 +1066,10 @@ export function ClassroomFormDialog({
                               }
                             />
                           </Field>
-                          <Field label="Semester ends" htmlFor="semester-end">
+                          <Field
+                            label={t('classroomDialogSemesterEndLabel')}
+                            htmlFor="semester-end"
+                          >
                             <DateInput
                               id="semester-end"
                               min={form.startsOn || undefined}
@@ -1004,11 +1085,16 @@ export function ClassroomFormDialog({
                   </div>
 
                   {renaming ? (
-                    <Field label="Class name" htmlFor="class-name">
+                    <Field
+                      label={t('classroomDialogClassNameLabel')}
+                      htmlFor="class-name"
+                    >
                       <Input
                         id="class-name"
                         value={form.cohortName}
-                        placeholder={derivedName || 'e.g. BSCS 3B'}
+                        placeholder={
+                          derivedName || t('classroomDialogClassNamePlaceholder')
+                        }
                         onChange={(event) =>
                           setForm({ ...form, cohortName: event.target.value })
                         }
@@ -1021,14 +1107,15 @@ export function ClassroomFormDialog({
                         }}
                         className="mt-1 text-xs text-(--color-accent-350) underline-offset-2 hover:underline"
                       >
-                        Use the name built from the pickers instead
+                        {t('classroomDialogUseAutoNameButton')}
                       </button>
                     </Field>
                   ) : (
                     cohortName && (
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-(--color-surface-2) px-3 py-2">
                         <p className="text-sm text-(--color-ink)">
-                          Listed as <span className="font-medium">{cohortName}</span>
+                          {t('classroomDialogListedAsPrefix')}{' '}
+                          <span className="font-medium">{cohortName}</span>
                         </p>
                         <button
                           type="button"
@@ -1038,14 +1125,16 @@ export function ClassroomFormDialog({
                           }}
                           className="text-xs text-(--color-accent-350) underline-offset-2 hover:underline"
                         >
-                          Rename
+                          {t('classroomDialogRenameButton')}
                         </button>
                       </div>
                     )
                   )}
 
                   <div className="space-y-1.5">
-                    <p className="text-sm font-medium text-(--color-ink-muted)">Colour</p>
+                    <p className="text-sm font-medium text-(--color-ink-muted)">
+                      {t('classroomDialogColorLabel')}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -1058,13 +1147,13 @@ export function ClassroomFormDialog({
                             : 'border-(--color-border) text-(--color-ink-muted)',
                         )}
                       >
-                        Auto
+                        {t('classroomDialogColorAuto')}
                       </button>
                       {CLASSROOM_COLORS.map((color) => (
                         <button
                           key={color}
                           type="button"
-                          aria-label={color}
+                          aria-label={t(COLOR_LABEL_KEYS[color])}
                           aria-pressed={form.color === color}
                           onClick={() => setForm({ ...form, color })}
                           className={cn(
@@ -1078,8 +1167,7 @@ export function ClassroomFormDialog({
                       ))}
                     </div>
                     <p className="text-xs text-(--color-ink-faint)">
-                      Auto picks a colour from the classroom itself, so every class still
-                      looks different.
+                      {t('classroomDialogColorAutoHint')}
                     </p>
                   </div>
 
@@ -1092,13 +1180,14 @@ export function ClassroomFormDialog({
                       >
                         <div className="space-y-2 rounded-xl border border-(--color-warning)/40 bg-(--color-warning)/10 p-3">
                           <p className="text-sm text-(--color-ink)">
-                            <span className="font-medium">{cohortName}</span> already
-                            exists for {form.semesterName} — SY {form.schoolYear}.
+                            <span className="font-medium">{cohortName}</span>{' '}
+                            {t('classroomDialogDuplicateSuffix', {
+                              semester: form.semesterName,
+                              schoolYear: form.schoolYear,
+                            })}
                           </p>
                           <p className="text-sm text-(--color-ink-muted)">
-                            Creating it again starts an empty roster. Add the new subject
-                            to the existing classroom instead and it keeps the same
-                            students.
+                            {t('classroomDialogDuplicateExplanation')}
                           </p>
                           <Link
                             to="/teacher/classrooms/$classroomId"
@@ -1112,7 +1201,9 @@ export function ClassroomFormDialog({
                               variant="outline"
                               className="w-full sm:w-auto"
                             >
-                              Open {cohortName} to add a subject
+                              {t('classroomDialogOpenDuplicateButton', {
+                                name: cohortName,
+                              })}
                             </Button>
                           </Link>
                           <label className="-mx-1 flex cursor-pointer items-start gap-2 rounded-lg border-t border-(--color-warning)/30 px-1 pt-3 text-sm text-(--color-ink) transition-colors hover:bg-(--color-warning)/10">
@@ -1124,8 +1215,7 @@ export function ClassroomFormDialog({
                               }
                               className="mt-0.5 size-4 shrink-0 rounded border-(--color-border) accent-(--color-accent-400)"
                             />
-                            Yes, create a separate classroom for the same course/term
-                            anyway.
+                            {t('classroomDialogDuplicateAcknowledge')}
                           </label>
                         </div>
                       </motion.div>
@@ -1158,18 +1248,23 @@ export function ClassroomFormDialog({
                       })
                     }
                     isCollege={isCollege}
-                    namePlaceholder={`e.g. ${subjectHint}`}
+                    namePlaceholder={t('classroomDialogSubjectNamePlaceholder', {
+                      hint: subjectHint,
+                    })}
                   />
                   {!isEditing && (
                     <div className="border-t border-(--color-border) pt-4">
                       {namingTemplate ? (
-                        <Field label="Template name" htmlFor="template-name">
+                        <Field
+                          label={t('classroomDialogTemplateNameLabel')}
+                          htmlFor="template-name"
+                        >
                           <div className="flex flex-wrap items-center gap-2">
                             <Input
                               id="template-name"
                               autoFocus
                               value={templateName}
-                              placeholder="BSCS 3B — lecture"
+                              placeholder={t('classroomDialogTemplateNamePlaceholder')}
                               className="min-w-0 flex-1"
                               onChange={(event) => setTemplateName(event.target.value)}
                               onKeyDown={(event) => {
@@ -1192,7 +1287,7 @@ export function ClassroomFormDialog({
                               loading={saveTemplate.isPending}
                               onClick={() => void handleSaveTemplate()}
                             >
-                              Save
+                              {t('commonSave')}
                             </Button>
                             <Button
                               type="button"
@@ -1200,7 +1295,7 @@ export function ClassroomFormDialog({
                               size="sm"
                               onClick={() => setNamingTemplate(false)}
                             >
-                              Cancel
+                              {t('commonCancel')}
                             </Button>
                           </div>
                         </Field>
@@ -1215,13 +1310,13 @@ export function ClassroomFormDialog({
                           }}
                         >
                           <BookmarkPlus className="size-4" aria-hidden />
-                          Save as template
+                          {t('classroomDialogSaveAsTemplateButton')}
                         </Button>
                       )}
                       <p className="mt-2 text-xs text-(--color-ink-faint)">
-                        Reuse these settings next term. The semester itself is not saved —
-                        only the values you typed.
-                        {namingTemplate && ' Reusing a name overwrites that template.'}
+                        {t('classroomDialogTemplateHint')}
+                        {namingTemplate &&
+                          ` ${t('classroomDialogTemplateOverwriteHint')}`}
                       </p>
                     </div>
                   )}
@@ -1236,7 +1331,7 @@ export function ClassroomFormDialog({
                       onChange={(event) => setAddMeeting(event.target.checked)}
                       className="size-4 accent-(--color-accent-400)"
                     />
-                    Add a weekly meeting to the Calendar
+                    {t('classroomDialogAddMeetingLabel')}
                   </label>
                   <MeetingSlotFields
                     value={meetingDraft}
@@ -1252,10 +1347,10 @@ export function ClassroomFormDialog({
         <ResponsiveDrawerFooter
           primaryLabel={
             step < lastStep
-              ? 'Continue'
+              ? t('commonContinue')
               : isEditing
-                ? 'Save classroom'
-                : 'Create classroom'
+                ? t('classroomDialogSaveButton')
+                : t('classroomDialogCreateButton')
           }
           primaryDisabled={
             (step === 3 && !meetingValid) ||
@@ -1270,7 +1365,7 @@ export function ClassroomFormDialog({
             if (step >= lastStep) void save()
             else goToStep(step === 1 ? 2 : 3)
           }}
-          secondaryLabel={step > 1 ? 'Back' : 'Cancel'}
+          secondaryLabel={step > 1 ? t('commonBack') : t('commonCancel')}
           onSecondary={() => (step > 1 ? goToStep(step === 3 ? 2 : 1) : setOpen(false))}
           nudgeSecondary={nudge}
         />

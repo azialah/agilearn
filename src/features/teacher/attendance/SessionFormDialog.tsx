@@ -13,6 +13,7 @@ import { DateInput } from '@/components/ui/DateInput'
 import { Label } from '@/components/ui/Label'
 import { useToast } from '@/components/ui/toast'
 import { useCreateSession, useUpdateSession } from '@/lib/queries/attendance'
+import { useLocale } from '@/lib/locale'
 import type { ClassSession } from '@/types/domain'
 
 function today(): string {
@@ -49,6 +50,7 @@ export function SessionFormDialog({
   const createSession = useCreateSession()
   const updateSession = useUpdateSession()
   const { toast } = useToast()
+  const { t } = useLocale()
   const isEditing = !!session
 
   useEffect(() => {
@@ -65,19 +67,21 @@ export function SessionFormDialog({
     try {
       if (isEditing) {
         await updateSession.mutateAsync({ id: session.id, patch })
-        toast({ title: 'Session updated', tone: 'success' })
+        toast({ title: t('attendanceSessionUpdated'), tone: 'success' })
       } else {
         await createSession.mutateAsync({
           ...patch,
           classroom_id: classroomId,
           course_subject_id: courseSubjectId,
         })
-        toast({ title: 'Session created', tone: 'success' })
+        toast({ title: t('attendanceSessionCreated'), tone: 'success' })
       }
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update session' : 'Could not create session',
+        title: isEditing
+          ? t('attendanceUpdateSessionError')
+          : t('attendanceCreateSessionError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -91,12 +95,14 @@ export function SessionFormDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit session' : 'New session'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? t('attendanceEditSession') : t('attendanceNewSession')}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="session_date">Date</Label>
+            <Label htmlFor="session_date">{t('commonDate')}</Label>
             <DateInput
               id="session_date"
               required
@@ -106,33 +112,33 @@ export function SessionFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t('commonTitle')}</Label>
             <Input
               id="title"
-              placeholder="e.g. Lecture 4 — Recursion"
+              placeholder={t('attendanceSessionTitlePlaceholder')}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t('commonNotes')}</Label>
             <textarea
               id="notes"
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm text-(--color-ink) placeholder:text-(--color-ink-faint) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none"
-              placeholder="Optional context for this session"
+              placeholder={t('attendanceNotesPlaceholder')}
             />
           </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button type="submit" loading={pending}>
-              {isEditing ? 'Save changes' : 'Create'}
+              {isEditing ? t('commonSaveChanges') : t('commonCreate')}
             </Button>
           </DialogFooter>
         </form>

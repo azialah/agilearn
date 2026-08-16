@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from '@/components/ui/Table'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/icons'
+import { useLocale } from '@/lib/locale'
 import { useClassroom } from '@/lib/queries/classrooms'
 import {
   STUDENTS_PAGE_SIZE,
@@ -22,6 +23,7 @@ import { ClassroomTabs } from './ClassroomTabs'
 import { StudentFormDialog } from './StudentFormDialog'
 
 export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
+  const { t } = useLocale()
   const { data: classroom, isLoading } = useClassroom(classroomId)
   const [page, setPage] = useState(0)
   const { data: roster, isLoading: studentsLoading } = useStudentsPage(classroomId, page)
@@ -36,10 +38,10 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       await deleteStudent.mutateAsync({ id, classroomId })
       // Emptying the last page would otherwise strand the table on a blank page.
       if (students?.length === 1 && page > 0) setPage(page - 1)
-      toast({ title: 'Student removed', tone: 'success' })
+      toast({ title: t('classroomsStudentRemovedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not remove student',
+        title: t('classroomsRemoveStudentError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -51,11 +53,11 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
   if (!classroom) {
     return (
       <EmptyState
-        title="Classroom not found"
-        description="It may have been deleted or you may not have access."
+        title={t('classroomsNotFoundTitle')}
+        description={t('classroomsNotFoundDescription')}
         action={
           <Link to="/teacher/classrooms">
-            <Button variant="secondary">Back to classrooms</Button>
+            <Button variant="secondary">{t('classroomsBackButton')}</Button>
           </Link>
         }
       />
@@ -71,12 +73,14 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       <ClassroomTabs classroomId={classroomId} />
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-(--color-ink-muted)">Roster</h2>
+        <h2 className="text-sm font-medium text-(--color-ink-muted)">
+          {t('classroomsRosterHeading')}
+        </h2>
         <StudentFormDialog
           classroomId={classroomId}
           trigger={
             <Button size="sm">
-              <PlusIcon /> Add student
+              <PlusIcon /> {t('classroomsAddStudentButton')}
             </Button>
           }
         />
@@ -91,18 +95,18 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       ) : !students || students.length === 0 ? (
         <EmptyState
           icon={<UsersIcon />}
-          title="No students yet"
-          description="Add students individually or import a roster spreadsheet."
+          title={t('classroomsNoStudentsTitle')}
+          description={t('classroomsNoStudentsDescription')}
         />
       ) : (
         <TableContainer>
           <Table>
             <THead>
               <TR>
-                <TH className="w-12 text-right">#</TH>
-                <TH className="w-40">Student no.</TH>
-                <TH>Name</TH>
-                <TH className="w-24 text-right">Actions</TH>
+                <TH className="w-12 text-right">{t('classroomsColumnRowNumber')}</TH>
+                <TH className="w-40">{t('classroomsColumnStudentNo')}</TH>
+                <TH>{t('classroomsColumnName')}</TH>
+                <TH className="w-24 text-right">{t('classroomsColumnActions')}</TH>
               </TR>
             </THead>
             <TBody>
@@ -121,19 +125,25 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
                         classroomId={classroomId}
                         student={student}
                         trigger={
-                          <IconButton label="Edit student" size="sm">
+                          <IconButton label={t('classroomsEditStudentLabel')} size="sm">
                             <EditIcon />
                           </IconButton>
                         }
                       />
                       <ConfirmDialog
-                        title="Remove student?"
-                        description={`This removes ${studentFullName(student)} and their scores and attendance.`}
-                        confirmLabel="Remove"
+                        title={t('classroomsRemoveStudentTitle')}
+                        description={t('classroomsRemoveStudentDescription', {
+                          name: studentFullName(student),
+                        })}
+                        confirmLabel={t('commonRemove')}
                         confirmPhrase={studentFullName(student)}
                         onConfirm={() => handleDeleteStudent(student.id)}
                         trigger={
-                          <IconButton label="Remove student" size="sm" variant="danger">
+                          <IconButton
+                            label={t('classroomsRemoveStudentLabel')}
+                            size="sm"
+                            variant="danger"
+                          >
                             <TrashIcon />
                           </IconButton>
                         }
@@ -150,7 +160,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
       {total > STUDENTS_PAGE_SIZE && (
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-(--color-ink-muted)">
-            Page {page + 1} of {pageCount}
+            {t('classroomsPaginationLabel', { current: page + 1, total: pageCount })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -159,7 +169,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
               disabled={page === 0}
               onClick={() => setPage((current) => current - 1)}
             >
-              Previous
+              {t('commonPrevious')}
             </Button>
             <Button
               size="sm"
@@ -167,7 +177,7 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
               disabled={page + 1 >= pageCount}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              {t('commonNext')}
             </Button>
           </div>
         </div>

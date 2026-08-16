@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
+import { useLocale } from '@/lib/locale'
 import { useProfile } from '@/lib/queries/profiles'
 import { useAcademicPeriods, useAllCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useClassrooms } from '@/lib/queries/classrooms'
@@ -33,11 +34,6 @@ import {
 const MONTHS = Array.from({ length: 12 }, (_value, index) =>
   new Date(2026, index).toLocaleString(undefined, { month: 'long' }),
 )
-
-const MODALITY_LABEL = {
-  online: 'Online',
-  hybrid: 'Hybrid',
-} as const
 
 /**
  * One scheduled class. `compact` is the lg+ week grid, where a 10px type size
@@ -62,6 +58,13 @@ function SlotCard({
   hasConflict?: boolean
   compact?: boolean
 }) {
+  const { t } = useLocale()
+  const modalityLabel =
+    slot.modality === 'online'
+      ? t('calendarModalityOnline')
+      : slot.modality === 'hybrid'
+        ? t('calendarModalityHybrid')
+        : t('calendarModalityFaceToFace')
   return (
     <div
       className={cn(
@@ -79,14 +82,14 @@ function SlotCard({
         </p>
       )}
       {hasConflict && (
-        <p className="mt-0.5 font-medium text-(--color-danger)">Overlaps another class</p>
+        <p className="mt-0.5 font-medium text-(--color-danger)">
+          {t('calendarSlotConflict')}
+        </p>
       )}
       <p className="mt-1 text-(--color-ink-muted)">
         {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
       </p>
-      <p className="mt-1 truncate text-(--color-accent-350)">
-        {MODALITY_LABEL[slot.modality as keyof typeof MODALITY_LABEL] ?? 'Face-to-face'}
-      </p>
+      <p className="mt-1 truncate text-(--color-accent-350)">{modalityLabel}</p>
     </div>
   )
 }
@@ -98,6 +101,7 @@ function EventCard({
   event: CalendarEvent
   compact?: boolean
 }) {
+  const { t } = useLocale()
   return (
     <div
       className={cn(
@@ -107,7 +111,11 @@ function EventCard({
     >
       <p className="truncate font-medium">{event.title}</p>
       <p className="mt-1 text-(--color-ink-muted)">
-        {event.kind === 'holiday' ? 'Holiday' : event.kind === 'note' ? 'Note' : 'Event'}
+        {event.kind === 'holiday'
+          ? t('calendarEventKindHoliday')
+          : event.kind === 'note'
+            ? t('calendarEventKindNote')
+            : t('calendarEventKindEvent')}
       </p>
     </div>
   )
@@ -118,6 +126,7 @@ export function CalendarPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
+  const { t } = useLocale()
   const { data: profile } = useProfile()
   const { data: subjects = [] } = useAllCourseSubjects()
   const { data: allSlots = [] } = useMeetingSlots()
@@ -173,10 +182,10 @@ export function CalendarPage() {
       setTitle('')
       setNotes('')
       setDrawerOpen(false)
-      toast({ title: 'Day note saved', tone: 'success' })
+      toast({ title: t('calendarNoteSavedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not save note',
+        title: t('calendarNoteSaveErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -191,11 +200,11 @@ export function CalendarPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Calendar"
-        description="A Sunday-first view of your weekly teaching load, school dates, and private planning notes."
+        title={t('calendar')}
+        description={t('calendarPageDescription')}
         actions={
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="size-4" /> Add day note
+            <Plus className="size-4" /> {t('calendarAddDayNote')}
           </Button>
         }
       />
@@ -207,18 +216,18 @@ export function CalendarPage() {
           <Button
             size="sm"
             variant="ghost"
-            aria-label="Previous week"
+            aria-label={t('calendarPreviousWeek')}
             onClick={() => setSelectedDate(addDays(selectedDate, -7))}
           >
             <ChevronLeft className="size-4" />
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setSelectedDate(new Date())}>
-            Today
+            {t('calendarToday')}
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            aria-label="Next week"
+            aria-label={t('calendarNextWeek')}
             onClick={() => setSelectedDate(addDays(selectedDate, 7))}
           >
             <ChevronRight className="size-4" />
@@ -234,7 +243,7 @@ export function CalendarPage() {
         </p>
         <div className="order-3 flex gap-2">
           <select
-            aria-label="Calendar month"
+            aria-label={t('calendarMonthLabel')}
             value={selectedDate.getMonth()}
             onChange={(event) =>
               setSelectedDate(
@@ -250,7 +259,7 @@ export function CalendarPage() {
             ))}
           </select>
           <select
-            aria-label="Calendar year"
+            aria-label={t('calendarYearLabel')}
             value={selectedDate.getFullYear()}
             onChange={(event) =>
               setSelectedDate(
@@ -332,12 +341,14 @@ export function CalendarPage() {
                         <SlotCard
                           key={slot.id}
                           slot={slot}
-                          subjectName={subject?.name ?? 'Course subject'}
+                          subjectName={
+                            subject?.name ?? t('calendarCourseSubjectFallback')
+                          }
                           kindLabel={
                             subject && subject.kind !== 'other'
                               ? subject.kind === 'lecture'
-                                ? 'Lecture'
-                                : 'Laboratory'
+                                ? t('calendarKindLecture')
+                                : t('calendarKindLaboratory')
                               : undefined
                           }
                           hasConflict={clashes.length > 0}
@@ -350,8 +361,7 @@ export function CalendarPage() {
                     ))}
                     {daySlots.length === 0 && dayEvents.length === 0 && (
                       <p className="p-1 text-[10px] leading-relaxed text-(--color-ink-faint)">
-                        Example slots and events appear here after you add a subject
-                        schedule or note.
+                        {t('calendarEmptyDayCell')}
                       </p>
                     )}
                   </div>
@@ -401,8 +411,8 @@ export function CalendarPage() {
                       </span>
                       <span className="block text-xs text-(--color-ink-faint)">
                         {count === 0
-                          ? 'Nothing scheduled'
-                          : `${count} ${count === 1 ? 'entry' : 'entries'}`}
+                          ? t('calendarNothingScheduled')
+                          : `${count} ${count === 1 ? t('calendarEntrySingular') : t('calendarEntryPlural')}`}
                       </span>
                     </span>
                   </button>
@@ -420,12 +430,14 @@ export function CalendarPage() {
                           <SlotCard
                             key={slot.id}
                             slot={slot}
-                            subjectName={subject?.name ?? 'Course subject'}
+                            subjectName={
+                              subject?.name ?? t('calendarCourseSubjectFallback')
+                            }
                             kindLabel={
                               subject && subject.kind !== 'other'
                                 ? subject.kind === 'lecture'
-                                  ? 'Lecture'
-                                  : 'Laboratory'
+                                  ? t('calendarKindLecture')
+                                  : t('calendarKindLaboratory')
                                 : undefined
                             }
                             hasConflict={clashes.length > 0}
@@ -454,7 +466,7 @@ export function CalendarPage() {
             </p>
           </div>
           <p className="mt-3 font-(family-name:--font-calligraphy) text-2xl text-(--color-accent-350)">
-            Plan a gentle day
+            {t('calendarPlanGentleDay')}
           </p>
           <div className="mt-5 space-y-3">
             {selectedSlots.map((slot) => (
@@ -464,11 +476,15 @@ export function CalendarPage() {
               >
                 <p className="font-medium">
                   {subjects.find((item) => item.id === slot.course_subject_id)?.name ??
-                    'Course subject'}
+                    t('calendarCourseSubjectFallback')}
                 </p>
                 <p className="mt-1 text-xs text-(--color-ink-muted)">
                   {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)} ·{' '}
-                  {slot.modality.replaceAll('_', ' ')}
+                  {slot.modality === 'online'
+                    ? t('calendarModalityOnline')
+                    : slot.modality === 'hybrid'
+                      ? t('calendarModalityHybrid')
+                      : t('calendarModalityFaceToFace')}
                 </p>
                 {slot.location_label && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-(--color-ink-faint)">
@@ -491,8 +507,7 @@ export function CalendarPage() {
             ))}
             {selectedSlots.length === 0 && selectedEvents.length === 0 && (
               <p className="text-sm text-(--color-ink-muted)">
-                This day is open. Add a private note or create a subject meeting schedule
-                from its workspace.
+                {t('calendarEmptyDayPanel')}
               </p>
             )}
           </div>
@@ -501,35 +516,35 @@ export function CalendarPage() {
       <ResponsiveDrawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <ResponsiveDrawerContent>
           <ResponsiveDrawerHeader
-            title="Add a day note"
-            description={`Private to you · ${selectedDate.toLocaleDateString()}`}
+            title={t('calendarAddDayNoteTitle')}
+            description={`${t('calendarPrivateToYou')} · ${selectedDate.toLocaleDateString()}`}
           />
           <ResponsiveDrawerBody>
             <div className="space-y-4">
               <label className="block text-sm font-medium" htmlFor="calendar-note-title">
-                Title
+                {t('calendarNoteTitleLabel')}
                 <Input
                   id="calendar-note-title"
                   className="mt-1.5"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Prepare activity sheets"
+                  placeholder={t('calendarNoteTitlePlaceholder')}
                 />
               </label>
               <label className="block text-sm font-medium" htmlFor="calendar-note-body">
-                Notes
+                {t('calendarNotesLabel')}
                 <textarea
                   id="calendar-note-body"
                   className="mt-1.5 min-h-28 w-full rounded-md border border-(--color-border) bg-(--color-surface-1) p-3 text-sm"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="A light reminder for this day…"
+                  placeholder={t('calendarNotesPlaceholder')}
                 />
               </label>
             </div>
           </ResponsiveDrawerBody>
           <ResponsiveDrawerFooter
-            primaryLabel="Save note"
+            primaryLabel={t('calendarSaveNote')}
             primaryDisabled={!title.trim()}
             primaryLoading={createEvent.isPending}
             onPrimary={() => void saveDayNote()}

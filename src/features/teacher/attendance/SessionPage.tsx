@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/toast'
 import { OfflineSyncBar } from './OfflineSyncBar'
+import { AttendanceImportButton } from './AttendanceImportButton'
 import { cn } from '@/lib/cn'
 import { ChevronRightIcon, UsersIcon } from '@/components/icons'
 import { STUDENTS_PAGE_SIZE, useStudents } from '@/lib/queries/students'
@@ -25,7 +26,8 @@ import {
   type AttendanceStatus,
 } from '@/types/domain'
 import { tallyStatuses, ATTENDANCE_STATUSES } from './summary'
-import { STATUS_META } from './status'
+import { getStatusMeta } from './status'
+import { useLocale } from '@/lib/locale'
 
 function formatSessionDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`)
@@ -51,6 +53,7 @@ export function SessionPage({
   const upsert = useUpsertAttendance(sessionId, classroomId)
   const bulkUpsert = useBulkUpsertAttendance(sessionId, classroomId)
   const { toast } = useToast()
+  const { t } = useLocale()
   // Client-side, not a server page: counts, "mark all present", and the
   // unrecorded tally all need the whole roster regardless of which page is
   // showing.
@@ -81,7 +84,7 @@ export function SessionPage({
       {
         onError: (error) =>
           toast({
-            title: 'Could not save attendance',
+            title: t('attendanceSaveError'),
             description: error instanceof Error ? error.message : undefined,
             tone: 'error',
           }),
@@ -102,7 +105,7 @@ export function SessionPage({
       {
         onError: (error) =>
           toast({
-            title: 'Could not save remark',
+            title: t('attendanceSaveRemarkError'),
             description: error instanceof Error ? error.message : undefined,
             tone: 'error',
           }),
@@ -120,10 +123,11 @@ export function SessionPage({
         remarks: recordByStudent.get(student.id)?.remarks ?? '',
       })),
       {
-        onSuccess: () => toast({ title: 'Marked everyone present', tone: 'success' }),
+        onSuccess: () =>
+          toast({ title: t('attendanceMarkedAllPresent'), tone: 'success' }),
         onError: (error) =>
           toast({
-            title: 'Could not mark all present',
+            title: t('attendanceMarkAllPresentError'),
             description: error instanceof Error ? error.message : undefined,
             tone: 'error',
           }),
@@ -131,7 +135,7 @@ export function SessionPage({
     )
   }
 
-  const title = session?.title?.trim() || 'Session'
+  const title = session?.title?.trim() || t('attendanceSessionFallbackTitle')
 
   return (
     <div className="space-y-6">
@@ -144,24 +148,31 @@ export function SessionPage({
           params={{ classroomId }}
           className="inline-flex items-center gap-1 text-sm text-(--color-ink-muted) transition-colors hover:text-(--color-ink)"
         >
-          <ChevronRightIcon className="size-4 rotate-180" /> Back to attendance
+          <ChevronRightIcon className="size-4 rotate-180" /> {t('attendanceBackToList')}
         </Link>
         <PageHeader
-          title={sessionLoading ? 'Session' : title}
+          title={sessionLoading ? t('attendanceSessionFallbackTitle') : title}
           description={
             session
               ? formatSessionDate(session.session_date)
-              : 'Mark attendance for this class session.'
+              : t('attendanceMarkDescription')
           }
           actions={
             students && students.length > 0 ? (
-              <Button
-                variant="secondary"
-                loading={bulkUpsert.isPending}
-                onClick={markAllPresent}
-              >
-                Mark all present
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <AttendanceImportButton
+                  sessionId={sessionId}
+                  classroomId={classroomId}
+                  students={students}
+                />
+                <Button
+                  variant="secondary"
+                  loading={bulkUpsert.isPending}
+                  onClick={markAllPresent}
+                >
+                  {t('attendanceMarkAllPresent')}
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -177,11 +188,19 @@ export function SessionPage({
 
       {students && students.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Badge tone="success">{counts.present} present</Badge>
-          <Badge tone="warning">{counts.late} late</Badge>
-          <Badge tone="accent">{counts.excused} excused</Badge>
-          <Badge tone="danger">{counts.absent} absent</Badge>
-          {unrecorded > 0 && <Badge tone="neutral">{unrecorded} unrecorded</Badge>}
+          <Badge tone="success">
+            {t('attendancePresentCount', { n: counts.present })}
+          </Badge>
+          <Badge tone="warning">{t('attendanceLateCount', { n: counts.late })}</Badge>
+          <Badge tone="accent">
+            {t('attendanceExcusedCount', { n: counts.excused })}
+          </Badge>
+          <Badge tone="danger">{t('attendanceAbsentCount', { n: counts.absent })}</Badge>
+          {unrecorded > 0 && (
+            <Badge tone="neutral">
+              {t('attendanceUnrecordedCount', { n: unrecorded })}
+            </Badge>
+          )}
         </div>
       )}
 
@@ -194,11 +213,11 @@ export function SessionPage({
       ) : !students || students.length === 0 ? (
         <EmptyState
           icon={<UsersIcon />}
-          title="No students to mark"
-          description="Add students to the roster before taking attendance."
+          title={t('attendanceNoStudents')}
+          description={t('attendanceNoStudentsDescription')}
           action={
             <Link to="/teacher/classrooms/$classroomId" params={{ classroomId }}>
-              <Button variant="secondary">Go to roster</Button>
+              <Button variant="secondary">{t('attendanceGoToRoster')}</Button>
             </Link>
           }
         />
@@ -218,7 +237,7 @@ export function SessionPage({
           {students.length > STUDENTS_PAGE_SIZE && (
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-(--color-ink-muted)">
-                Page {page + 1} of {pageCount}
+                {t('commonPageOf', { current: page + 1, total: pageCount })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -227,7 +246,7 @@ export function SessionPage({
                   disabled={page === 0}
                   onClick={() => setPage((current) => current - 1)}
                 >
-                  Previous
+                  {t('commonPrevious')}
                 </Button>
                 <Button
                   size="sm"
@@ -235,7 +254,7 @@ export function SessionPage({
                   disabled={page + 1 >= pageCount}
                   onClick={() => setPage((current) => current + 1)}
                 >
-                  Next
+                  {t('commonNext')}
                 </Button>
               </div>
             </div>
@@ -257,6 +276,7 @@ function RosterRow({
   onSetStatus: (status: AttendanceStatus) => void
   onSaveRemarks: (remarks: string) => void
 }) {
+  const { t } = useLocale()
   const recorded = !!record
   const [remarks, setRemarks] = useState(record?.remarks ?? '')
 
@@ -272,7 +292,7 @@ function RosterRow({
       <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
         <div className="flex min-w-0 items-center gap-2 sm:w-56 sm:shrink-0">
           <span className="truncate font-medium text-(--color-ink)">{name}</span>
-          {!recorded && <Badge tone="neutral">unrecorded</Badge>}
+          {!recorded && <Badge tone="neutral">{t('attendanceUnrecordedBadge')}</Badge>}
         </div>
 
         <StatusToggle value={record?.status} onChange={onSetStatus} />
@@ -281,9 +301,9 @@ function RosterRow({
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           onBlur={() => onSaveRemarks(remarks.trim())}
-          placeholder="Remarks"
+          placeholder={t('attendanceRemarksPlaceholder')}
           className="sm:flex-1"
-          aria-label={`Remarks for ${name}`}
+          aria-label={t('attendanceRemarksAriaLabel', { name })}
         />
       </CardBody>
     </Card>
@@ -297,14 +317,16 @@ function StatusToggle({
   value: AttendanceStatus | undefined
   onChange: (status: AttendanceStatus) => void
 }) {
+  const { t } = useLocale()
+  const statusMeta = getStatusMeta(t)
   return (
     <div
       role="group"
-      aria-label="Attendance status"
+      aria-label={t('attendanceStatusGroupLabel')}
       className="flex shrink-0 gap-1 rounded-md bg-(--color-surface-1) p-1"
     >
       {ATTENDANCE_STATUSES.map((status) => {
-        const meta = STATUS_META[status]
+        const meta = statusMeta[status]
         const active = value === status
         const isUnsetDefault = value === undefined && status === 'present'
         return (

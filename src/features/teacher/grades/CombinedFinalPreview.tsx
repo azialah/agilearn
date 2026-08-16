@@ -8,6 +8,7 @@ import type {
 } from '@/lib/queries/grades'
 import { studentFullName, type CourseSubject, type Student } from '@/types/domain'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useLocale } from '@/lib/locale'
 
 export function CombinedFinalPreview({
   combinations,
@@ -22,17 +23,19 @@ export function CombinedFinalPreview({
   loading: boolean
   students: Student[]
 }) {
+  const { t } = useLocale()
   if (loading) return <Skeleton className="h-44 w-full" />
 
   const subjectName = (id: string) =>
-    subjects.find((subject) => subject.id === id)?.name ?? 'Subject'
+    subjects.find((subject) => subject.id === id)?.name ??
+    t('combinedFinalsSubjectFallback')
 
   return (
     <section className="space-y-3 rounded-lg border border-(--color-border) p-4">
       <div>
-        <h3 className="font-medium">Combined final preview</h3>
+        <h3 className="font-medium">{t('combinedFinalsPreviewHeading')}</h3>
         <p className="text-sm text-(--color-ink-faint)">
-          A reported final is shown only when every selected subject has a valid final.
+          {t('combinedFinalsPreviewDescription')}
         </p>
       </div>
       {combinations.map((combination) => (
@@ -43,7 +46,9 @@ export function CombinedFinalPreview({
           <table className="w-full min-w-130 text-sm">
             <thead className="bg-(--color-surface-2) text-left text-xs text-(--color-ink-faint)">
               <tr>
-                <th className="px-3 py-2 font-medium">Student</th>
+                <th className="px-3 py-2 font-medium">
+                  {t('combinedFinalsPreviewStudentColumn')}
+                </th>
                 {combination.items.map((item) => (
                   <th
                     key={item.course_subject_id}

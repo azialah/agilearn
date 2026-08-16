@@ -25,6 +25,7 @@ import { StudentFormDialog } from '@/features/teacher/classrooms/StudentFormDial
 import { finalColumnLabel } from './SummaryTable'
 import { useUpsertScore } from '@/lib/queries/grades'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { ScoreCell } from './ScoreCell'
 import { nextCell, parseScoreInput, type CellPos, type NavDirection } from './navigation'
 
@@ -77,6 +78,7 @@ export function GradeGrid({
 }) {
   const upsertScore = useUpsertScore()
   const { toast } = useToast()
+  const { t } = useLocale()
   const [selected, setSelected] = useState<CellPos>({ row: 0, col: 0 })
   const [editing, setEditing] = useState<CellPos | null>(null)
   const [editSeed, setEditSeed] = useState<string>()
@@ -97,7 +99,10 @@ export function GradeGrid({
     const info = new Map<string, LeafInfo>()
     const editable: { activityId: string; maxScore: number }[] = []
     const cols: ColumnDef<Student, unknown>[] = [
-      helper.display({ id: 'student', header: 'Student' }) as ColumnDef<Student, unknown>,
+      helper.display({
+        id: 'student',
+        header: t('gradesStudentColumnHeader'),
+      }) as ColumnDef<Student, unknown>,
     ]
     info.set('student', { kind: 'student' })
     for (const component of structure.components) {
@@ -152,10 +157,10 @@ export function GradeGrid({
       const gradeId = `period:${component.id}`
       info.set(gradeId, { kind: 'periodgrade', componentId: component.id })
       categoryGroups.push(
-        helper.display({ id: gradeId, header: `${component.name} grade` }) as ColumnDef<
-          Student,
-          unknown
-        >,
+        helper.display({
+          id: gradeId,
+          header: t('gradesPeriodGradeColumnHeader', { component: component.name }),
+        }) as ColumnDef<Student, unknown>,
       )
       cols.push(
         helper.group({
@@ -179,17 +184,18 @@ export function GradeGrid({
     summary.push(
       helper.display({
         id: 'final',
-        header: finalColumnLabel(gradingTemplate),
+        header: finalColumnLabel(t, gradingTemplate),
       }) as ColumnDef<Student, unknown>,
     )
     cols.push(
-      helper.group({ id: 'overall', header: 'Overall', columns: summary }) as ColumnDef<
-        Student,
-        unknown
-      >,
+      helper.group({
+        id: 'overall',
+        header: t('gradesOverallColumnHeader'),
+        columns: summary,
+      }) as ColumnDef<Student, unknown>,
     )
     return { editableActivities: editable, leafInfo: info, columns: cols }
-  }, [structure, periodId, gradingTemplate])
+  }, [structure, periodId, gradingTemplate, t])
   const gradebooks = useMemo(
     () =>
       new Map(
@@ -263,18 +269,18 @@ export function GradeGrid({
         {
           onError: (error) =>
             toast({
-              title: 'Could not save score',
+              title: t('gradesScoreSaveErrorToast'),
               description: error instanceof Error ? error.message : undefined,
               tone: 'error',
             }),
         },
       )
       toast({
-        title: `${studentFullName(student)}: score saved`,
+        title: t('gradesScoreSavedToast', { name: studentFullName(student) }),
         tone: 'success',
         durationMs: 10_000,
         action: {
-          label: 'Undo',
+          label: t('commonUndo'),
           onClick: () =>
             upsertScore.mutate(
               {
@@ -287,12 +293,14 @@ export function GradeGrid({
               {
                 onSuccess: () =>
                   toast({
-                    title: `${studentFullName(student)}: score restored`,
+                    title: t('gradesScoreRestoredToast', {
+                      name: studentFullName(student),
+                    }),
                     tone: 'success',
                   }),
                 onError: (error) =>
                   toast({
-                    title: 'Could not undo',
+                    title: t('gradesUndoErrorToast'),
                     description: error instanceof Error ? error.message : undefined,
                     tone: 'error',
                   }),
@@ -353,12 +361,9 @@ export function GradeGrid({
     toast({
       title:
         skipped > 0
-          ? `Pasted ${applied} scores, skipped ${skipped}`
-          : `Pasted ${applied} scores`,
-      description:
-        skipped > 0
-          ? 'Skipped cells were out of range or not a valid score for that activity.'
-          : undefined,
+          ? t('gradesPasteAppliedSkippedToast', { applied, skipped })
+          : t('gradesPasteAppliedToast', { applied }),
+      description: skipped > 0 ? t('gradesPasteSkippedDescription') : undefined,
       tone: skipped > 0 ? 'error' : 'success',
     })
   }
@@ -537,7 +542,7 @@ export function GradeGrid({
       ) : (
         <Maximize2 className="size-3.5" aria-hidden />
       )}
-      {fullScreen ? 'Exit full screen' : 'Full screen'}
+      {fullScreen ? t('gradesExitFullScreenButton') : t('gradesFullScreenButton')}
     </button>
   )
 

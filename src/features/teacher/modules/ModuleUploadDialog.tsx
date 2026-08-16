@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import { useClassrooms } from '@/lib/queries/classrooms'
 import { useUploadModule } from '@/lib/queries/modules'
 import { useStorageUsage } from '@/lib/queries/calendar'
@@ -52,6 +53,7 @@ export function ModuleUploadDialog({
   ownerId: string
   trigger: ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(initialForm)
   const [file, setFile] = useState<File | null>(null)
@@ -93,11 +95,11 @@ export function ModuleUploadDialog({
         folder: form.folder,
         classroomId: form.classroomId === NO_CLASSROOM ? null : form.classroomId,
       })
-      toast({ title: 'Module uploaded', tone: 'success' })
+      toast({ title: t('modulesUploadedToastTitle'), tone: 'success' })
       setOpen(false)
     } catch (error) {
       toast({
-        title: 'Upload failed',
+        title: t('modulesUploadFailedTitle'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -115,12 +117,12 @@ export function ModuleUploadDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Upload module</DialogTitle>
+          <DialogTitle>{t('modulesUploadButton')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="module-folder">Folder</Label>
+            <Label htmlFor="module-folder">{t('modulesFolderLabel')}</Label>
             <Input
               id="module-folder"
               value={form.folder}
@@ -129,7 +131,7 @@ export function ModuleUploadDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="module-file">File</Label>
+            <Label htmlFor="module-file">{t('modulesFileLabel')}</Label>
             <input
               ref={fileInputRef}
               id="module-file"
@@ -151,29 +153,29 @@ export function ModuleUploadDialog({
                   </span>
                 </span>
               ) : (
-                <span className="text-(--color-ink-faint)">Choose a file to upload</span>
+                <span className="text-(--color-ink-faint)">
+                  {t('modulesChooseFilePlaceholder')}
+                </span>
               )}
               <span className="shrink-0 rounded-sm bg-(--color-surface-3) px-2 py-1 text-xs text-(--color-ink)">
-                Browse
+                {t('modulesBrowseButton')}
               </span>
             </button>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="module-tags">Tags</Label>
+            <Label htmlFor="module-tags">{t('modulesTagsLabel')}</Label>
             <Input
               id="module-tags"
               value={form.tags}
-              placeholder="e.g. midterm, programming, worksheet"
+              placeholder={t('modulesTagsPlaceholder')}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
             />
-            <p className="text-xs text-(--color-ink-faint)">
-              Separate light, helpful tags with commas.
-            </p>
+            <p className="text-xs text-(--color-ink-faint)">{t('modulesTagsHint')}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="module-kind">Kind</Label>
+              <Label htmlFor="module-kind">{t('modulesKindLabel')}</Label>
               <Select
                 value={form.kind}
                 onValueChange={(value) => setForm({ ...form, kind: value as ModuleKind })}
@@ -192,7 +194,9 @@ export function ModuleUploadDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="module-classroom">Classroom (optional)</Label>
+              <Label htmlFor="module-classroom">
+                {t('modulesClassroomOptionalLabel')}
+              </Label>
               <Select
                 value={form.classroomId}
                 onValueChange={(value) => setForm({ ...form, classroomId: value })}
@@ -201,7 +205,9 @@ export function ModuleUploadDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_CLASSROOM}>No classroom</SelectItem>
+                  <SelectItem value={NO_CLASSROOM}>
+                    {t('modulesNoClassroomOption')}
+                  </SelectItem>
                   {(classrooms ?? []).map((classroom) => (
                     <SelectItem key={classroom.id} value={classroom.id}>
                       {classroom.course_code} · {classroom.course_name}
@@ -213,7 +219,7 @@ export function ModuleUploadDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="module-title">Title</Label>
+            <Label htmlFor="module-title">{t('modulesTitleLabel')}</Label>
             <Input
               id="module-title"
               required
@@ -223,14 +229,14 @@ export function ModuleUploadDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="module-description">Description</Label>
+            <Label htmlFor="module-description">{t('modulesDescriptionLabel')}</Label>
             <textarea
               id="module-description"
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full resize-none rounded-md border border-(--color-border) bg-(--color-surface-1) px-3 py-2 text-sm text-(--color-ink) placeholder:text-(--color-ink-faint) transition-colors focus-visible:border-(--color-accent-400) focus-visible:outline-none"
-              placeholder="What is this module and how is it used?"
+              placeholder={t('modulesDescriptionPlaceholder')}
             />
           </div>
 
@@ -254,15 +260,16 @@ export function ModuleUploadDialog({
                   />
                 </div>
                 <p className="mt-1.5 text-xs text-(--color-ink-muted)">
-                  Uploading {file ? formatFileSize(file.size) : ''}…
+                  {t('modulesUploadingProgress', {
+                    size: file ? formatFileSize(file.size) : '',
+                  })}
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
           {quotaExceeded && (
             <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">
-              This file would exceed your 500 MB private storage limit. Remove files from
-              Usage first.
+              {t('modulesQuotaExceededMessage')}
             </p>
           )}
 
@@ -273,14 +280,14 @@ export function ModuleUploadDialog({
               disabled={pending}
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button
               type="submit"
               loading={pending}
               disabled={!file || !form.title.trim() || quotaExceeded}
             >
-              Upload
+              {t('modulesUploadSubmitButton')}
             </Button>
           </DialogFooter>
         </form>

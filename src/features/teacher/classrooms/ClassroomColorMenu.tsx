@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/DropdownMenu'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
+import { useLocale } from '@/lib/locale'
 import { useUpdateClassroom } from '@/lib/queries/classrooms'
 import {
   CLASSROOM_COLORS,
@@ -33,6 +34,7 @@ export function ClassroomColorMenu({
   /** Rendered as the visible, focusable way into the same menu. */
   button: (props: { onClick: () => void }) => ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
   const update = useUpdateClassroom()
@@ -45,7 +47,7 @@ export function ClassroomColorMenu({
       await update.mutateAsync({ id: classroom.id, patch: { color } })
     } catch (error) {
       toast({
-        title: 'Could not change the colour',
+        title: t('classroomsColorChangeError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -79,7 +81,7 @@ export function ClassroomColorMenu({
         </DropdownMenuTrigger>
       </div>
       <DropdownMenuContent align="start" className="w-64 p-2">
-        <DropdownMenuLabel>Classroom colour</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('classroomsColorMenuLabel')}</DropdownMenuLabel>
         <div className="flex flex-wrap gap-2 p-1">
           <button
             type="button"
@@ -92,7 +94,7 @@ export function ClassroomColorMenu({
                 : 'border-(--color-accent-400) text-(--color-ink)',
             )}
           >
-            Auto
+            {t('classroomsColorAuto')}
           </button>
           {CLASSROOM_COLORS.map((color) => (
             <button
@@ -112,7 +114,9 @@ export function ClassroomColorMenu({
           ))}
         </div>
         <p className="px-2 pb-1 pt-2 text-xs text-(--color-ink-faint)">
-          Currently {classroom.color ? current : `${current} (auto)`}.
+          {classroom.color
+            ? t('classroomsColorCurrent', { color: current })
+            : t('classroomsColorCurrentAuto', { color: current })}
         </p>
       </DropdownMenuContent>
     </DropdownMenu>

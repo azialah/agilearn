@@ -10,6 +10,7 @@ import {
   Plus,
   Upload,
 } from 'lucide-react'
+import { useLocale } from '@/lib/locale'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -33,6 +34,7 @@ import { GradeDistribution } from './GradeDistribution'
 const rise = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }
 
 export function DashboardPage() {
+  const { t } = useLocale()
   const { data: profile } = useProfile()
   const { data: classrooms, isLoading } = useClassrooms()
   const { data: periods = [] } = useAcademicPeriods()
@@ -213,10 +215,10 @@ export function DashboardPage() {
         <PageHeader
           title={
             <span className="inline-block pb-1 font-greeting text-4xl font-normal leading-[1.15] text-(--color-accent-350)">
-              Good day, {firstName}
+              {t('dashboardGreeting', { name: firstName })}
             </span>
           }
-          description="Your teaching day, gathered in one calm place."
+          description={t('dashboardSubtitle')}
         />
       </motion.div>
 
@@ -240,23 +242,23 @@ export function DashboardPage() {
         <div className="absolute inset-0 -z-10 bg-linear-to-r from-(--color-surface-1) via-(--color-surface-1)/92 to-transparent" />
         <div className="max-w-xl p-6 sm:p-8">
           <p className="font-[cursive] text-2xl text-(--color-accent-350)">
-            A steady day of teaching.
+            {t('dashboardHeroEyebrow')}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Start where your students need you most.
+            {t('dashboardHeroTitle')}
           </h2>
           <p className="mt-3 max-w-md text-sm leading-6 text-(--color-ink-muted)">
-            Keep the roster close, grades clear, and materials ready for the next lesson.
+            {t('dashboardHeroDescription')}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link to="/teacher/classrooms">
               <Button>
-                <Plus className="size-4" /> Create a class
+                <Plus className="size-4" /> {t('dashboardCreateClass')}
               </Button>
             </Link>
             <Link to="/teacher/modules">
               <Button variant="outline">
-                <Upload className="size-4" /> Add material
+                <Upload className="size-4" /> {t('dashboardAddMaterial')}
               </Button>
             </Link>
           </div>
@@ -269,19 +271,19 @@ export function DashboardPage() {
         className="grid grid-cols-1 gap-3 sm:grid-cols-3"
       >
         <Metric
-          label="Active classes"
+          label={t('dashboardActiveClasses')}
           value={isLoading ? '—' : String(classrooms?.length ?? 0)}
-          detail="Your current teaching spaces"
+          detail={t('dashboardActiveClassesDetail')}
         />
         <Metric
-          label="Students"
+          label={t('students')}
           value={isLoading ? '—' : String(totalStudents)}
-          detail="Across all your class rosters"
+          detail={t('dashboardStudentsDetail')}
         />
         <Metric
-          label="Class readiness"
+          label={t('dashboardClassReadiness')}
           value={isLoading ? '—' : `${completed}/${classrooms?.length ?? 0}`}
-          detail="Classes with a roster started"
+          detail={t('dashboardClassReadinessDetail')}
         />
       </motion.div>
 
@@ -291,20 +293,30 @@ export function DashboardPage() {
             <div>
               <p className="text-sm font-medium">
                 {activePeriod
-                  ? `${activePeriod.semester_name} — SY ${activePeriod.school_year}`
-                  : 'Set up your academic period'}
+                  ? t('dashboardPeriodLabel', {
+                      semester: activePeriod.semester_name,
+                      year: activePeriod.school_year,
+                    })
+                  : t('dashboardSetUpPeriod')}
               </p>
               <p className="mt-1 text-sm text-(--color-ink-muted)">
                 {daysRemaining === null
-                  ? 'Add an end date to show how much teaching time remains.'
+                  ? t('dashboardNoEndDate')
                   : daysRemaining >= 0
-                    ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} until the semester ends.`
-                    : 'This semester end date has passed—archive it when your records are complete.'}
+                    ? t(
+                        daysRemaining === 1
+                          ? 'dashboardDayRemaining'
+                          : 'dashboardDaysRemaining',
+                        {
+                          n: daysRemaining,
+                        },
+                      )
+                    : t('dashboardPeriodPassed')}
               </p>
             </div>
             <Link to="/teacher/classrooms">
               <Button size="sm" variant="outline">
-                Manage semesters
+                {t('dashboardManageSemesters')}
               </Button>
             </Link>
           </CardBody>
@@ -320,16 +332,16 @@ export function DashboardPage() {
           <CardBody className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Continue with a class</p>
+                <p className="text-sm font-medium">{t('dashboardContinueClass')}</p>
                 <p className="mt-1 text-sm text-(--color-ink-muted)">
-                  Your recent teaching spaces and their next step.
+                  {t('dashboardContinueClassDescription')}
                 </p>
               </div>
               <Link
                 to="/teacher/classrooms"
                 className="text-sm text-(--color-accent-350)"
               >
-                All classes
+                {t('dashboardAllClasses')}
               </Link>
             </div>
             {isLoading ? (
@@ -340,11 +352,11 @@ export function DashboardPage() {
             ) : !classrooms?.length ? (
               <EmptyState
                 icon={<BookOpen />}
-                title="Your first class is waiting"
-                description="Set up a course, add a roster, then build the assessments that make your grading yours."
+                title={t('dashboardFirstClassTitle')}
+                description={t('dashboardFirstClassDescription')}
                 action={
                   <Link to="/teacher/classrooms">
-                    <Button size="sm">Create a class</Button>
+                    <Button size="sm">{t('dashboardCreateClass')}</Button>
                   </Link>
                 }
               />
@@ -367,9 +379,11 @@ export function DashboardPage() {
                       <ChevronRight className="size-4 shrink-0 text-(--color-ink-faint)" />
                     </div>
                     <div className="mt-4 flex items-center justify-between">
-                      <Badge>{classroom.student_count} students</Badge>
+                      <Badge>
+                        {t('dashboardStudentsCount', { n: classroom.student_count })}
+                      </Badge>
                       <span className="text-xs text-(--color-ink-faint)">
-                        {classroom.term_name || 'Term not set'}
+                        {classroom.term_name || t('dashboardTermNotSet')}
                       </span>
                     </div>
                   </Link>
@@ -381,29 +395,29 @@ export function DashboardPage() {
         <Card>
           <CardBody className="space-y-4">
             <div>
-              <p className="text-sm font-medium">Today at a glance</p>
+              <p className="text-sm font-medium">{t('dashboardTodayGlance')}</p>
               <p className="mt-1 text-sm text-(--color-ink-muted)">
-                Small nudges to keep your teaching flow moving.
+                {t('dashboardTodayGlanceDescription')}
               </p>
             </div>
             <AtGlance
               icon={<ClipboardCheck />}
-              title="Assessment setup"
+              title={t('dashboardAssessmentSetup')}
               detail={
                 classrooms?.length
-                  ? 'Open a class to build or review your grade breakdown.'
-                  : 'Create a class, then choose a flexible grading template.'
+                  ? t('dashboardAssessmentSetupWithClasses')
+                  : t('dashboardAssessmentSetupNoClasses')
               }
             />
             <AtGlance
               icon={<CalendarCheck />}
-              title="Attendance"
-              detail="Add a session whenever you are ready to take the room's pulse."
+              title={t('dashboardAttendance')}
+              detail={t('dashboardAttendanceDetail')}
             />
             <AtGlance
               icon={<Upload />}
-              title="Materials"
-              detail="Keep your syllabus, lesson plans, and resources organized together."
+              title={t('dashboardMaterials')}
+              detail={t('dashboardMaterialsDetail')}
             />
           </CardBody>
         </Card>
@@ -416,10 +430,9 @@ export function DashboardPage() {
       >
         <Card>
           <CardBody>
-            <p className="text-sm font-medium">At-risk students</p>
+            <p className="text-sm font-medium">{t('dashboardAtRiskTitle')}</p>
             <p className="mt-1 text-sm text-(--color-ink-muted)">
-              Students with a weighted average below 70% or unexcused absence rate above
-              20% in the selected scope.
+              {t('dashboardAtRiskDescription')}
             </p>
 
             <div className="mt-3 flex items-end justify-between gap-4">
@@ -429,13 +442,13 @@ export function DashboardPage() {
                 search={{ atRisk: '1' }}
                 className="text-sm text-(--color-accent-350)"
               >
-                View all at-risk
+                {t('dashboardViewAllAtRisk')}
               </Link>
             </div>
 
             {atRiskStudents.length === 0 ? (
               <p className="mt-4 text-sm text-(--color-ink-muted)">
-                No students currently at risk
+                {t('dashboardNoAtRisk')}
               </p>
             ) : (
               <ul className="mt-4 space-y-2">
@@ -457,8 +470,10 @@ export function DashboardPage() {
                       <div>{r.final !== null ? `${Math.round(r.final)}%` : '—'}</div>
                       <div className="text-(--color-ink-muted)">
                         {r.absentRate !== null
-                          ? `${Math.round(r.absentRate * 100)}% absent`
-                          : 'No attendance'}
+                          ? t('dashboardPercentAbsent', {
+                              n: Math.round(r.absentRate * 100),
+                            })
+                          : t('dashboardNoAttendance')}
                       </div>
                       <div>
                         <button
@@ -472,7 +487,7 @@ export function DashboardPage() {
                           }
                           className="ml-3 text-(--color-accent-350) text-sm"
                         >
-                          Open
+                          {t('dashboardOpen')}
                         </button>
                       </div>
                     </div>
@@ -497,9 +512,9 @@ export function DashboardPage() {
       >
         <Card>
           <CardBody>
-            <p className="text-sm font-medium">Subject readiness</p>
+            <p className="text-sm font-medium">{t('dashboardSubjectReadiness')}</p>
             <p className="mt-1 text-sm text-(--color-ink-muted)">
-              A quick view of the cohorts most ready to teach.
+              {t('dashboardSubjectReadinessDescription')}
             </p>
             <div className="mt-5 space-y-4">
               {(classrooms ?? []).slice(0, 5).map((classroom) => {
@@ -531,7 +546,7 @@ export function DashboardPage() {
               })}
               {!classrooms?.length && (
                 <p className="text-sm text-(--color-ink-muted)">
-                  Create a classroom to start measuring subject readiness.
+                  {t('dashboardSubjectReadinessEmpty')}
                 </p>
               )}
             </div>
@@ -539,15 +554,15 @@ export function DashboardPage() {
         </Card>
         <Card>
           <CardBody>
-            <p className="text-sm font-medium">Attendance rhythm</p>
+            <p className="text-sm font-medium">{t('dashboardAttendanceRhythm')}</p>
             <p className="mt-1 text-sm text-(--color-ink-muted)">
-              Recent sessions will appear here as attendance is recorded.
+              {t('dashboardAttendanceRhythmDescription')}
             </p>
             <Link
               to="/teacher/analytics"
               className="mt-5 inline-flex text-sm text-(--color-accent-350) hover:underline"
             >
-              Open Analytics to view real attendance trends
+              {t('dashboardOpenAnalytics')}
             </Link>
           </CardBody>
         </Card>

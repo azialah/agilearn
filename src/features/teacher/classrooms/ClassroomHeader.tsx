@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { EditIcon } from '@/components/icons'
+import { useLocale } from '@/lib/locale'
 import { useProfile } from '@/lib/queries/profiles'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { classroomColorClasses } from '@/lib/classroomColor'
@@ -36,6 +37,7 @@ function ActionFallback({ label }: { label: string }) {
  * not change as you move between them.
  */
 export function ClassroomHeader({ classroomId }: { classroomId: string }) {
+  const { t } = useLocale()
   const { data: profile } = useProfile()
   const { data: classroom } = useClassroom(classroomId)
 
@@ -65,10 +67,10 @@ export function ClassroomHeader({ classroomId }: { classroomId: string }) {
         .join(' · ')}
       actions={
         <div className="flex items-center gap-2">
-          <Suspense fallback={<ActionFallback label="Import" />}>
+          <Suspense fallback={<ActionFallback label={t('classroomsImportLabel')} />}>
             <ImportButton classroomId={classroomId} />
           </Suspense>
-          <Suspense fallback={<ActionFallback label="Export" />}>
+          <Suspense fallback={<ActionFallback label={t('classroomsExportLabel')} />}>
             <ExportMenu classroomId={classroomId} />
           </Suspense>
           {profile && (
@@ -78,7 +80,7 @@ export function ClassroomHeader({ classroomId }: { classroomId: string }) {
               trigger={
                 // Same variant/size as Import and Export — the three read as one set.
                 <Button variant="outline" size="sm">
-                  <EditIcon className="size-4" /> Edit
+                  <EditIcon className="size-4" /> {t('commonEdit')}
                 </Button>
               }
             />

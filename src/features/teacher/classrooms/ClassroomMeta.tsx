@@ -3,6 +3,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
+import { useLocale } from '@/lib/locale'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useStudentsPage } from '@/lib/queries/students'
 import { useDeleteMeetingSlot, useMeetingSlots } from '@/lib/queries/calendar'
@@ -27,27 +28,33 @@ import { SubjectFormDialog } from './SubjectFormDialog'
  * flow to keep in sync with it.
  */
 export function ClassroomMeta({ classroomId }: { classroomId: string }) {
+  const { t } = useLocale()
   const { data: subjects = [] } = useCourseSubjects(classroomId)
   const { data: roster } = useStudentsPage(classroomId, 0)
   const { data: allSlots = [] } = useMeetingSlots()
 
   return (
     <section
-      aria-label="Course subjects"
+      aria-label={t('classroomsSubjectsSectionLabel')}
       className="rounded-2xl border border-(--color-border) bg-(--color-surface-1)"
     >
       <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <p className="text-sm text-(--color-ink-muted)">
           <span className="font-medium text-(--color-ink)">
-            {roster?.total ?? 0} students
+            {roster?.total ?? 0} {t('students')}
           </span>{' '}
-          shared by {subjects.length} {subjects.length === 1 ? 'subject' : 'subjects'}
+          {t(
+            subjects.length === 1
+              ? 'classroomsSharedBySubjectsOne'
+              : 'classroomsSharedBySubjectsOther',
+            { n: subjects.length },
+          )}
         </p>
         <SubjectFormDialog
           classroomId={classroomId}
           trigger={
             <Button variant="ghost" size="sm">
-              <PlusIcon /> Add subject
+              <PlusIcon /> {t('classroomsAddSubjectButton')}
             </Button>
           }
         />
@@ -78,6 +85,7 @@ function SubjectRow({
   subject: CourseSubject
   slots: SubjectMeetingSlot[]
 }) {
+  const { t } = useLocale()
   return (
     <li className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -112,14 +120,16 @@ function SubjectRow({
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-xs text-(--color-ink-faint)">No meeting scheduled</p>
+          <p className="mt-1 text-xs text-(--color-ink-faint)">
+            {t('classroomsNoMeetingScheduled')}
+          </p>
         )}
       </div>
       <MeetingSlotDialog
         subject={subject}
         trigger={
           <Button variant="ghost" size="sm">
-            <PlusIcon /> Meeting
+            <PlusIcon /> {t('classroomsAddMeetingButton')}
           </Button>
         }
       />
@@ -134,6 +144,7 @@ function MeetingRow({
   slot: SubjectMeetingSlot
   subject: CourseSubject
 }) {
+  const { t } = useLocale()
   const remove = useDeleteMeetingSlot()
   const { toast } = useToast()
   const when = `${WEEKDAY_LABELS[slot.weekday]} ${to12Hour(slot.starts_at)}–${to12Hour(slot.ends_at)}`
@@ -141,10 +152,10 @@ function MeetingRow({
   async function handleDelete() {
     try {
       await remove.mutateAsync(slot)
-      toast({ title: 'Meeting removed', tone: 'success' })
+      toast({ title: t('classroomsMeetingRemovedToast'), tone: 'success' })
     } catch (error) {
       toast({
-        title: 'Could not remove the meeting',
+        title: t('classroomsRemoveMeetingError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -161,18 +172,25 @@ function MeetingRow({
           subject={subject}
           slot={slot}
           trigger={
-            <IconButton label={`Edit the ${when} meeting`} size="sm">
+            <IconButton label={t('classroomsEditMeetingLabel', { when })} size="sm">
               <EditIcon />
             </IconButton>
           }
         />
         <ConfirmDialog
-          title="Remove this meeting?"
-          description={`${subject.name} on ${when} disappears from your Calendar. The subject and its grades stay.`}
-          confirmLabel="Remove"
+          title={t('classroomsRemoveMeetingTitle')}
+          description={t('classroomsRemoveMeetingDescription', {
+            subject: subject.name,
+            when,
+          })}
+          confirmLabel={t('commonRemove')}
           onConfirm={handleDelete}
           trigger={
-            <IconButton label={`Remove the ${when} meeting`} size="sm" variant="danger">
+            <IconButton
+              label={t('classroomsRemoveMeetingLabel', { when })}
+              size="sm"
+              variant="danger"
+            >
               <TrashIcon />
             </IconButton>
           }

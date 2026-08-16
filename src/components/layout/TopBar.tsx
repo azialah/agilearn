@@ -63,11 +63,14 @@ function deriveMiddleName(
   return middle || undefined
 }
 
-function notificationPayload(notification: AppNotification): NotificationPayload {
+function notificationPayload(
+  notification: AppNotification,
+  fallbackName: string,
+): NotificationPayload {
   const payload = notification.payload
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     const studentName =
-      typeof payload.studentName === 'string' ? payload.studentName : 'Student'
+      typeof payload.studentName === 'string' ? payload.studentName : fallbackName
     const value = typeof payload.value === 'number' ? payload.value : 0
     const courseSubjectName =
       typeof payload.courseSubjectName === 'string'
@@ -75,7 +78,7 @@ function notificationPayload(notification: AppNotification): NotificationPayload
         : undefined
     return { studentName, value, courseSubjectName }
   }
-  return { studentName: 'Student', value: 0 }
+  return { studentName: fallbackName, value: 0 }
 }
 
 // Navigation below `lg` lives entirely in the bottom navbar (its "More" button
@@ -125,7 +128,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   function handleNotificationSelect(notification: AppNotification) {
     void markNotificationRead.mutateAsync(notification.id).catch((error: unknown) => {
       toast({
-        title: 'Could not mark notification as read',
+        title: t('shellToastMarkReadError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -156,7 +159,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
       navigate({ to: '/login' })
     } catch (error) {
       toast({
-        title: 'Could not sign out',
+        title: t('shellToastSignOutError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -168,7 +171,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   function handleClearNotifications() {
     void clearUnreadNotifications.mutateAsync().catch((error: unknown) => {
       toast({
-        title: 'Could not clear notifications',
+        title: t('shellToastClearNotificationsError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -197,11 +200,13 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
         <button
           type="button"
           onClick={onOpenSearch}
-          aria-label="Search (Ctrl+K)"
+          aria-label={t('shellSearchAriaLabel')}
           className="order-2 flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1) pl-3 pr-2 text-sm text-(--color-ink-faint) transition-colors hover:border-(--color-border-strong) hover:text-(--color-ink-muted) lg:max-w-none lg:flex-none lg:basis-64"
         >
           <SearchIcon className="size-4 shrink-0" aria-hidden />
-          <span className="min-w-0 flex-1 truncate text-left">Search…</span>
+          <span className="min-w-0 flex-1 truncate text-left">
+            {t('shellSearchPlaceholder')}
+          </span>
           <kbd className="hidden shrink-0 rounded border border-(--color-border) bg-(--color-surface-2) px-1.5 py-0.5 text-[10px] font-medium sm:inline">
             {isMac ? 'Cmd K' : 'Ctrl K'}
           </kbd>
@@ -210,7 +215,9 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Account menu for ${profile?.full_name || profile?.email || 'your account'}`}
+              aria-label={t('shellAccountMenu', {
+                name: profile?.full_name || profile?.email || t('shellYourAccount'),
+              })}
               className={cn(
                 TRIGGER_CLASS,
                 'order-3 relative md:w-auto md:justify-start md:gap-2 md:pl-1 md:pr-3',
@@ -245,7 +252,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
                 />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-(--color-ink)">
-                    {profile?.full_name || 'Teacher account'}
+                    {profile?.full_name || t('shellTeacherAccountFallback')}
                   </p>
                   <p className="truncate text-xs font-normal text-(--color-ink-muted)">
                     {profile?.email}
@@ -254,7 +261,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
               </div>
               {profile?.role === 'admin' && (
                 <Badge tone="accent" className="mt-2">
-                  admin
+                  {t('shellAdminBadge')}
                 </Badge>
               )}
             </DropdownMenuLabel>
@@ -262,7 +269,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <div className="flex items-center justify-between px-2 py-1.5">
               <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-(--color-ink-faint)">
                 <Bell className="size-3.5" aria-hidden />
-                Notifications
+                {t('shellNotifications')}
               </span>
               {unreadCount > 0 && (
                 <button
@@ -271,26 +278,41 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
                   disabled={clearUnreadNotifications.isPending}
                   className="rounded-md px-2 py-1 text-xs font-medium text-(--color-accent-350) hover:bg-(--color-surface-3) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400) disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Clear all
+                  {t('shellClearAll')}
                 </button>
               )}
             </div>
             {unreadNotifications.isLoading ? (
               <p className="px-3 py-6 text-center text-sm text-(--color-ink-faint)">
-                Loading notifications…
+                {t('shellLoadingNotifications')}
               </p>
             ) : unread.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-(--color-ink-faint)">
-                You&apos;re all caught up.
+                {t('shellAllCaughtUp')}
               </p>
             ) : (
               <div className="max-h-64 overflow-y-auto py-1">
                 {unread.map((notification) => {
-                  const payload = notificationPayload(notification)
+                  const payload = notificationPayload(
+                    notification,
+                    t('shellStudentFallback'),
+                  )
                   const lowAverage = notification.type === 'low_average'
                   const description = lowAverage
-                    ? `${payload.studentName} has a ${payload.value.toFixed(2)}% average${payload.courseSubjectName ? ` in ${payload.courseSubjectName}` : ''}.`
-                    : `${payload.studentName} has ${payload.value} consecutive unexcused absences.`
+                    ? payload.courseSubjectName
+                      ? t('shellLowAverageWithSubject', {
+                          name: payload.studentName,
+                          value: payload.value.toFixed(2),
+                          subject: payload.courseSubjectName,
+                        })
+                      : t('shellLowAverageNoSubject', {
+                          name: payload.studentName,
+                          value: payload.value.toFixed(2),
+                        })
+                    : t('shellAbsenceAlert', {
+                        name: payload.studentName,
+                        count: payload.value,
+                      })
                   return (
                     <DropdownMenuItem
                       key={notification.id}
@@ -300,7 +322,9 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
                       <TriangleAlert className="mt-0.5 size-4 shrink-0 text-(--color-warning)" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium text-(--color-ink)">
-                          {lowAverage ? 'Low average' : 'Attendance alert'}
+                          {lowAverage
+                            ? t('shellLowAverageTitle')
+                            : t('shellAttendanceAlertTitle')}
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-(--color-ink-muted)">
                           {description}
@@ -313,13 +337,13 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate({ to: '/teacher/profile' })}>
-              <ProfileIcon className="size-4" /> Profile
+              <ProfileIcon className="size-4" /> {t('profile')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate({ to: '/settings' })}>
               <SettingsIcon className="size-4" /> {t('settings')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate({ to: '/teacher/usage' })}>
-              <UsageIcon className="size-4" /> Usage
+              <UsageIcon className="size-4" /> {t('usage')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setConfirmSignOut(true)}>
@@ -341,12 +365,11 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
         <ResponsiveDrawerContent className="!min-h-0 md:max-w-md">
           <ResponsiveDrawerHeader
             title={t('signOut')}
-            description="You'll need to sign in again to get back to your classes."
+            description={t('shellSignOutConfirmDescription')}
           />
           <ResponsiveDrawerBody>
             <p className="text-sm text-(--color-ink-muted)">
-              Your classrooms, grades, and attendance stay saved — signing out only clears
-              the copy held on this device.
+              {t('shellSignOutConfirmBody')}
             </p>
           </ResponsiveDrawerBody>
           <ResponsiveDrawerFooter
@@ -354,7 +377,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             primaryVariant="danger"
             primaryLoading={signingOut}
             onPrimary={() => void handleSignOut()}
-            secondaryLabel="Stay signed in"
+            secondaryLabel={t('shellStaySignedIn')}
             onSecondary={() => setConfirmSignOut(false)}
           />
         </ResponsiveDrawerContent>

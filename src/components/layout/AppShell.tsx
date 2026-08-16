@@ -78,6 +78,7 @@ function NavLinks({
 // On the settings route the desktop sidebar swaps the app nav for the
 // settings sections, with a link back to the workspace.
 function SettingsSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useLocale()
   return (
     <nav className="flex flex-col gap-1">
       <Link
@@ -85,10 +86,10 @@ function SettingsSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate}
         className="mb-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-(--color-ink-muted) transition-colors hover:bg-(--color-surface-2) hover:text-(--color-ink)"
       >
-        <ChevronLeft className="size-4" /> Back to workspace
+        <ChevronLeft className="size-4" /> {t('shellBackToWorkspace')}
       </Link>
       <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-ink-faint)">
-        Settings
+        {t('settings')}
       </p>
       {SETTINGS_SECTIONS.map((section) => (
         <Link
@@ -121,6 +122,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { t } = useLocale()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [sidebarCompact, setSidebarCompact] = useState<boolean | null>(() => {
@@ -295,10 +297,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <IconButton
               label={
                 sidebarCompact === true
-                  ? 'Pinned collapsed — click to unpin'
+                  ? t('shellPinnedCollapsed')
                   : effectiveCompact
-                    ? 'Expand sidebar'
-                    : 'Collapse sidebar'
+                    ? t('shellExpandSidebar')
+                    : t('shellCollapseSidebar')
               }
               onClick={toggleSidebar}
               className="hidden lg:inline-flex"
@@ -323,7 +325,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {!settingsMode && !effectiveCompact && (classrooms?.length ?? 0) > 0 && (
           <div className="min-h-0 overflow-y-auto px-1">
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-ink-faint)">
-              Recent classrooms
+              {t('recentClassrooms')}
             </p>
             <ul className="space-y-1">
               {recentClassrooms.map((classroom) => (
@@ -348,7 +350,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                           classroom.course_name}
                       </span>
                       <span className="block truncate text-[11px] text-(--color-ink-faint)">
-                        {[classroom.year, `${classroom.student_count} students`]
+                        {[
+                          classroom.year,
+                          t('shellStudentCount', { count: classroom.student_count }),
+                        ]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>
@@ -361,8 +366,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         {!settingsMode && !effectiveCompact && (
           <div className="mt-auto border-t border-(--color-border) px-2 pt-4 text-xs text-(--color-ink-faint)">
-            <p>Agilearn teacher workspace</p>
-            <p className="mt-1">v1.0 · © 2026</p>
+            <p>{t('shellTeacherWorkspace')}</p>
+            <p className="mt-1">{t('shellVersionCopyright')}</p>
           </div>
         )}
       </aside>
@@ -377,7 +382,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <aside className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] flex max-h-[78dvh] flex-col gap-5 rounded-4xl border border-white/35 bg-[color-mix(in_srgb,var(--color-surface-1)_70%,transparent)] p-4 shadow-(--shadow-pop) ring-1 ring-inset ring-white/20 backdrop-blur-2xl backdrop-saturate-150 md:inset-y-3 md:bottom-auto md:left-3 md:right-auto md:max-h-none md:w-80">
             <div className="flex items-center justify-between">
               <Brand />
-              <IconButton label="Close navigation" onClick={() => setDrawerOpen(false)}>
+              <IconButton
+                label={t('shellCloseNavigation')}
+                onClick={() => setDrawerOpen(false)}
+              >
                 <CloseIcon />
               </IconButton>
             </div>
@@ -412,7 +420,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* App bottom nav — hidden on settings routes (replaced by the search bar). */}
       {!settingsMode && (
         <nav
-          aria-label="Primary navigation"
+          aria-label={t('shellPrimaryNavigation')}
           onPointerDown={handleMobileNavPointerDown}
           onPointerMove={handleMobileNavPointerMove}
           onPointerUp={handleMobileNavPointerEnd}
@@ -422,37 +430,37 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <MobileNavLink
             to="/teacher/dashboard"
-            label="Home"
+            label={t('dashboard')}
             icon={<Home />}
             preview={mobileNavPreview}
           />
           <MobileNavLink
             to="/teacher/classrooms"
-            label="Classes"
+            label={t('shellNavClasses')}
             icon={<BookOpen />}
             preview={mobileNavPreview}
           />
           <MobileNavLink
             to="/teacher/modules"
-            label="Materials"
+            label={t('shellNavMaterials')}
             icon={<Layers3 />}
             preview={mobileNavPreview}
           />
           <MobileNavLink
             to="/teacher/calendar"
-            label="Calendar"
+            label={t('calendar')}
             icon={<CalendarDays />}
             preview={mobileNavPreview}
           />
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open more navigation"
+            aria-label={t('shellOpenMoreNavigation')}
             data-mobile-nav-target="more"
             className="flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-[11px] leading-none text-(--color-ink-muted) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
           >
             <MoreHorizontal className="size-5" />
-            <span>More</span>
+            <span>{t('shellMore')}</span>
           </button>
         </nav>
       )}

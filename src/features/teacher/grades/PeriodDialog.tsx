@@ -13,6 +13,7 @@ import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/toast'
 import { useCreatePeriod, useUpdatePeriod } from '@/lib/queries/grades'
+import { useLocale } from '@/lib/locale'
 import type { GradingPeriod } from '@/types/domain'
 
 /** What Philippine terms are actually called, so nobody types them by hand. */
@@ -64,6 +65,7 @@ export function PeriodDialog({
   const createPeriod = useCreatePeriod()
   const updatePeriod = useUpdatePeriod()
   const { toast } = useToast()
+  const { t } = useLocale()
   const isEditing = !!period
 
   useEffect(() => {
@@ -95,19 +97,21 @@ export function PeriodDialog({
       }
       if (isEditing) {
         await updatePeriod.mutateAsync({ id: period.id, patch })
-        toast({ title: 'Period updated', tone: 'success' })
+        toast({ title: t('periodDialogUpdatedToast'), tone: 'success' })
       } else {
         await createPeriod.mutateAsync({
           classroom_id: classroomId,
           course_subject_id: courseSubjectId,
           ...patch,
         })
-        toast({ title: 'Period added', tone: 'success' })
+        toast({ title: t('periodDialogAddedToast'), tone: 'success' })
       }
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update period' : 'Could not add period',
+        title: isEditing
+          ? t('periodDialogUpdateErrorToast')
+          : t('periodDialogAddErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -125,16 +129,16 @@ export function PeriodDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Edit grading period' : 'New grading period'}
+            {isEditing ? t('periodDialogEditTitle') : t('periodDialogNewTitle')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Name" htmlFor="period-name">
+          <Field label={t('commonName')} htmlFor="period-name">
             <Input
               id="period-name"
               required
               autoFocus
-              placeholder="Prelim"
+              placeholder={t('periodDialogNamePlaceholder')}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -156,7 +160,7 @@ export function PeriodDialog({
 
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-(--color-ink-muted)">
-              How much does it count?
+              {t('periodDialogHowMuchLegend')}
             </legend>
             <div className="flex gap-2">
               <ChoiceButton
@@ -164,7 +168,7 @@ export function PeriodDialog({
                 onSelect={() => setForm({ ...form, sharePercent: '' })}
                 className="flex-1"
               >
-                Equal share
+                {t('periodDialogEqualShare')}
               </ChoiceButton>
               <ChoiceButton
                 selected={custom}
@@ -173,14 +177,14 @@ export function PeriodDialog({
                 }
                 className="flex-1"
               >
-                Set a percentage
+                {t('periodDialogSetPercentage')}
               </ChoiceButton>
             </div>
             {custom && (
               <div className="flex items-center gap-2">
                 <Input
                   id="period-share"
-                  aria-label="Share of the final grade, in percent"
+                  aria-label={t('periodDialogShareAriaLabel')}
                   type="number"
                   min={1}
                   max={100}
@@ -190,7 +194,7 @@ export function PeriodDialog({
                   onChange={(e) => setForm({ ...form, sharePercent: e.target.value })}
                 />
                 <span className="text-sm text-(--color-ink-muted)">
-                  percent of the final grade
+                  {t('periodDialogPercentOfFinal')}
                 </span>
               </div>
             )}
@@ -200,34 +204,34 @@ export function PeriodDialog({
             <div className="space-y-1 rounded-xl bg-(--color-surface-2) px-3 py-2 text-sm">
               {others.length === 0 ? (
                 <p className="text-(--color-ink)">
-                  <span className="font-medium">{form.name.trim()}</span> is your only
-                  period, so it carries the whole grade. Add more and they will share it.
+                  <span className="font-medium">{form.name.trim()}</span>{' '}
+                  {t('periodDialogOnlyPeriodText')}
                 </p>
               ) : (
                 <p className="text-(--color-ink)">
                   <span className="font-medium">
-                    {form.name.trim()} is worth about {resultingShare}%
+                    {t('periodDialogWorthAbout', {
+                      name: form.name.trim(),
+                      percent: resultingShare,
+                    })}
                   </span>{' '}
-                  of the final grade, next to {others.map((item) => item.name).join(', ')}
-                  .
+                  {t('periodDialogNextToSuffix', {
+                    names: others.map((item) => item.name).join(', '),
+                  })}
                 </p>
               )}
               {/* The rule teachers actually get surprised by: an ungraded period
                   is skipped, not counted as zero. */}
-              <p className="text-(--color-ink-muted)">
-                A period starts counting once it has graded work, so early-term grades
-                show how students are doing on what you have marked — not zeros for work
-                you have not given yet.
-              </p>
+              <p className="text-(--color-ink-muted)">{t('periodDialogRuleHint')}</p>
             </div>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t('commonCancel')}
             </Button>
             <Button type="submit" loading={pending} disabled={!valid}>
-              {isEditing ? 'Save changes' : 'Add period'}
+              {isEditing ? t('commonSaveChanges') : t('periodDialogSubmitAdd')}
             </Button>
           </DialogFooter>
         </form>

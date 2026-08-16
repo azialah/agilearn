@@ -1,4 +1,4 @@
-import { Bell, Command, Languages, SunMoon } from 'lucide-react'
+import { Bell, ClipboardCheck, Command, Languages, SunMoon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -116,6 +116,31 @@ export function WorkspaceSection() {
             </Button>
           )}
         </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="size-4 text-(--color-accent-350)" /> Attendance
+            import
+          </CardTitle>
+          <p className="text-sm text-(--color-ink-muted)">
+            Agilearn imports Google Meet attendance from a{' '}
+            <a
+              href="https://trackit.visualbrahma.tech/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-(--color-accent-350) underline underline-offset-2"
+            >
+              TrackIt
+            </a>{' '}
+            participants .txt export. Supported browsers: Chromium-based browsers (Chrome,
+            Edge, Brave) and Mozilla Firefox. Install the extension, run it during your
+            Meet session, then upload the exported file from the{' '}
+            <span className="font-medium text-(--color-ink)">Import from Meet</span>{' '}
+            button on any class session's attendance page.
+          </p>
+        </CardHeader>
       </Card>
 
       <Card>

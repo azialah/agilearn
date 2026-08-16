@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/toast'
 import { useOfflineSync } from '@/lib/queries/offlineSync'
+import { useLocale } from '@/lib/locale'
 
 /**
  * Shown only when there is something to sync. Attendance marked without a
@@ -12,6 +13,7 @@ export function OfflineSyncBar() {
   const { pending, progress, conflicts, flushing, flush, keepMine, discardConflict } =
     useOfflineSync()
   const { toast } = useToast()
+  const { t } = useLocale()
 
   if (pending === 0 && conflicts.length === 0) return null
 
@@ -24,7 +26,7 @@ export function OfflineSyncBar() {
       else await discardConflict(conflict.write.id)
     } catch (error) {
       toast({
-        title: 'Could not settle that change',
+        title: t('attendanceSyncResolveError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -33,16 +35,23 @@ export function OfflineSyncBar() {
 
   return (
     <section
-      aria-label="Offline changes"
+      aria-label={t('attendanceOfflineChangesLabel')}
       className="space-y-3 rounded-2xl border border-(--color-warning)/40 bg-(--color-warning)/10 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-(--color-ink)">
-            {pending} {pending === 1 ? 'change is' : 'changes are'} saved on this device
+            {t(
+              pending === 1
+                ? 'attendanceSyncPendingSingular'
+                : 'attendanceSyncPendingPlural',
+              {
+                n: pending,
+              },
+            )}
           </p>
           <p className="text-sm text-(--color-ink-muted)">
-            They upload automatically when you are back online.
+            {t('attendanceSyncAutoUpload')}
           </p>
         </div>
         <Button
@@ -51,21 +60,24 @@ export function OfflineSyncBar() {
           loading={flushing}
           onClick={() => void flush()}
         >
-          Sync now
+          {t('attendanceSyncNow')}
         </Button>
       </div>
 
       {progress && (
         <div>
           <p className="text-xs text-(--color-ink-muted)">
-            {progress.done} of {progress.total} changes synced
+            {t('attendanceSyncProgressText', {
+              done: progress.done,
+              total: progress.total,
+            })}
           </p>
           <div
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={progress.total}
             aria-valuenow={progress.done}
-            aria-label="Sync progress"
+            aria-label={t('attendanceSyncProgressLabel')}
             className="mt-1 h-1.5 overflow-hidden rounded-full bg-(--color-surface-3)"
           >
             <div
@@ -79,7 +91,7 @@ export function OfflineSyncBar() {
       {conflicts.length > 0 && (
         <div className="space-y-2 border-t border-(--color-warning)/30 pt-3">
           <p className="text-sm font-medium text-(--color-ink)">
-            Changed elsewhere while you were offline
+            {t('attendanceSyncConflictHeading')}
           </p>
           {conflicts.map((conflict) => (
             <div
@@ -91,7 +103,9 @@ export function OfflineSyncBar() {
                   {conflict.write.label}
                 </p>
                 <p className="text-xs text-(--color-ink-muted)">
-                  Yours: {String(conflict.write.payload.status ?? '—')} · Theirs:{' '}
+                  {t('attendanceSyncYoursLabel')}:{' '}
+                  {String(conflict.write.payload.status ?? '—')} ·{' '}
+                  {t('attendanceSyncTheirsLabel')}:{' '}
                   {String(conflict.theirs?.status ?? '—')}
                 </p>
               </div>
@@ -101,14 +115,14 @@ export function OfflineSyncBar() {
                   variant="ghost"
                   onClick={() => void resolve('theirs', conflict)}
                 >
-                  Keep theirs
+                  {t('attendanceSyncKeepTheirs')}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => void resolve('mine', conflict)}
                 >
-                  Keep mine
+                  {t('attendanceSyncKeepMine')}
                 </Button>
               </div>
             </div>

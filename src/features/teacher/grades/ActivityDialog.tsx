@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/toast'
 import { useCreateActivity, useUpdateActivity } from '@/lib/queries/grades'
+import { useLocale } from '@/lib/locale'
 import type { Activity, ActivityCategory } from '@/types/domain'
 
 interface ActivityForm {
@@ -66,6 +67,7 @@ export function ActivityDialog({
   const createActivity = useCreateActivity()
   const updateActivity = useUpdateActivity()
   const { toast } = useToast()
+  const { t } = useLocale()
   const isEditing = !!activity
 
   useEffect(() => {
@@ -94,18 +96,20 @@ export function ActivityDialog({
       }
       if (isEditing) {
         await updateActivity.mutateAsync({ id: activity.id, patch, classroomId })
-        toast({ title: 'Activity updated', tone: 'success' })
+        toast({ title: t('activityDialogUpdatedToast'), tone: 'success' })
       } else {
         await createActivity.mutateAsync({
           input: { grading_period_id: periodId, ...patch },
           classroomId,
         })
-        toast({ title: 'Activity added', tone: 'success' })
+        toast({ title: t('activityDialogAddedToast'), tone: 'success' })
       }
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update activity' : 'Could not add activity',
+        title: isEditing
+          ? t('activityDialogUpdateErrorToast')
+          : t('activityDialogAddErrorToast'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -120,33 +124,37 @@ export function ActivityDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit activity' : 'New activity'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? t('activityDialogEditTitle') : t('activityDialogNewTitle')}
+          </DialogTitle>
         </DialogHeader>
         {noCategories ? (
           <p className="text-sm text-(--color-ink-muted)">
-            Add at least one activity category before creating activities.
+            {t('activityDialogNoCategoriesHint')}
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="activity-name">Name</Label>
+              <Label htmlFor="activity-name">{t('commonName')}</Label>
               <Input
                 id="activity-name"
                 required
                 autoFocus
-                placeholder="Quiz 1"
+                placeholder={t('activityDialogNamePlaceholder')}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="activity-category">Category</Label>
+              <Label htmlFor="activity-category">
+                {t('activityDialogCategoryLabel')}
+              </Label>
               <Select
                 value={form.category_id}
                 onValueChange={(value) => setForm({ ...form, category_id: value })}
               >
                 <SelectTrigger id="activity-category">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('activityDialogCategoryPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
@@ -159,7 +167,7 @@ export function ActivityDialog({
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="activity-max">Max score</Label>
+                <Label htmlFor="activity-max">{t('activityDialogMaxScoreLabel')}</Label>
                 <Input
                   id="activity-max"
                   type="number"
@@ -171,7 +179,9 @@ export function ActivityDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="activity-position">Position</Label>
+                <Label htmlFor="activity-position">
+                  {t('activityDialogPositionLabel')}
+                </Label>
                 <Input
                   id="activity-position"
                   type="number"
@@ -183,7 +193,7 @@ export function ActivityDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="activity-date">Date</Label>
+                <Label htmlFor="activity-date">{t('activityDialogDateLabel')}</Label>
                 <DateInput
                   id="activity-date"
                   value={form.date}
@@ -193,10 +203,10 @@ export function ActivityDialog({
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {t('commonCancel')}
               </Button>
               <Button type="submit" loading={pending} disabled={!valid}>
-                {isEditing ? 'Save changes' : 'Add activity'}
+                {isEditing ? t('commonSaveChanges') : t('activityDialogSubmitAdd')}
               </Button>
             </DialogFooter>
           </form>

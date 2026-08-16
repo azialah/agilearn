@@ -8,6 +8,7 @@ import {
   ResponsiveDrawerTrigger,
 } from '@/components/ui/ResponsiveDrawer'
 import { useToast } from '@/components/ui/toast'
+import { useLocale } from '@/lib/locale'
 import {
   useCourseSubjects,
   useCreateCourseSubject,
@@ -67,6 +68,7 @@ export function SubjectFormDialog({
   subject?: CourseSubject
   trigger: ReactNode
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [draft, setDraft] = useState<SubjectDraft>(draftFromSubject(subject))
@@ -108,18 +110,18 @@ export function SubjectFormDialog({
       }
       toast({
         title: isEditing
-          ? 'Course subject updated'
+          ? t('subjectDialogUpdateSuccess')
           : draft.sessionType === 'lecture_lab'
-            ? 'Lecture and laboratory added'
-            : 'Course subject added',
+            ? t('subjectDialogLectureLabAddedSuccess')
+            : t('subjectDialogAddSuccess'),
         tone: 'success',
       })
       setOpen(false)
     } catch (error) {
       toast({
-        title: isEditing ? 'Could not update the subject' : 'Could not add the subject',
+        title: isEditing ? t('subjectDialogUpdateError') : t('subjectDialogAddError'),
         description: isNameCollision(error)
-          ? `A subject named "${draft.name.trim()}" already exists in this classroom — pick a different name.`
+          ? t('subjectDialogNameCollision', { name: draft.name.trim() })
           : meetingSlotErrorMessage(error),
         tone: 'error',
       })
@@ -130,12 +132,12 @@ export function SubjectFormDialog({
     if (!subject) return
     try {
       await deleteSubject.mutateAsync({ id: subject.id, classroomId })
-      toast({ title: 'Course subject deleted', tone: 'success' })
+      toast({ title: t('subjectDialogDeleteSuccess'), tone: 'success' })
       setConfirmDelete(false)
       setOpen(false)
     } catch (error) {
       toast({
-        title: 'Could not delete the subject',
+        title: t('subjectDialogDeleteError'),
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
@@ -159,11 +161,11 @@ export function SubjectFormDialog({
       <ResponsiveDrawerTrigger asChild>{trigger}</ResponsiveDrawerTrigger>
       <ResponsiveDrawerContent>
         <ResponsiveDrawerHeader
-          title={isEditing ? 'Edit course subject' : 'Add a course subject'}
+          title={isEditing ? t('subjectDialogEditTitle') : t('subjectDialogAddTitle')}
           description={
             isEditing
-              ? 'Renaming this updates it everywhere the subject appears.'
-              : 'It shares this classroom’s roster — no need to add the students again.'
+              ? t('subjectDialogEditDescription')
+              : t('subjectDialogAddDescription')
           }
         />
         <ResponsiveDrawerBody>
@@ -176,7 +178,7 @@ export function SubjectFormDialog({
           />
           {duplicate && (
             <p role="alert" className="mt-3 text-sm text-(--color-danger)">
-              This classroom already has a subject with that title.
+              {t('subjectDialogDuplicateWarning')}
             </p>
           )}
           {isEditing && (
@@ -186,7 +188,7 @@ export function SubjectFormDialog({
                 onClick={() => setConfirmDelete(true)}
                 className="text-sm font-medium text-(--color-danger) hover:underline"
               >
-                Delete subject
+                {t('subjectDialogDeleteButton')}
               </button>
             </div>
           )}
@@ -194,10 +196,10 @@ export function SubjectFormDialog({
         <ResponsiveDrawerFooter
           primaryLabel={
             isEditing
-              ? 'Save subject'
+              ? t('subjectDialogSaveButton')
               : draft.sessionType === 'lecture_lab'
-                ? 'Add both'
-                : 'Add subject'
+                ? t('subjectDialogAddBothButton')
+                : t('subjectDialogAddButton')
           }
           primaryDisabled={!draft.name.trim() || duplicate}
           primaryLoading={update.isPending || create.isPending}
@@ -215,11 +217,13 @@ export function SubjectFormDialog({
         >
           <ResponsiveDrawerContent className="!min-h-0 md:max-w-md">
             <ResponsiveDrawerHeader
-              title="Delete subject"
-              description={`This permanently deletes "${subject.name}" — its schedule, grading periods, activities, scores, and attendance sessions all go with it. The shared roster and students stay untouched. This can't be undone.`}
+              title={t('subjectDialogDeleteButton')}
+              description={t('subjectDialogDeleteConfirmDescription', {
+                name: subject.name,
+              })}
             />
             <ResponsiveDrawerFooter
-              primaryLabel="Delete"
+              primaryLabel={t('commonDelete')}
               primaryVariant="danger"
               primaryLoading={deleteSubject.isPending}
               onPrimary={() => void handleDelete()}

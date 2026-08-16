@@ -1,5 +1,6 @@
 import type { BadgeTone } from '@/components/ui/Badge'
 import type { AttendanceStatus } from '@/types/domain'
+import type { useLocale } from '@/lib/locale'
 
 interface StatusMeta {
   label: string
@@ -11,37 +12,57 @@ interface StatusMeta {
   activeClass: string
 }
 
-export const STATUS_META: Record<AttendanceStatus, StatusMeta> = {
+const STATUS_STYLE: Record<AttendanceStatus, Omit<StatusMeta, 'label' | 'short'>> = {
   present: {
-    label: 'Present',
-    short: 'P',
     tone: 'success',
     color: 'var(--color-success)',
     activeClass:
       'bg-(--color-success)/15 text-(--color-success) ring-1 ring-(--color-success)/40',
   },
   late: {
-    label: 'Late',
-    short: 'L',
     tone: 'warning',
     color: 'var(--color-warning)',
     activeClass:
       'bg-(--color-warning)/15 text-(--color-warning) ring-1 ring-(--color-warning)/40',
   },
   excused: {
-    label: 'Excused',
-    short: 'E',
     tone: 'accent',
     color: 'var(--color-accent-350)',
     activeClass:
       'bg-(--color-accent-500)/20 text-(--color-accent-300) ring-1 ring-(--color-accent-400)/40',
   },
   absent: {
-    label: 'Absent',
-    short: 'A',
     tone: 'danger',
     color: 'var(--color-danger)',
     activeClass:
       'bg-(--color-danger)/15 text-(--color-danger) ring-1 ring-(--color-danger)/40',
   },
+}
+
+/** Localized status labels, built from the active locale's `t()`. */
+export function getStatusMeta(
+  t: ReturnType<typeof useLocale>['t'],
+): Record<AttendanceStatus, StatusMeta> {
+  return {
+    present: {
+      ...STATUS_STYLE.present,
+      label: t('attendanceStatusPresentLabel'),
+      short: t('attendanceStatusPresentShort'),
+    },
+    late: {
+      ...STATUS_STYLE.late,
+      label: t('attendanceStatusLateLabel'),
+      short: t('attendanceStatusLateShort'),
+    },
+    excused: {
+      ...STATUS_STYLE.excused,
+      label: t('attendanceStatusExcusedLabel'),
+      short: t('attendanceStatusExcusedShort'),
+    },
+    absent: {
+      ...STATUS_STYLE.absent,
+      label: t('attendanceStatusAbsentLabel'),
+      short: t('attendanceStatusAbsentShort'),
+    },
+  }
 }
