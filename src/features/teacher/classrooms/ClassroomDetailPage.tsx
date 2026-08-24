@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/Button'
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { IconButton } from '@/components/ui/IconButton'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { RouteSkeleton } from '@/components/ui/RouteSkeleton'
@@ -72,20 +73,6 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
 
       <ClassroomTabs classroomId={classroomId} />
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-(--color-ink-muted)">
-          {t('classroomsRosterHeading')}
-        </h2>
-        <StudentFormDialog
-          classroomId={classroomId}
-          trigger={
-            <Button size="sm">
-              <PlusIcon /> {t('classroomsAddStudentButton')}
-            </Button>
-          }
-        />
-      </div>
-
       {studentsLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 6 }, (_, row) => (
@@ -99,62 +86,92 @@ export function ClassroomDetailPage({ classroomId }: { classroomId: string }) {
           description={t('classroomsNoStudentsDescription')}
         />
       ) : (
-        <TableContainer>
-          <Table>
-            <THead>
-              <TR>
-                <TH className="w-12 text-right">{t('classroomsColumnRowNumber')}</TH>
-                <TH className="w-40">{t('classroomsColumnStudentNo')}</TH>
-                <TH>{t('classroomsColumnName')}</TH>
-                <TH className="w-24 text-right">{t('classroomsColumnActions')}</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {students.map((student, index) => (
-                <TR key={student.id}>
-                  <TD className="text-right text-xs text-(--color-ink-faint)">
-                    {page * STUDENTS_PAGE_SIZE + index + 1}
-                  </TD>
-                  <TD className="font-mono text-xs text-(--color-ink-muted)">
-                    {student.student_no}
-                  </TD>
-                  <TD className="font-medium">{studentFullName(student)}</TD>
-                  <TD>
-                    <div className="flex items-center justify-end gap-1">
-                      <StudentFormDialog
-                        classroomId={classroomId}
-                        student={student}
-                        trigger={
-                          <IconButton label={t('classroomsEditStudentLabel')} size="sm">
-                            <EditIcon />
-                          </IconButton>
-                        }
-                      />
-                      <ConfirmDialog
-                        title={t('classroomsRemoveStudentTitle')}
-                        description={t('classroomsRemoveStudentDescription', {
-                          name: studentFullName(student),
-                        })}
-                        confirmLabel={t('commonRemove')}
-                        confirmPhrase={studentFullName(student)}
-                        onConfirm={() => handleDeleteStudent(student.id)}
-                        trigger={
-                          <IconButton
-                            label={t('classroomsRemoveStudentLabel')}
-                            size="sm"
-                            variant="danger"
-                          >
-                            <TrashIcon />
-                          </IconButton>
-                        }
-                      />
-                    </div>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </TableContainer>
+        /* Same shell as the attendance report: a card whose header owns the
+           title, the count and the primary action, with the table flush inside
+           it. Two tables of students on adjacent tabs should not look like they
+           come from different applications. */
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle>{t('classroomsRosterHeading')}</CardTitle>
+              <p className="text-sm text-(--color-ink-muted)">
+                {t(
+                  total === 1 ? 'classroomsRosterCountOne' : 'classroomsRosterCountOther',
+                  { n: total },
+                )}
+              </p>
+            </div>
+            <StudentFormDialog
+              classroomId={classroomId}
+              trigger={
+                <Button size="sm">
+                  <PlusIcon /> {t('classroomsAddStudentButton')}
+                </Button>
+              }
+            />
+          </CardHeader>
+          <CardBody className="p-0">
+            <TableContainer className="rounded-none border-0">
+              <Table>
+                <THead>
+                  <TR>
+                    <TH className="w-12 text-right">{t('classroomsColumnRowNumber')}</TH>
+                    <TH className="w-40">{t('classroomsColumnStudentNo')}</TH>
+                    <TH>{t('classroomsColumnName')}</TH>
+                    <TH className="w-24 text-right">{t('classroomsColumnActions')}</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {students.map((student, index) => (
+                    <TR key={student.id}>
+                      <TD className="text-right text-xs text-(--color-ink-faint)">
+                        {page * STUDENTS_PAGE_SIZE + index + 1}
+                      </TD>
+                      <TD className="font-mono text-xs text-(--color-ink-muted)">
+                        {student.student_no}
+                      </TD>
+                      <TD className="font-medium">{studentFullName(student)}</TD>
+                      <TD>
+                        <div className="flex items-center justify-end gap-1">
+                          <StudentFormDialog
+                            classroomId={classroomId}
+                            student={student}
+                            trigger={
+                              <IconButton
+                                label={t('classroomsEditStudentLabel')}
+                                size="sm"
+                              >
+                                <EditIcon />
+                              </IconButton>
+                            }
+                          />
+                          <ConfirmDialog
+                            title={t('classroomsRemoveStudentTitle')}
+                            description={t('classroomsRemoveStudentDescription', {
+                              name: studentFullName(student),
+                            })}
+                            confirmLabel={t('commonRemove')}
+                            confirmPhrase={studentFullName(student)}
+                            onConfirm={() => handleDeleteStudent(student.id)}
+                            trigger={
+                              <IconButton
+                                label={t('classroomsRemoveStudentLabel')}
+                                size="sm"
+                                variant="danger"
+                              >
+                                <TrashIcon />
+                              </IconButton>
+                            }
+                          />
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </TableContainer>
+          </CardBody>
+        </Card>
       )}
 
       {total > STUDENTS_PAGE_SIZE && (

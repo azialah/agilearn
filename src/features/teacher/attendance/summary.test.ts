@@ -9,6 +9,7 @@ import {
   emptyCounts,
   formatRate,
   groupRecordsByStudent,
+  groupSessionsByMonth,
   tallyStatuses,
 } from './summary'
 import type { AttendanceStatus } from '@/types/domain'
@@ -156,5 +157,38 @@ describe('formatRate', () => {
 describe('ATTENDANCE_STATUSES', () => {
   it('lists all four statuses in cycle order', () => {
     expect([...ATTENDANCE_STATUSES]).toEqual(['present', 'late', 'excused', 'absent'])
+  })
+})
+
+describe('groupSessionsByMonth', () => {
+  const session = (session_date: string) => ({ session_date })
+
+  it('buckets by calendar month and preserves order', () => {
+    const months = groupSessionsByMonth([
+      session('2026-08-17'),
+      session('2026-08-03'),
+      session('2026-07-27'),
+    ])
+    expect(months.map((m) => m.key)).toEqual(['2026-08', '2026-07'])
+    expect(months[0].sessions.map((s) => s.session_date)).toEqual([
+      '2026-08-17',
+      '2026-08-03',
+    ])
+  })
+
+  it('returns no groups for an empty list', () => {
+    expect(groupSessionsByMonth([])).toEqual([])
+  })
+
+  it('keeps every session — none are dropped between groups', () => {
+    const dates = ['2026-08-17', '2026-08-03', '2026-07-27', '2026-06-01']
+    const months = groupSessionsByMonth(dates.map(session))
+    expect(months.flatMap((m) => m.sessions).map((s) => s.session_date)).toEqual(dates)
+  })
+
+  it('reads the month off the string rather than a parsed date', () => {
+    // A UTC-midnight Date built from this string lands on 2025-12-31 anywhere
+    // west of UTC, which would file a January session under December.
+    expect(groupSessionsByMonth([session('2026-01-01')])[0].key).toBe('2026-01')
   })
 })

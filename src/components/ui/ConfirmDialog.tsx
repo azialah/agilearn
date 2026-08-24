@@ -11,12 +11,13 @@ import {
   DialogTrigger,
 } from './Dialog'
 import { Button } from './Button'
+import { useLocale } from '@/lib/locale'
 
 export function ConfirmDialog({
   trigger,
   title,
   description,
-  confirmLabel = 'Delete',
+  confirmLabel,
   confirmVariant = 'danger',
   confirmPhrase,
   onConfirm,
@@ -24,12 +25,14 @@ export function ConfirmDialog({
   trigger: ReactNode
   title: string
   description?: string
+  /** Defaults to the localized "Delete" — this dialog is mostly a delete gate. */
   confirmLabel?: string
   confirmVariant?: React.ComponentProps<typeof Button>['variant']
   /** When set, the phrase must be typed exactly before confirming (GitHub-style). */
   confirmPhrase?: string
   onConfirm: () => void | Promise<void>
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [typed, setTyped] = useState('')
@@ -62,9 +65,7 @@ export function ConfirmDialog({
         {confirmPhrase && (
           <div className="space-y-2">
             <Label htmlFor="confirm-phrase">
-              Type{' '}
-              <span className="font-semibold text-(--color-ink)">{confirmPhrase}</span> to
-              confirm
+              {t('commonTypeToConfirm', { phrase: confirmPhrase })}
             </Label>
             <Input
               id="confirm-phrase"
@@ -76,7 +77,7 @@ export function ConfirmDialog({
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t('commonCancel')}
           </Button>
           <Button
             variant={confirmVariant}
@@ -84,7 +85,7 @@ export function ConfirmDialog({
             disabled={locked}
             onClick={handleConfirm}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('commonDelete')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -6,8 +6,12 @@
  * in isolation (see participantsImport.test.ts).
  *
  * Line shape: `Name | Entry: HH:MM:SS, Total time: X min Y secs` — the `|`
- * segment is optional (some exports omit timing for a participant). `Name`
- * is inconsistent in the wild: `Last, First MI.`, `LASTNAME, FIRSTNAME`,
+ * segment is optional (some exports omit timing for a participant). The timing
+ * half is split off so it cannot pollute the name tokens, then discarded: the
+ * import records who was present, never when they joined or how long they
+ * stayed.
+ *
+ * `Name` is inconsistent in the wild: `Last, First MI.`, `LASTNAME, FIRSTNAME`,
  * `First Last` with no comma at all, embedded suffixes (`Last, First JR., MI.`),
  * and diacritics. Matching is therefore order-independent and never assumes
  * which word is the surname.
@@ -20,11 +24,14 @@ export type RosterStudent = Pick<
   'id' | 'last_name' | 'first_name' | 'middle_initial'
 >
 
-export type LineOutcome = 'matched' | 'ambiguous' | 'unmatched'
+export type LineOutcome = 'matched' | 'ambiguous' | 'unmatched' | 'teacher'
 
 export interface AttendanceImportRow {
-  rawName: string
-  remarks: string
+  /**
+   * Every spelling the file used for this person. More than one means the same
+   * participant appeared under different spellings — see mergeByStudent().
+   */
+  rawNames: string[]
   occurrences: number
   outcome: LineOutcome
   matchedStudentId: string | null
@@ -33,7 +40,12 @@ export interface AttendanceImportRow {
 
 export interface AttendanceImportResult {
   rows: AttendanceImportRow[]
-  counts: { matched: number; ambiguous: number; unmatched: number }
+  counts: { matched: number; ambiguous: number; unmatched: number; teacher: number }
+}
+
+export interface ParseOptions {
+  /** The signed-in teacher's display name, so the host line reads as "you". */
+  teacherName?: string | null
 }
 
 const SUFFIX_TOKENS = new Set(['JR', 'SR', 'II', 'III', 'IV'])
@@ -56,44 +68,33 @@ function tokenize(name: string): string[] {
     .filter((token) => token.length > 0 && !SUFFIX_TOKENS.has(token))
 }
 
-interface RawLine {
-  name: string
-  meta: string
-}
-
-function parseLines(text: string): RawLine[] {
+/** Names, with the `Entry:`/`Total time:` half already stripped and dropped. */
+function parseNames(text: string): string[] {
   return text
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
     .map((line) => {
       const pipeIndex = line.indexOf('|')
-      return pipeIndex === -1
-        ? { name: line, meta: '' }
-        : {
-            name: line.slice(0, pipeIndex).trim(),
-            meta: line.slice(pipeIndex + 1).trim(),
-          }
+      return (pipeIndex === -1 ? line : line.slice(0, pipeIndex)).trim()
     })
-    .filter((line) => line.name.length > 0)
+    .filter(Boolean)
 }
 
 interface NameGroup {
   rawName: string
   tokens: string[]
-  metas: string[]
+  occurrences: number
 }
 
 /** Groups by token set (not raw text) so rejoin lines with drifting whitespace still merge. */
-function groupByName(lines: RawLine[]): NameGroup[] {
+function groupByName(names: string[]): NameGroup[] {
   const groups = new Map<string, NameGroup>()
-  for (const line of lines) {
-    const tokens = tokenize(line.name)
+  for (const name of names) {
+    const tokens = tokenize(name)
     if (tokens.length === 0) continue
     const key = [...new Set(tokens)].sort().join('|')
     const existing = groups.get(key)
-    if (existing) existing.metas.push(line.meta)
-    else groups.set(key, { rawName: line.name, tokens, metas: [line.meta] })
+    if (existing) existing.occurrences += 1
+    else groups.set(key, { rawName: name, tokens, occurrences: 1 })
   }
   return [...groups.values()]
 }
@@ -154,26 +155,120 @@ function matchGroup(
       }
 }
 
+/**
+ * Is this line the meeting host rather than a student?
+ *
+ * Only ever asked of a line that failed to match the roster, so a student who
+ * happens to share the teacher's name still resolves to that student. Requires
+ * two shared tokens and a subset relationship in one direction, so `Lopez, John`
+ * matches `John Neo Lopez` while a lone shared surname does not.
+ */
+function isTeacher(tokens: string[], teacherTokens: string[]): boolean {
+  if (teacherTokens.length === 0) return false
+  const line = new Set(tokens)
+  const teacher = new Set(teacherTokens)
+  const shared = [...line].filter((token) => teacher.has(token))
+  if (shared.length < 2) return false
+  return shared.length === line.size || shared.length === teacher.size
+}
+
+/**
+ * Collapse rows that resolved to the same student.
+ *
+ * A real export spells one participant more than one way — `IGNACIO, ROMUALNICO
+ * S.` on one line and `ROMUALNICO IGNACIO` on another. Those have different
+ * token sets, so groupByName() keeps them apart, but they are one person. Left
+ * alone they produce two inserts sharing a (session_id, student_id), which
+ * Postgres rejects outright with 21000: "ON CONFLICT DO UPDATE command cannot
+ * affect row a second time" — failing the whole import, not just the row.
+ *
+ * Merging here rather than at the call site means no caller can rebuild the
+ * invalid batch.
+ */
+function mergeByStudent(rows: AttendanceImportRow[]): AttendanceImportRow[] {
+  const byStudent = new Map<string, AttendanceImportRow>()
+  const merged: AttendanceImportRow[] = []
+  for (const row of rows) {
+    if (!row.matchedStudentId) {
+      merged.push(row)
+      continue
+    }
+    const existing = byStudent.get(row.matchedStudentId)
+    if (existing) {
+      existing.rawNames.push(...row.rawNames)
+      existing.occurrences += row.occurrences
+    } else {
+      byStudent.set(row.matchedStudentId, row)
+      merged.push(row)
+    }
+  }
+  return merged
+}
+
 export function parseAttendanceImport(
   text: string,
   roster: readonly RosterStudent[],
+  options: ParseOptions = {},
 ): AttendanceImportResult {
   const rosterTokens = tokenizeRoster(roster)
-  const groups = groupByName(parseLines(text))
-  const counts = { matched: 0, ambiguous: 0, unmatched: 0 }
+  const teacherTokens = options.teacherName ? tokenize(options.teacherName) : []
+  const groups = groupByName(parseNames(text))
 
-  const rows: AttendanceImportRow[] = groups.map((group) => {
-    const match = matchGroup(group.tokens, rosterTokens)
-    counts[match.outcome] += 1
-    return {
-      rawName: group.rawName,
-      remarks: group.metas.filter(Boolean).join('; '),
-      occurrences: group.metas.length,
-      outcome: match.outcome,
-      matchedStudentId: match.matchedStudentId,
-      candidateIds: match.candidateIds,
-    }
-  })
+  const rows = mergeByStudent(
+    groups.map((group) => {
+      const match = matchGroup(group.tokens, rosterTokens)
+      const outcome: LineOutcome =
+        match.outcome === 'unmatched' && isTeacher(group.tokens, teacherTokens)
+          ? 'teacher'
+          : match.outcome
+      return {
+        rawNames: [group.rawName],
+        occurrences: group.occurrences,
+        outcome,
+        matchedStudentId: match.matchedStudentId,
+        candidateIds: match.candidateIds,
+      }
+    }),
+  )
+
+  const counts = { matched: 0, ambiguous: 0, unmatched: 0, teacher: 0 }
+  for (const row of rows) counts[row.outcome] += 1
 
   return { rows, counts }
+}
+
+export interface ImportPlan {
+  /** Matched students with no record yet — the import marks these present. */
+  present: string[]
+  /** Roster students absent from the file and not yet recorded. */
+  absent: string[]
+  /** Already recorded by hand; the import leaves these alone. */
+  alreadyRecorded: string[]
+}
+
+/**
+ * Split the roster into what the import may write and what it must not.
+ *
+ * A student who is already recorded lands in `alreadyRecorded` whether or not
+ * the file mentions them — a manual Excused always outranks the meeting log.
+ */
+export function planFromResult(
+  result: AttendanceImportResult,
+  roster: readonly RosterStudent[],
+  recordedStudentIds: readonly string[],
+): ImportPlan {
+  const recorded = new Set(recordedStudentIds)
+  const inFile = new Set(
+    result.rows
+      .map((row) => row.matchedStudentId)
+      .filter((id): id is string => id !== null),
+  )
+
+  const plan: ImportPlan = { present: [], absent: [], alreadyRecorded: [] }
+  for (const student of roster) {
+    if (recorded.has(student.id)) plan.alreadyRecorded.push(student.id)
+    else if (inFile.has(student.id)) plan.present.push(student.id)
+    else plan.absent.push(student.id)
+  }
+  return plan
 }

@@ -1,30 +1,14 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MouseEvent,
-  type PointerEvent,
-  type ReactNode,
-} from 'react'
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { motion, useReducedMotion } from 'motion/react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { cn } from '@/lib/cn'
 import { TopBar } from './TopBar'
 import { CommandPalette } from './CommandPalette'
 import { IconButton } from '@/components/ui/IconButton'
 import { Logo } from '@/components/ui/Logo'
 import { CloseIcon } from '@/components/icons'
-import {
-  BookOpen,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Home,
-  Layers3,
-  MoreHorizontal,
-  Pin,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pin } from 'lucide-react'
 import { useProfile } from '@/lib/queries/profiles'
 import { useLocale } from '@/lib/locale'
 import { NAV_ITEMS } from './navItems'
@@ -34,6 +18,7 @@ import { useClassrooms } from '@/lib/queries/classrooms'
 import { readRecentClassrooms, sortByRecentVisit } from '@/lib/recentClassrooms'
 import { classroomColorClasses } from '@/lib/classroomColor'
 import { SettingsSearchBar } from '@/features/settings/SettingsSearchBar'
+import { AppDock } from './AppDock'
 
 function NavLinks({
   isAdmin,
@@ -123,6 +108,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useLocale()
+  const reduceMotion = useReducedMotion()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [sidebarCompact, setSidebarCompact] = useState<boolean | null>(() => {
@@ -132,15 +118,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [autoCompact, setAutoCompact] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarHovered, setSidebarHovered] = useState(false)
-  const [mobileNavPreview, setMobileNavPreview] = useState<MobileNavTarget | null>(null)
-  const mobileNavDrag = useRef<{
-    pointerId: number
-    startX: number
-    startY: number
-    isSwipe: boolean
-  } | null>(null)
-  const suppressMobileNavClick = useRef(false)
-  const navigate = useNavigate()
   const { data: profile } = useProfile()
   const { data: classrooms } = useClassrooms()
   const isAdmin = profile?.role === 'admin'
@@ -185,72 +162,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       localStorage.setItem('agilearn-sidebar-compact', String(next))
       return next
     })
-  }
-
-  function mobileNavTargetAt(x: number, y: number): MobileNavTarget | null {
-    const element = document.elementFromPoint(x, y)
-    const target = element?.closest<HTMLElement>('[data-mobile-nav-target]')?.dataset
-      .mobileNavTarget
-    return isMobileNavTarget(target) ? target : null
-  }
-
-  function handleMobileNavPointerDown(event: PointerEvent<HTMLElement>) {
-    if (event.pointerType !== 'touch') return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    mobileNavDrag.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      isSwipe: false,
-    }
-  }
-
-  function handleMobileNavPointerMove(event: PointerEvent<HTMLElement>) {
-    const drag = mobileNavDrag.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-
-    const horizontalDistance = Math.abs(event.clientX - drag.startX)
-    const verticalDistance = Math.abs(event.clientY - drag.startY)
-    if (
-      !drag.isSwipe &&
-      (horizontalDistance < 12 || horizontalDistance < verticalDistance)
-    )
-      return
-
-    drag.isSwipe = true
-    setMobileNavPreview(mobileNavTargetAt(event.clientX, event.clientY))
-  }
-
-  function handleMobileNavPointerEnd(event: PointerEvent<HTMLElement>) {
-    const drag = mobileNavDrag.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-
-    const target = drag.isSwipe ? mobileNavTargetAt(event.clientX, event.clientY) : null
-    mobileNavDrag.current = null
-    setMobileNavPreview(null)
-    if (!target) return
-
-    suppressMobileNavClick.current = true
-    window.setTimeout(() => {
-      suppressMobileNavClick.current = false
-    }, 0)
-    if (target === 'more') {
-      setDrawerOpen(true)
-      return
-    }
-    navigate({ to: target })
-  }
-
-  function handleMobileNavPointerCancel() {
-    mobileNavDrag.current = null
-    setMobileNavPreview(null)
-  }
-
-  function handleMobileNavClickCapture(event: MouseEvent<HTMLElement>) {
-    if (!suppressMobileNavClick.current) return
-    event.preventDefault()
-    event.stopPropagation()
-    suppressMobileNavClick.current = false
   }
 
   // Hover-intent: wait a beat before expanding the rail so a quick graze past
@@ -372,31 +283,77 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </aside>
 
-      {/* Phone bottom sheet / tablet side drawer for navigation. */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/48 backdrop-blur-md"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <aside className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] flex max-h-[78dvh] flex-col gap-5 rounded-4xl border border-white/35 bg-[color-mix(in_srgb,var(--color-surface-1)_70%,transparent)] p-4 shadow-(--shadow-pop) ring-1 ring-inset ring-white/20 backdrop-blur-2xl backdrop-saturate-150 md:inset-y-3 md:bottom-auto md:left-3 md:right-auto md:max-h-none md:w-80">
-            <div className="flex items-center justify-between">
-              <Brand />
-              <IconButton
-                label={t('shellCloseNavigation')}
-                onClick={() => setDrawerOpen(false)}
+      {/* Navigation drawer: a bottom sheet on phones, the same sheet capped and
+          centred from md up — deliberately not a full-bleed panel, so the page
+          stays visible either side of it and it reads as a menu, not a screen.
+
+          Built on Radix Dialog rather than a bare role="dialog": aria-modal is a
+          promise that focus is trapped and the rest of the page is inert, and
+          hand-rolling half of that is worse than not claiming it. Content is
+          force-mounted so AnimatePresence can play the exit before Radix
+          unmounts it. The geometry is bespoke because ResponsiveDrawerContent
+          pins itself to the viewport edges, which is the shape this is not. */}
+      <DialogPrimitive.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <AnimatePresence>
+          {drawerOpen && (
+            <DialogPrimitive.Portal forceMount>
+              <DialogPrimitive.Overlay asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                  className="fixed inset-0 z-40 bg-black/48 backdrop-blur-md lg:hidden"
+                />
+              </DialogPrimitive.Overlay>
+              <DialogPrimitive.Content
+                asChild
+                forceMount
+                // No description element exists, and Radix would otherwise point
+                // aria-describedby at an id that is not in the document.
+                aria-describedby={undefined}
               >
-                <CloseIcon />
-              </IconButton>
-            </div>
-            {settingsMode ? (
-              <SettingsSidebarNav onNavigate={() => setDrawerOpen(false)} />
-            ) : (
-              <NavLinks isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
-            )}
-          </aside>
-        </div>
-      )}
+                <motion.aside
+                  initial={
+                    reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }
+                  }
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                  exit={
+                    reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }
+                  }
+                  transition={
+                    reduceMotion
+                      ? { duration: 0 }
+                      : { type: 'spring', stiffness: 420, damping: 34, mass: 0.8 }
+                  }
+                  className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[78dvh] max-w-md flex-col gap-5 overflow-y-auto rounded-4xl border border-white/35 bg-[color-mix(in_srgb,var(--color-surface-1)_70%,transparent)] p-4 shadow-(--shadow-pop) outline-none ring-1 ring-inset ring-white/20 backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
+                >
+                  <div className="flex items-center justify-between">
+                    {/* Title must own a real DOM node: <Brand> does not forward
+                        props, so `asChild` dropped Radix's generated id and left
+                        aria-labelledby pointing at nothing — a dialog with no
+                        accessible name at all. */}
+                    <DialogPrimitive.Title className="sr-only">
+                      {t('shellPrimaryNavigation')}
+                    </DialogPrimitive.Title>
+                    <Brand />
+                    <DialogPrimitive.Close asChild>
+                      <IconButton label={t('shellCloseNavigation')}>
+                        <CloseIcon />
+                      </IconButton>
+                    </DialogPrimitive.Close>
+                  </div>
+                  {settingsMode ? (
+                    <SettingsSidebarNav onNavigate={() => setDrawerOpen(false)} />
+                  ) : (
+                    <NavLinks isAdmin={isAdmin} onNavigate={() => setDrawerOpen(false)} />
+                  )}
+                </motion.aside>
+              </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
+          )}
+        </AnimatePresence>
+      </DialogPrimitive.Root>
 
       <div className="flex min-w-0 flex-col">
         {/* Mobile settings screens carry their own header/back, so the app top
@@ -408,62 +365,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main
           key={pathname}
           className={cn(
-            // pb-24 clears the floating bottom nav; it runs through md now, so
-            // the padding has to follow it to lg.
-            'page-enter page-stagger mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-24 sm:px-6 lg:pb-6',
+            // Bottom padding reserves the dock's measured height (published by
+            // BottomDock as --dock-height). The fallback is what applies at the
+            // breakpoint where there is no dock at all.
+            'page-enter page-stagger mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6',
+            'pb-[calc(var(--dock-height,0px)+1.5rem)]',
+            // Settings suppresses the dock but puts its own search bar at the
+            // bottom of the screen, so those routes reserve their own space.
+            // Kept as a CSS breakpoint, not the isMobile state, for the same
+            // reason the dock's own visibility is.
+            settingsMode && 'max-md:pb-[calc(5rem+env(safe-area-inset-bottom))]',
           )}
         >
           {children}
         </main>
       </div>
 
-      {/* App bottom nav — hidden on settings routes (replaced by the search bar). */}
-      {!settingsMode && (
-        <nav
-          aria-label={t('shellPrimaryNavigation')}
-          onPointerDown={handleMobileNavPointerDown}
-          onPointerMove={handleMobileNavPointerMove}
-          onPointerUp={handleMobileNavPointerEnd}
-          onPointerCancel={handleMobileNavPointerCancel}
-          onClickCapture={handleMobileNavClickCapture}
-          className="bottom-nav-enter fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-md touch-pan-y items-center justify-around rounded-[1.6rem] border border-white/40 bg-[color-mix(in_srgb,var(--color-surface-1)_55%,transparent)] px-2 py-2 shadow-(--shadow-pop) ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
-        >
-          <MobileNavLink
-            to="/teacher/dashboard"
-            label={t('dashboard')}
-            icon={<Home />}
-            preview={mobileNavPreview}
-          />
-          <MobileNavLink
-            to="/teacher/classrooms"
-            label={t('shellNavClasses')}
-            icon={<BookOpen />}
-            preview={mobileNavPreview}
-          />
-          <MobileNavLink
-            to="/teacher/modules"
-            label={t('shellNavMaterials')}
-            icon={<Layers3 />}
-            preview={mobileNavPreview}
-          />
-          <MobileNavLink
-            to="/teacher/calendar"
-            label={t('calendar')}
-            icon={<CalendarDays />}
-            preview={mobileNavPreview}
-          />
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label={t('shellOpenMoreNavigation')}
-            data-mobile-nav-target="more"
-            className="flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-[11px] leading-none text-(--color-ink-muted) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-400)"
-          >
-            <MoreHorizontal className="size-5" />
-            <span>{t('shellMore')}</span>
-          </button>
-        </nav>
-      )}
+      {/* One dock for every audience; it decides its own visibility. */}
+      <AppDock onOverflow={() => setDrawerOpen(true)} />
 
       {/* Settings keeps search inline on mobile; it does not open the global palette. */}
       {settingsOnMobile ? (
@@ -472,74 +391,5 @@ export function AppShell({ children }: { children: ReactNode }) {
         <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       )}
     </div>
-  )
-}
-
-type MobileNavDestination =
-  '/teacher/dashboard' | '/teacher/classrooms' | '/teacher/calendar' | '/teacher/modules'
-type MobileNavTarget = MobileNavDestination | 'more'
-
-function isMobileNavTarget(value: string | undefined): value is MobileNavTarget {
-  return (
-    value === '/teacher/dashboard' ||
-    value === '/teacher/classrooms' ||
-    value === '/teacher/calendar' ||
-    value === '/teacher/modules' ||
-    value === 'more'
-  )
-}
-
-function MobileNavLink({
-  to,
-  label,
-  icon,
-  preview,
-}: {
-  to: MobileNavDestination
-  label: string
-  icon: ReactNode
-  preview: MobileNavTarget | null
-}) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const reduceMotion = useReducedMotion()
-  const isCurrentRoute =
-    to === '/teacher/dashboard'
-      ? pathname === to
-      : pathname === to || pathname.startsWith(`${to}/`)
-  const isActive = preview ? preview === to : isCurrentRoute
-
-  return (
-    <Link
-      to={to}
-      data-mobile-nav-target={to}
-      activeOptions={{ exact: to === '/teacher/dashboard' }}
-      className={cn(
-        'relative isolate flex min-w-14 flex-col items-center gap-1 rounded-full px-3 py-1 text-[11px] leading-none transition-colors',
-        isActive ? 'font-medium text-(--color-accent-fg)' : 'text-(--color-ink-muted)',
-      )}
-    >
-      {isActive && (
-        <motion.span
-          layoutId="mobile-nav-active-indicator"
-          initial={false}
-          transition={
-            reduceMotion
-              ? { duration: 0 }
-              : { type: 'spring', stiffness: 430, damping: 30, mass: 0.7 }
-          }
-          className="absolute inset-0 z-0 rounded-full border border-white/45 bg-[color-mix(in_srgb,var(--color-accent-400)_82%,white)] shadow-[0_5px_15px_color-mix(in_srgb,var(--color-accent-400)_24%,transparent)] before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/45 before:blur-[2px] before:content-['']"
-        />
-      )}
-      <motion.span
-        animate={{ scale: isActive && !reduceMotion ? 1.08 : 1 }}
-        transition={
-          reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 24 }
-        }
-        className="relative z-10 [&>svg]:size-5"
-      >
-        {icon}
-      </motion.span>
-      <span className="relative z-10">{label}</span>
-    </Link>
   )
 }

@@ -133,6 +133,36 @@ export function computeSessionTrend(
     .reverse()
 }
 
+export interface SessionMonth<T> {
+  /** `YYYY-MM`, taken straight off the date string. */
+  key: string
+  sessions: T[]
+}
+
+/**
+ * Bucket sessions into calendar months, preserving the order they arrive in.
+ *
+ * The key is sliced off the `YYYY-MM-DD` string rather than parsed into a Date:
+ * `session_date` is a wall-clock school day, and constructing a Date from it
+ * shifts the month across a timezone boundary for anyone west of UTC.
+ *
+ * Only adjacent runs are merged, so callers must pass date-ordered sessions —
+ * which `useClassSessions` does. Unordered input yields one group per run, and
+ * two groups can then share a key.
+ */
+export function groupSessionsByMonth<T extends { session_date: string }>(
+  sessions: readonly T[],
+): SessionMonth<T>[] {
+  const months: SessionMonth<T>[] = []
+  for (const session of sessions) {
+    const key = session.session_date.slice(0, 7)
+    const current = months.at(-1)
+    if (current?.key === key) current.sessions.push(session)
+    else months.push({ key, sessions: [session] })
+  }
+  return months
+}
+
 export type SummarySort = 'name' | 'rate'
 
 /** Format a rate in [0, 1] as a whole-percent string, or an em dash when null. */

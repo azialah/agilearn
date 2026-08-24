@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
-import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
+import { ChevronRightIcon, EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import { useLocale } from '@/lib/locale'
 import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
 import { useStudentsPage } from '@/lib/queries/students'
@@ -33,23 +33,27 @@ export function ClassroomMeta({ classroomId }: { classroomId: string }) {
   const { data: roster } = useStudentsPage(classroomId, 0)
   const { data: allSlots = [] } = useMeetingSlots()
 
+  const slotsFor = (subjectId: string) =>
+    allSlots.filter((slot) => slot.course_subject_id === subjectId)
+
+  // The meeting times a teacher actually needs at a glance, folded into the
+  // closed state so this panel stops eating the top of Roster, Grades and
+  // Attendance alike.
+  const schedule = subjects
+    .flatMap((subject) => slotsFor(subject.id))
+    .map((slot) => `${WEEKDAY_LABELS[slot.weekday]} ${to12Hour(slot.starts_at)}`)
+    .join(', ')
+
   return (
     <section
       aria-label={t('classroomsSubjectsSectionLabel')}
-      className="rounded-2xl border border-(--color-border) bg-(--color-surface-1)"
+      className="relative rounded-2xl border border-(--color-border) bg-(--color-surface-1)"
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <p className="text-sm text-(--color-ink-muted)">
-          <span className="font-medium text-(--color-ink)">
-            {roster?.total ?? 0} {t('students')}
-          </span>{' '}
-          {t(
-            subjects.length === 1
-              ? 'classroomsSharedBySubjectsOne'
-              : 'classroomsSharedBySubjectsOther',
-            { n: subjects.length },
-          )}
-        </p>
+      {/* Sits over the summary rather than inside it: a button nested in a
+          <summary> swallows the click that should toggle the panel. Placed
+          before <details> so tab order matches the visual order — after it, a
+          keyboard user had to pass every subject row to reach this. */}
+      <div className="absolute right-2 top-2">
         <SubjectFormDialog
           classroomId={classroomId}
           trigger={
@@ -58,20 +62,40 @@ export function ClassroomMeta({ classroomId }: { classroomId: string }) {
             </Button>
           }
         />
-      </header>
+      </div>
 
-      {subjects.length > 0 && (
-        <ul className="divide-y divide-(--color-border) border-t border-(--color-border)">
-          {subjects.map((subject) => (
-            <SubjectRow
-              key={subject.id}
-              classroomId={classroomId}
-              subject={subject}
-              slots={allSlots.filter((slot) => slot.course_subject_id === subject.id)}
-            />
-          ))}
-        </ul>
-      )}
+      {/* Native <details>: correct keyboard and screen-reader behaviour, and it
+          opens for in-page find, none of which a div-and-state version gets. */}
+      <details className="group/panel">
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-3 pl-4 pr-32 text-sm text-(--color-ink-muted) [&::-webkit-details-marker]:hidden">
+          <ChevronRightIcon className="size-4 shrink-0 text-(--color-ink-faint) transition-transform group-open/panel:rotate-90" />
+          <span className="line-clamp-2 min-w-0 flex-1">
+            <span className="font-medium text-(--color-ink)">
+              {roster?.total ?? 0} {t('students')}
+            </span>{' '}
+            {t(
+              subjects.length === 1
+                ? 'classroomsSharedBySubjectsOne'
+                : 'classroomsSharedBySubjectsOther',
+              { n: subjects.length },
+            )}
+            {schedule && ` · ${schedule}`}
+          </span>
+        </summary>
+
+        {subjects.length > 0 && (
+          <ul className="divide-y divide-(--color-border) border-t border-(--color-border)">
+            {subjects.map((subject) => (
+              <SubjectRow
+                key={subject.id}
+                classroomId={classroomId}
+                subject={subject}
+                slots={slotsFor(subject.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </details>
     </section>
   )
 }
@@ -166,8 +190,9 @@ function MeetingRow({
     <li className="group flex items-center gap-2 text-xs text-(--color-ink-muted)">
       <span className="font-medium text-(--color-ink)">{when}</span>
       {slot.location_label && <span>{slot.location_label}</span>}
-      {/* The row already names the subject, so these only need the time. */}
-      <span className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      {/* The row already names the subject, so these only need the time. Always
+          shown on touch, where hover never fires and they were unreachable. */}
+      <span className="flex items-center gap-0.5 transition-opacity sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
         <MeetingSlotDialog
           subject={subject}
           slot={slot}
