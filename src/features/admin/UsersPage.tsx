@@ -88,7 +88,7 @@ export function UsersPage() {
                       }
                       disabled={user.id === profile?.id || updateRole.isPending}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-32" aria-label="Change role">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

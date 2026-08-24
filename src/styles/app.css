@@ -1,13 +1,7 @@
 @import 'tailwindcss';
 
-/* Self-hosted display + mono faces (landing typography, code/OTP digits). */
-@font-face {
-  font-family: 'Space Grotesk';
-  font-style: normal;
-  font-weight: 300 700;
-  font-display: swap;
-  src: url('/fonts/space-grotesk-var.woff2') format('woff2');
-}
+/* Self-hosted mono + script faces (code/OTP digits, the greeting). The display
+   face is Stack Sans Text, loaded by index.html — see --font-display below. */
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
@@ -270,6 +264,211 @@
     background: rgba(255, 255, 255, 0.35);
     transform: scale(0);
     animation: ripple-out 0.6s ease-out;
+  }
+}
+
+/* Sliding selection for SegmentedControl (bottom dock, classroom tab strip).
+   Only left/width transition: the pill is positioned in percentages of its
+   track, so a proportional resize is interpolated by the browser for free and
+   never needs a JS-driven re-measure to keep up. */
+.segmented-pill-animated {
+  transition:
+    left 0.4s cubic-bezier(0.65, 0, 0.35, 1),
+    width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Mid-drag the pill is following a finger rather than settling, so it swaps to
+   a short, near-linear transition. At 400ms it visibly trailed the touch, which
+   defeats the point — the pill is the only thing telling the user where lifting
+   will land. */
+.segmented-pill-animated[data-dragging='true'] {
+  transition:
+    left 90ms linear,
+    width 90ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented-pill-animated,
+  .segmented-pill-animated[data-dragging='true'] {
+    transition: none;
+  }
+}
+
+/* Collapsing the dock hides LABELS ONLY — icons keep their size and, more
+   importantly, their horizontal positions. The bar is also a drag control, and
+   tabs that shift sideways mid-gesture silently retarget a commit already in
+   flight. Height and opacity animate; overflow clips the glyphs rather than
+   squashing them.
+
+   The label carries an explicit height rather than `auto`, because a height
+   transition out of `auto` does not animate. */
+.dock-label {
+  display: block;
+  overflow: hidden;
+  height: 0.75rem;
+  margin-top: 0.25rem;
+  font-size: 0.5625rem;
+  line-height: 0.75rem;
+  letter-spacing: 0.01em;
+  opacity: 1;
+  /* Leaving is brisk, arriving is soft: chrome that hid itself should get out
+     of the way of the gesture that dismissed it, then return calmly. The
+     duration is read from the target state so class and duration commit in the
+     same frame. */
+  transition:
+    height 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A tab's visible box is now smaller than its touch target. The 44px floor was
+   what set the dock's height — icon plus label came to less than 44, so the
+   floor won and the bar could not get shorter no matter what was trimmed.
+   The floor is not negotiable, so it moves off the visible box: ::after extends
+   the hit area down into the dead space between the capsule and the screen
+   edge, where there is nothing to block. Extending upward would drop an
+   invisible tap-blocker over the page content showing through beside the dock. */
+.dock-tab {
+  min-height: 2rem;
+}
+.dock-tab::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 -0.75rem 0;
+}
+
+/* The capsule's own padding tightens too. Without this the bar frees no space
+   at all: an icon plus a label is exactly the 44px touch-target floor, so the
+   floor — not the content — sets the height, and hiding the label changes
+   nothing. Vertical padding only, so no tab moves sideways.
+
+   This deliberately animates a layout property, against the usual
+   transform/opacity advice, because the requirement is that the bar genuinely
+   occupies less room. `transform: scale` would squash the glyphs and the text
+   instead of shrinking the box, and opacity reclaims no space at all — neither
+   does what a collapsing bar has to do.
+
+   The cost is bounded rather than ignored: `contain: layout` scopes the reflow
+   to this subtree, which is a position:fixed element with five children, and
+   the page beyond it cannot move because --dock-height is deliberately never
+   republished while collapsed. Both properties live on the glass rule below,
+   so there is one .dock-capsule declaration rather than two to keep in sync. */
+
+.dock-collapsed .dock-label {
+  height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transition-duration: 200ms;
+}
+
+/* Collapsing pulls the capsule in horizontally as well as vertically — the bar
+   contracts toward the middle rather than just getting shorter. The tabs narrow
+   with it, staying at or above 44px wide so the touch target survives.
+
+   This is the one place tabs DO move sideways, which rule 4 otherwise forbids.
+   It is safe only because a drag in flight forces the expanded state (see
+   showLabels in BottomDock) and freezes it there, so no tab can shift under a
+   finger that is already committing. */
+.dock-collapsed .dock-capsule {
+  padding-block: 0.1875rem;
+  max-width: 17rem;
+  transition-duration: 200ms;
+}
+
+.dock-collapsed .dock-tab {
+  min-width: 2.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-label,
+  .dock-capsule {
+    transition: none;
+  }
+}
+
+/* Liquid-glass capsule, following Apple's iOS 26 recipe: a heavy background
+   blur (30-40px) with saturation and brightness pushed up, a low-opacity tint
+   over it, and a specular highlight along the top edge. The blur is what makes
+   it read as glass rather than as a translucent panel — the tint alone is just
+   a grey box.
+
+   Tint values differ per theme on purpose: a fill tuned for light reads as
+   grime on a dark ground, and a top rim strong enough to catch the eye in light
+   becomes a glare stripe in dark. */
+.dock-capsule {
+  --dock-fill: color-mix(in srgb, var(--color-surface-0) 68%, transparent);
+  --dock-rim: rgba(255, 255, 255, 0.55);
+  /* Specular highlight along the top edge, plus a faint bounce off the bottom
+     so the capsule reads as a solid of glass rather than a flat sheet. */
+  --dock-sheen: rgba(255, 255, 255, 0.7);
+  --dock-bounce: rgba(255, 255, 255, 0.16);
+  --dock-lift: 0 10px 30px rgba(61, 42, 24, 0.16), 0 2px 8px rgba(61, 42, 24, 0.1);
+
+  /* Collapse geometry — see the note above the .dock-collapsed rules. */
+  padding-block: 0.3125rem;
+  max-width: 20rem;
+  contain: layout;
+  border: 1px solid var(--dock-rim);
+  background: var(--dock-fill);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0.5px var(--dock-sheen),
+    inset 0 -1px 0.5px var(--dock-bounce),
+    var(--dock-lift);
+  transition:
+    padding-block 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dark values apply for an explicit dark choice, or for "no explicit choice"
+   AND a dark system preference — the same shape the token blocks at the top of
+   this file use (:root.dark / :root:not(.dark):not(.calm-white)). This file
+   themes by CLASS, not by a data-theme attribute; a data-theme selector here
+   matched nothing on dark and, worse, its :not() form matched system-default
+   LIGHT users and painted a black tint onto the cream page.
+   The light values stay on the bare .dock-capsule rule above, so .calm-white —
+   which is a light theme — correctly inherits them. */
+:root.dark .dock-capsule {
+  --dock-fill: color-mix(in srgb, #000 26%, transparent);
+  --dock-rim: rgba(255, 255, 255, 0.14);
+  --dock-sheen: rgba(255, 255, 255, 0.18);
+  --dock-bounce: rgba(255, 255, 255, 0.05);
+  --dock-lift: 0 12px 34px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.34);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark):not(.calm-white) .dock-capsule {
+    --dock-fill: color-mix(in srgb, #000 26%, transparent);
+    --dock-rim: rgba(255, 255, 255, 0.14);
+    --dock-sheen: rgba(255, 255, 255, 0.18);
+    --dock-bounce: rgba(255, 255, 255, 0.05);
+    --dock-lift: 0 12px 34px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.34);
+  }
+}
+
+/* The selected pill is glass too, tinted with the brand accent rather than
+   left as a flat fill — same rim treatment so it reads as a lens sitting in
+   the capsule, not a sticker on top of it. */
+.dock-pill {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-accent-400) 92%, white),
+    var(--color-accent-400)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.6),
+    0 4px 12px color-mix(in srgb, var(--color-accent-400) 30%, transparent);
+}
+
+/* Frosted glass is decoration; when the user has asked for less transparency
+   it becomes a legibility problem, so the fill goes solid and the blur off. */
+@media (prefers-reduced-transparency: reduce) {
+  .dock-capsule {
+    background: var(--color-surface-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
