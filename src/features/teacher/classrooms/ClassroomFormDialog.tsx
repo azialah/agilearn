@@ -1232,6 +1232,10 @@ export function ClassroomFormDialog({
                       subjectCode: form.subjectCode,
                       sessionType: form.sessionType,
                       gradingTemplate: form.gradingTemplate,
+                      // Not part of the wizard's form; see showScoringPolicy.
+                      transmutationTableId: null,
+                      gradeFloor: 0,
+                      ungradedAsZero: false,
                       description: form.description,
                       room: form.room,
                     }}
@@ -1248,6 +1252,7 @@ export function ClassroomFormDialog({
                       })
                     }
                     isCollege={isCollege}
+                    showScoringPolicy={false}
                     namePlaceholder={t('classroomDialogSubjectNamePlaceholder', {
                       hint: subjectHint,
                     })}

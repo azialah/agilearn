@@ -10,9 +10,14 @@
 
 import * as XLSX from 'xlsx'
 import {
+  categoriesFor,
   computeConfiguredStudentGradebook,
+  computeReportedFinalGrade,
+  isConfiguredGradeComplete,
+  remarkFor,
   round2,
   type GradebookStructure,
+  type ReportingConfig,
   type ScoreMap,
 } from '@/lib/grading'
 import type { Activity, Classroom, Student } from '@/types/domain'
@@ -25,18 +30,6 @@ const TEMPLATE_NOTES = [
   'e.g. Juan',
   'e.g. Reyes',
 ] as const
-
-function belongsToComponent(
-  category: GradebookStructure['categories'][number],
-  componentId: string,
-) {
-  return (
-    category.grade_component_id === componentId ||
-    (category.grade_component_id === null &&
-      ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
-        (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
-  )
-}
 
 /** Roster import template: header + hint row, ready to fill in. */
 export function buildRosterTemplateWorkbook(): XLSX.WorkBook {
@@ -53,12 +46,7 @@ function orderedActivityColumns(structure: GradebookStructure): Activity[] {
   const columns: Activity[] = []
   for (const period of structure.periods) {
     for (const component of structure.components) {
-      const categories = structure.categories.filter(
-        (category) =>
-          belongsToComponent(category, component.id) &&
-          (category.grading_period_id === period.id ||
-            category.grading_period_id === null),
-      )
+      const categories = categoriesFor(structure, period.id, component.id)
       for (const category of categories) {
         const activities = structure.activities.filter(
           (a) => a.category_id === category.id && a.grading_period_id === period.id,
@@ -81,6 +69,17 @@ function cell(value: number | null): number | string {
   return value === null ? '' : round2(value)
 }
 
+/** Name the Final column for what it actually holds, matching the on-screen
+ *  label — "Final Grade" reads as a percentage, which it is not for a DepEd or
+ *  college subject. */
+function finalHeaderFor(gradingTemplate?: string): string {
+  if (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') {
+    return 'Transmuted Grade'
+  }
+  if (gradingTemplate === 'higher_education') return 'Grade Equivalent'
+  return 'Final Grade'
+}
+
 /**
  * Grade sheet: roster + every activity score + the computed period, component
  * and final grades (from the shared grading engine, using the classroom's
@@ -91,6 +90,10 @@ export function buildGradeSheetWorkbook(
   students: Student[],
   structure: GradebookStructure,
   scores: ScoreMap,
+  /** Which number the Final column holds. Omitted means the raw percentage,
+   *  which is what this exporter used to emit unconditionally — including for
+   *  DepEd and college subjects whose screen showed a converted grade. */
+  reporting: ReportingConfig = {},
 ): XLSX.WorkBook {
   const activityColumns = orderedActivityColumns(structure)
 
@@ -102,7 +105,8 @@ export function buildGradeSheetWorkbook(
     }
   }
   for (const component of structure.components) header.push(`${component.name} grade`)
-  header.push('Final Grade')
+  header.push(finalHeaderFor(reporting.gradingTemplate))
+  header.push('Remarks')
 
   const aoa: (string | number)[][] = [header]
 
@@ -125,7 +129,10 @@ export function buildGradeSheetWorkbook(
     }
     for (const component of structure.components)
       row.push(cell(book.components[component.id]))
-    row.push(cell(book.final))
+    row.push(cell(computeReportedFinalGrade(structure, scores, student.id, reporting)))
+    row.push(
+      remarkFor(book.final, isConfiguredGradeComplete(structure, scores, student.id)),
+    )
     aoa.push(row)
   }
 

@@ -49,10 +49,33 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Without this, the workbox default covers js/css/html only, so an
+        // offline launch renders with no self-hosted fonts at all — app.css
+        // pulls JetBrains Mono and Dancing Script from /fonts. They are small
+        // and immutable, so precaching them is the right trade.
+        //
+        // Deliberately no "png": the dashboard illustration alone is 2.4 MB,
+        // which would more than double the install payload for every teacher
+        // to protect an image that degrades gracefully. The app icons are
+        // precached anyway via includeAssets above, and /images is handled by
+        // the runtime rule below.
+        globPatterns: ['**/*.{js,css,html,woff2,svg,ico,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/auth/, /supabase\.co/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // Same-origin artwork: too large to precache, but worth keeping
+            // after the first view so a revisit offline still looks right.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin === true && url.pathname.startsWith('/images/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'agilearn-images',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             // The Google Fonts stylesheet: revalidate in the background so a
             // cold launch never waits on the network for it.

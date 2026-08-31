@@ -563,6 +563,7 @@ export type Database = {
           course_code: string
           created_at: string
           description: string
+          grade_floor: number
           grading_template: string
           id: string
           kind: Database['public']['Enums']['course_subject_kind']
@@ -573,6 +574,7 @@ export type Database = {
           schedule: string
           subject_code: string
           transmutation_table_id: string | null
+          ungraded_as_zero: boolean
           updated_at: string
         }
         Insert: {
@@ -581,6 +583,7 @@ export type Database = {
           course_code?: string
           created_at?: string
           description?: string
+          grade_floor?: number
           grading_template?: string
           id?: string
           kind?: Database['public']['Enums']['course_subject_kind']
@@ -591,6 +594,7 @@ export type Database = {
           schedule?: string
           subject_code?: string
           transmutation_table_id?: string | null
+          ungraded_as_zero?: boolean
           updated_at?: string
         }
         Update: {
@@ -599,6 +603,7 @@ export type Database = {
           course_code?: string
           created_at?: string
           description?: string
+          grade_floor?: number
           grading_template?: string
           id?: string
           kind?: Database['public']['Enums']['course_subject_kind']
@@ -609,6 +614,7 @@ export type Database = {
           schedule?: string
           subject_code?: string
           transmutation_table_id?: string | null
+          ungraded_as_zero?: boolean
           updated_at?: string
         }
         Relationships: [

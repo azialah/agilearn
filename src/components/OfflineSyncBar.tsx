@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/toast'
 import { useOfflineSync } from '@/lib/queries/offlineSync'
@@ -9,11 +10,25 @@ import { useLocale } from '@/lib/locale'
  * teacher can see that, push it manually, and settle anything that clashed
  * with a change made elsewhere in the meantime.
  */
+/** The one field a teacher is actually choosing between. Attendance rows
+ *  differ by status, score rows by the mark — showing "status" for a queued
+ *  grade printed an em dash and made the choice meaningless. */
+function describeValue(
+  table: string,
+  row: Record<string, unknown> | null | undefined,
+): string {
+  if (!row) return '—'
+  const value = table === 'scores' ? row.score : row.status
+  return value === null || value === undefined ? '—' : String(value)
+}
+
 export function OfflineSyncBar() {
   const { pending, progress, conflicts, flushing, flush, keepMine, discardConflict } =
     useOfflineSync()
   const { toast } = useToast()
   const { t } = useLocale()
+  // Resolving is a round trip; without this a double-tap fires it twice.
+  const [resolving, setResolving] = useState<string | null>(null)
 
   if (pending === 0 && conflicts.length === 0) return null
 
@@ -21,6 +36,8 @@ export function OfflineSyncBar() {
     action: 'mine' | 'theirs',
     conflict: (typeof conflicts)[number],
   ) {
+    if (resolving) return
+    setResolving(conflict.write.id)
     try {
       if (action === 'mine') await keepMine(conflict)
       else await discardConflict(conflict.write.id)
@@ -30,6 +47,8 @@ export function OfflineSyncBar() {
         description: error instanceof Error ? error.message : undefined,
         tone: 'error',
       })
+    } finally {
+      setResolving(null)
     }
   }
 
@@ -104,15 +123,16 @@ export function OfflineSyncBar() {
                 </p>
                 <p className="text-xs text-(--color-ink-muted)">
                   {t('attendanceSyncYoursLabel')}:{' '}
-                  {String(conflict.write.payload.status ?? '—')} ·{' '}
+                  {describeValue(conflict.write.table, conflict.write.payload)} ·{' '}
                   {t('attendanceSyncTheirsLabel')}:{' '}
-                  {String(conflict.theirs?.status ?? '—')}
+                  {describeValue(conflict.write.table, conflict.theirs)}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
+                  disabled={resolving !== null}
                   onClick={() => void resolve('theirs', conflict)}
                 >
                   {t('attendanceSyncKeepTheirs')}
@@ -120,6 +140,8 @@ export function OfflineSyncBar() {
                 <Button
                   size="sm"
                   variant="outline"
+                  loading={resolving === conflict.write.id}
+                  disabled={resolving !== null}
                   onClick={() => void resolve('mine', conflict)}
                 >
                   {t('attendanceSyncKeepMine')}

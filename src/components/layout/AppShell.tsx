@@ -19,6 +19,7 @@ import { readRecentClassrooms, sortByRecentVisit } from '@/lib/recentClassrooms'
 import { classroomColorClasses } from '@/lib/classroomColor'
 import { SettingsSearchBar } from '@/features/settings/SettingsSearchBar'
 import { AppDock } from './AppDock'
+import { OfflineSyncBar } from '@/components/OfflineSyncBar'
 
 function NavLinks({
   isAdmin,
@@ -377,6 +378,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             settingsMode && 'max-md:pb-[calc(5rem+env(safe-area-inset-bottom))]',
           )}
         >
+          {/* Renders nothing unless something is queued. Mounted here rather
+              than on the attendance screens because the queue now also holds
+              score edits, and pending work must not be invisible just because
+              the teacher navigated somewhere else. */}
+          <div className="mb-4 empty:mb-0">
+            <OfflineSyncBar />
+          </div>
           {children}
         </main>
       </div>

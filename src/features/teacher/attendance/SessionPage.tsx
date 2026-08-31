@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/toast'
-import { OfflineSyncBar } from './OfflineSyncBar'
 import { AttendanceImportButton } from './AttendanceImportButton'
 import { cn } from '@/lib/cn'
 import { ChevronRightIcon, UsersIcon } from '@/components/icons'
@@ -139,9 +138,6 @@ export function SessionPage({
 
   return (
     <div className="space-y-6">
-      {/* Marking happens here, so this is where a stranded change must be
-          visible — not one screen back. */}
-      <OfflineSyncBar />
       <div className="space-y-2">
         <Link
           to="/teacher/classrooms/$classroomId/attendance"

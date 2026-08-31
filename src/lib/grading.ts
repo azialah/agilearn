@@ -18,7 +18,10 @@
  *
  * Renormalization rule: any category or period that has no graded work for the
  * student is dropped, and the remaining weights are renormalized so they always
- * sum to 1. Full precision is retained internally; rounding to two decimals
+ * sum to 1. That renormalization also covers a structure whose configured
+ * weights miss 100% — such a gradebook still grades, and {@link findWeightIssues}
+ * reports the mismatch so the UI can warn rather than silently blanking every
+ * column. Full precision is retained internally; rounding to two decimals
  * happens only at the very end (see {@link round2}).
  */
 
@@ -30,12 +33,46 @@ import type {
   GradingPeriod,
 } from '@/types/domain'
 
+/**
+ * Per-subject scoring rules, mirroring course_subjects.grade_floor and
+ * .ungraded_as_zero (migration 0036).
+ *
+ * Optional throughout: an absent policy is exactly today's behaviour, so every
+ * existing caller and test keeps working untouched.
+ */
+export interface ScoringPolicy {
+  /**
+   * Lowest reportable percentage. A raw category percent `p` becomes
+   * `floor + p * (100 - floor) / 100`. 0 disables it; 60 gives the Philippine
+   * college convention `tab_score = (raw / max) * 40 + 60`.
+   *
+   * Applied per category, which is where the paper class record applies it. It
+   * would be arithmetically identical to apply it once to the weighted average
+   * (the linear map commutes with a weighted mean whose weights sum to 1), but
+   * per-category keeps the grid's category column showing the same number the
+   * teacher's sheet shows.
+   */
+  floor?: number
+  /**
+   * When true, an activity with no score counts as zero rather than dropping
+   * out of the ratio — spreadsheet behaviour, where a blank cell is a zero.
+   *
+   * ponytail: the known consequence is that an exam row created before the exam
+   * is given drags everyone toward the floor until scores are entered. The
+   * paper record behaves the same way and teachers cope by adding columns as
+   * they go; add a per-activity "counts yet" flag only if someone asks.
+   */
+  ungradedAsZero?: boolean
+}
+
 /** The static shape of a classroom's gradebook (no scores). */
 export interface GradebookStructure {
   periods: GradingPeriod[]
   components: GradeComponentRecord[]
   categories: ActivityCategory[]
   activities: Activity[]
+  /** Absent means "no floor, ungraded work excluded" — the historical default. */
+  policy?: ScoringPolicy
 }
 
 export interface ConfiguredStudentGradebook {
@@ -49,13 +86,80 @@ export interface WeightedFinalInput {
   weight: number
 }
 
-/** Grade structures are expressed as decimal weights: 0.4 means 40%. */
+/**
+ * Grade structures are expressed as decimal weights: 0.4 means 40%.
+ *
+ * This is a *reporting* predicate, not a gate. The compute functions below
+ * renormalize (`weighted / totalWeight`), so a structure totalling 70% or 200%
+ * still produces a grade — it is simply not the split the teacher asked for.
+ * Gating on it instead used to blank the whole gradebook silently:
+ * `grading_periods.weight` defaults to 1.0 and PeriodDialog sends 1 for a blank
+ * share, so two hand-added periods totalled 200% and every component and final
+ * read `null` while the dialog reported "resulting share: 50%".
+ * {@link findWeightIssues} surfaces the mismatch instead of hiding the grades.
+ *
+ * It stays a hard gate in exactly one place, {@link computeCombinedFinalGrade}:
+ * a missing Lecture subject must never renormalize into 100% Laboratory, and
+ * `save_subject_grade_combination` enforces the same rule in SQL.
+ */
 export function hasExactWeightTotal(weights: readonly number[]): boolean {
   return (
     weights.length > 0 &&
     weights.every((weight) => Number.isFinite(weight) && weight >= 0 && weight <= 1) &&
     weights.reduce((total, weight) => total + Math.round(weight * 10_000), 0) === 10_000
   )
+}
+
+/**
+ * A level whose configured weights do not total 100%.
+ *
+ * Grades are still produced for such a structure — the engine renormalizes —
+ * but the teacher asked for a different split, so the UI must say so. This
+ * replaces the old behavior of silently returning `null` for the whole level,
+ * which looked identical to "no grades entered yet".
+ */
+export interface WeightIssue {
+  level: 'period' | 'component' | 'category'
+  /** Which period/component pair the offending categories sit in. */
+  periodId?: string
+  componentId?: string
+  /** What the weights actually add up to, as a percentage: 70, 200, ... */
+  totalPercent: number
+}
+
+/** Every level of `structure` whose weights miss 100%, in display order. */
+export function findWeightIssues(structure: GradebookStructure): WeightIssue[] {
+  const issues: WeightIssue[] = []
+  const totalOf = (weights: readonly number[]) =>
+    round2(weights.reduce((sum, weight) => sum + weight, 0) * 100)
+
+  const periodWeights = structure.periods.map((period) => period.weight)
+  if (periodWeights.length > 0 && !hasExactWeightTotal(periodWeights)) {
+    issues.push({ level: 'period', totalPercent: totalOf(periodWeights) })
+  }
+
+  const componentWeights = structure.components.map((component) => component.weight)
+  if (componentWeights.length > 0 && !hasExactWeightTotal(componentWeights)) {
+    issues.push({ level: 'component', totalPercent: totalOf(componentWeights) })
+  }
+
+  for (const period of structure.periods) {
+    for (const component of structure.components) {
+      const weights = categoriesFor(structure, period.id, component.id).map(
+        (category) => category.weight,
+      )
+      // An empty component in a period is not misconfigured, just unused.
+      if (weights.length === 0 || hasExactWeightTotal(weights)) continue
+      issues.push({
+        level: 'category',
+        periodId: period.id,
+        componentId: component.id,
+        totalPercent: totalOf(weights),
+      })
+    }
+  }
+
+  return issues
 }
 
 /**
@@ -91,8 +195,23 @@ function categoryUsesComponent(category: ActivityCategory, componentId: string):
   )
 }
 
-/** Grade one configured component for a period. Legacy categories remain visible
- * across periods; new categories are scoped by `grading_period_id`. */
+/** The categories that count toward one component in one period. Legacy
+ * categories remain visible across periods; new ones are scoped by
+ * `grading_period_id`. Exported because the grid, the structure panel and the
+ * workbook all need the same selection and had each grown their own copy. */
+export function categoriesFor(
+  structure: GradebookStructure,
+  periodId: string,
+  componentId: string,
+): ActivityCategory[] {
+  return structure.categories.filter(
+    (category) =>
+      categoryUsesComponent(category, componentId) &&
+      (category.grading_period_id === null || category.grading_period_id === periodId),
+  )
+}
+
+/** Grade one configured component for a period. */
 export function computeConfiguredPeriodComponentGrade(
   structure: GradebookStructure,
   scores: ScoreMap,
@@ -100,12 +219,7 @@ export function computeConfiguredPeriodComponentGrade(
   periodId: string,
   componentId: string,
 ): number | null {
-  const categories = structure.categories.filter(
-    (category) =>
-      categoryUsesComponent(category, componentId) &&
-      (category.grading_period_id === null || category.grading_period_id === periodId),
-  )
-  if (!hasExactWeightTotal(categories.map((category) => category.weight))) return null
+  const categories = categoriesFor(structure, periodId, componentId)
   let weighted = 0
   let totalWeight = 0
   for (const category of categories) {
@@ -113,7 +227,12 @@ export function computeConfiguredPeriodComponentGrade(
       (activity) =>
         activity.category_id === category.id && activity.grading_period_id === periodId,
     )
-    const percent = computeCategoryPercent(activities, scores, studentId)
+    const percent = computeCategoryPercent(
+      activities,
+      scores,
+      studentId,
+      structure.policy,
+    )
     if (percent === null) continue
     weighted += percent * category.weight
     totalWeight += category.weight
@@ -149,11 +268,7 @@ export function computeConfiguredStudentGradebook(
       weighted += grade * period.weight
       totalWeight += period.weight
     }
-    components[component.id] =
-      totalWeight > 0 &&
-      hasExactWeightTotal(structure.periods.map((period) => period.weight))
-        ? weighted / totalWeight
-        : null
+    components[component.id] = totalWeight > 0 ? weighted / totalWeight : null
   }
   let total = 0
   let totalWeight = 0
@@ -166,11 +281,7 @@ export function computeConfiguredStudentGradebook(
   return {
     perPeriod,
     components,
-    final:
-      totalWeight > 0 &&
-      hasExactWeightTotal(structure.components.map((component) => component.weight))
-        ? round2(total / totalWeight)
-        : null,
+    final: totalWeight > 0 ? round2(total / totalWeight) : null,
   }
 }
 
@@ -181,9 +292,6 @@ export function computeConfiguredPeriodFinalGrade(
   studentId: string,
   periodId: string,
 ): number | null {
-  if (!hasExactWeightTotal(structure.components.map((component) => component.weight))) {
-    return null
-  }
   let total = 0
   let totalWeight = 0
   for (const component of structure.components) {
@@ -250,24 +358,52 @@ function scoreFor(
 
 /**
  * Category percentage (0–100) for a student across the supplied activities.
- * Only activities the student has a numeric score for count toward the ratio.
- * Returns null when the student has no graded activity in the category.
+ *
+ * By default only activities the student has a numeric score for count toward
+ * the ratio, and the result is null when nothing in the category is graded.
+ * A {@link ScoringPolicy} can change both halves: `ungradedAsZero` keeps
+ * unscored activities in the denominator, and `floor` compresses the result
+ * into [floor, 100].
  */
 export function computeCategoryPercent(
   activities: Activity[],
   scores: ScoreMap,
   studentId: string,
+  policy?: ScoringPolicy,
 ): number | null {
   let earned = 0
   let possible = 0
   for (const activity of activities) {
     const value = scoreFor(scores, activity.id, studentId)
-    if (value === null) continue
+    if (value === null) {
+      if (!policy?.ungradedAsZero) continue
+      // Counts as a zero: contributes to the denominator, not the numerator.
+      possible += activity.max_score
+      continue
+    }
     earned += value
     possible += activity.max_score
   }
+  // Default policy: nothing scored means possible is still 0, so an untouched
+  // category reads "not started" rather than 0%. Under ungradedAsZero it does
+  // report the floor instead, which is the whole point of that mode — a
+  // spreadsheet shows the same thing, and a not-yet-given exam column pulls
+  // everyone down until it is filled in. isConfiguredGradeComplete is what
+  // keeps such a grade out of a report.
   if (possible <= 0) return null
-  return (earned / possible) * 100
+  return applyFloor((earned / possible) * 100, policy?.floor)
+}
+
+/**
+ * Compress a 0–100 percentage into [floor, 100]:
+ * `floor + percent * (100 - floor) / 100`.
+ *
+ * Exported because the grid shows this per category and the exporters need the
+ * identical number — the alternative was three copies drifting apart.
+ */
+export function applyFloor(percent: number, floor?: number): number {
+  if (!floor || floor <= 0 || floor >= 100 || !Number.isFinite(floor)) return percent
+  return floor + (percent * (100 - floor)) / 100
 }
 
 /**
@@ -289,7 +425,12 @@ export function computePeriodComponentGrade(
     const activities = structure.activities.filter(
       (a) => a.category_id === category.id && a.grading_period_id === periodId,
     )
-    const percent = computeCategoryPercent(activities, scores, studentId)
+    const percent = computeCategoryPercent(
+      activities,
+      scores,
+      studentId,
+      structure.policy,
+    )
     if (percent === null) continue
     weighted += percent * category.weight
     totalWeight += category.weight
@@ -522,10 +663,7 @@ export function computeTransmutedStudentGradebook(
     weighted += grade * period.weight
     totalWeight += period.weight
   }
-  const final =
-    totalWeight > 0 && hasExactWeightTotal(structure.periods.map((p) => p.weight))
-      ? round2(weighted / totalWeight)
-      : null
+  const final = totalWeight > 0 ? round2(weighted / totalWeight) : null
   return { perPeriod, final }
 }
 
@@ -568,4 +706,98 @@ export function computeChedFinalGrade(
     computeConfiguredStudentGradebook(structure, scores, studentId).final,
     increment,
   )
+}
+
+/**
+ * The reporting layer: which number a teacher is actually shown.
+ *
+ * Everything above produces a 0-100 percentage. Which conversion sits on top
+ * depends on the subject's grading template, and the branch used to live
+ * duplicated in SummaryTable and GradeGrid — so the .xlsx and .pdf exporters,
+ * which never had a copy, printed the raw percentage while the screen showed
+ * the converted grade. Same student, two different numbers. One function now,
+ * called by all four.
+ */
+
+export type GradingTemplateName =
+  'basic_education' | 'senior_high' | 'higher_education' | 'custom'
+
+export interface ReportingConfig {
+  gradingTemplate?: GradingTemplateName | string
+  /** Resolved conversion table, when the subject uses one. */
+  table?: TransmutationTable
+  /** Only consulted on the CHED formula fallback. */
+  chedIncrement?: number
+}
+
+export function computeReportedFinalGrade(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  config: ReportingConfig = {},
+): number | null {
+  const { gradingTemplate, table, chedIncrement } = config
+
+  // DepEd: transmute EACH period into its own Quarterly Grade, then combine.
+  // The combination is deliberately NOT re-transmuted - see the comment on
+  // computeTransmutedStudentGradebook.
+  if (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') {
+    if (!table)
+      return computeConfiguredStudentGradebook(structure, scores, studentId).final
+    return computeTransmutedStudentGradebook(structure, scores, studentId, table).final
+  }
+
+  if (gradingTemplate === 'higher_education') {
+    const final = computeConfiguredStudentGradebook(structure, scores, studentId).final
+    // Combine first, THEN look up - the opposite order to DepEd above, and the
+    // order the college class record uses: ROUND(AVERAGE(midterm, finals)) is
+    // computed first and the numeric equivalent read off that single number.
+    if (table) return transmuteGrade(final, table)
+    return bandChedGrade(final, chedIncrement)
+  }
+
+  return computeConfiguredStudentGradebook(structure, scores, studentId).final
+}
+
+/**
+ * Pass/fail/incomplete for one student.
+ *
+ * Judged on the PERCENTAGE, never on a converted grade: a CHED numeric
+ * equivalent runs 1.00 (best) to 5.00 (worst), so a >= comparison against it
+ * would invert the test.
+ *
+ * INCOMPLETE needs no stored column - "has a score for every activity" is
+ * already answered by isConfiguredGradeComplete, and that is what an INC means
+ * in practice.
+ *
+ * ponytail: derived, not stored. A teacher who wants to mark a fully-scored
+ * student INC anyway needs a real override column - add it when someone asks.
+ */
+export type Remark = 'PASSED' | 'FAILED' | 'INCOMPLETE'
+
+export function remarkFor(
+  finalPercent: number | null,
+  complete: boolean,
+  passingPercent: number = CHED_PASSING_PERCENT,
+): Remark {
+  if (finalPercent === null || !complete) return 'INCOMPLETE'
+  return finalPercent >= passingPercent ? 'PASSED' : 'FAILED'
+}
+
+export interface ClassStatistics {
+  count: number
+  passed: number
+  failed: number
+  incomplete: number
+}
+
+/** Tally remarks the caller has already computed - SummaryTable maps over its
+ * students once, so this is a reduce over an array it is holding anyway. */
+export function summarizeClass(remarks: readonly Remark[]): ClassStatistics {
+  return {
+    count: remarks.length,
+    passed: remarks.filter((remark) => remark === 'PASSED').length,
+    failed: remarks.filter((remark) => remark === 'FAILED').length,
+    incomplete: remarks.filter((remark) => remark === 'INCOMPLETE').length,
+  }
 }

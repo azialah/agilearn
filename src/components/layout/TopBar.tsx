@@ -27,7 +27,7 @@ import {
   ResponsiveDrawerHeader,
 } from '@/components/ui/ResponsiveDrawer'
 import { cn } from '@/lib/cn'
-import { signOut, useProfile } from '@/lib/queries/profiles'
+import { useProfile, useSignOut } from '@/lib/queries/profiles'
 import {
   useClearUnreadNotifications,
   useMarkNotificationRead,
@@ -86,6 +86,7 @@ function notificationPayload(
 export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const { data: profile } = useProfile()
   const navigate = useNavigate()
+  const signOutAndRedirect = useSignOut()
   const { t } = useLocale()
   const { toast } = useToast()
   const [isPhone, setIsPhone] = useState(false)
@@ -154,9 +155,8 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   async function handleSignOut() {
     setSigningOut(true)
     try {
-      await signOut()
+      await signOutAndRedirect()
       setConfirmSignOut(false)
-      navigate({ to: '/login' })
     } catch (error) {
       toast({
         title: t('shellToastSignOutError'),

@@ -68,8 +68,8 @@ export function PrivacySection() {
             device
           </CardTitle>
           <p className="text-sm text-(--color-ink-muted)">
-            Agilearn keeps an offline application shell and checks for service-worker
-            updates on supported browsers.
+            Agilearn keeps its screens, your classrooms and your latest grades on this
+            device, so it opens and keeps working without a connection.
           </p>
         </CardHeader>
         <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -83,7 +83,7 @@ export function PrivacySection() {
           />
           <SettingHint
             title="Offline behavior"
-            detail="Previously opened application screens can start offline; live teaching records still synchronize through Supabase."
+            detail="Screens you have opened before still load with no connection, using data saved on this device. Attendance and scores you enter offline are held here and uploaded when you reconnect; if someone changed the same record meanwhile, Agilearn asks you which version to keep. Signing out erases all of it from this device."
           />
         </CardBody>
       </Card>

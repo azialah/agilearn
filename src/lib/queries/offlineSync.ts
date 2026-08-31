@@ -100,6 +100,10 @@ export function useOfflineSync() {
       setConflicts(parked)
       await refreshCount()
       queryClient.invalidateQueries({ queryKey: keys.attendance.allSessions })
+      // The queue now also carries score writes, so the gradebook has to be
+      // refreshed for the same reason attendance is: a replayed edit that is
+      // not invalidated stays invisible until something else happens to refetch.
+      queryClient.invalidateQueries({ queryKey: keys.grades.all })
     }
   }, [flushing, queryClient, refreshCount])
 

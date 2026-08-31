@@ -15,7 +15,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
 import { EditIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import type { GradebookStructure } from '@/lib/grading'
-import { hasExactWeightTotal, round2 } from '@/lib/grading'
+import { categoriesFor, hasExactWeightTotal, round2 } from '@/lib/grading'
 import {
   useDeleteActivity,
   useDeleteCategory,
@@ -72,18 +72,6 @@ function NeedsPeriod({
         }
       />
     </div>
-  )
-}
-
-function belongsToComponent(
-  category: GradebookStructure['categories'][number],
-  componentId: string,
-) {
-  return (
-    category.grade_component_id === componentId ||
-    (category.grade_component_id === null &&
-      ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
-        (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
   )
 }
 
@@ -431,11 +419,12 @@ export function StructurePanel({
             </SectionTitle>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {structure.components.map((component) => {
-                const categories = structure.categories.filter(
-                  (c) =>
-                    belongsToComponent(c, component.id) &&
-                    (c.grading_period_id === selectedPeriod?.id ||
-                      c.grading_period_id === null),
+                // '' when no period is selected: matches nothing, so only
+                // legacy (period-less) categories show — same as before.
+                const categories = categoriesFor(
+                  structure,
+                  selectedPeriod?.id ?? '',
+                  component.id,
                 )
                 const weightSum = categories.reduce((sum, c) => sum + c.weight, 0)
                 const hasExactTotal = hasExactWeightTotal(

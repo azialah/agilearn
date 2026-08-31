@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 import { cn } from '@/lib/cn'
 import {
-  computeChedFinalGrade,
   computeConfiguredStudentGradebook,
-  computeTransmutedStudentGradebook,
+  computeReportedFinalGrade,
+  isConfiguredGradeComplete,
+  remarkFor,
   round2,
+  summarizeClass,
   type GradebookStructure,
+  type Remark,
   type ScoreMap,
   type TransmutationTable,
 } from '@/lib/grading'
@@ -17,6 +20,12 @@ function fmt(value: number | null | undefined) {
 }
 const STICKY =
   'sticky left-0 z-20 border-r border-(--color-border-strong) bg-(--color-surface-1)'
+
+const REMARK_LABEL: Record<Remark, MessageKey> = {
+  PASSED: 'gradesRemarkPassed',
+  FAILED: 'gradesRemarkFailed',
+  INCOMPLETE: 'gradesRemarkIncomplete',
+}
 
 /** Report-card label for the Final column, matching what's actually shown —
  * a raw percentage reads as ambiguous once it might be a transmuted DepEd
@@ -55,22 +64,27 @@ export function SummaryTable({
     () =>
       students.map((student) => {
         const gradebook = computeConfiguredStudentGradebook(structure, scores, student.id)
-        const reportedFinal =
-          (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') &&
-          transmutationTable
-            ? computeTransmutedStudentGradebook(
-                structure,
-                scores,
-                student.id,
-                transmutationTable,
-              ).final
-            : gradingTemplate === 'higher_education'
-              ? computeChedFinalGrade(structure, scores, student.id, chedIncrement)
-              : gradebook.final
-        return { student, gradebook, reportedFinal }
+        // One shared reporting function, so the .xlsx and .pdf cannot drift
+        // from what is on screen the way they used to.
+        const reportedFinal = computeReportedFinalGrade(structure, scores, student.id, {
+          gradingTemplate,
+          table: transmutationTable,
+          chedIncrement,
+        })
+        // Under ungradedAsZero a blank cell is a zero, not missing work, so
+        // "has every score" would mark the whole class INCOMPLETE forever.
+        // Having a computable final is the right completeness test there.
+        const complete = structure.policy?.ungradedAsZero
+          ? gradebook.final !== null
+          : isConfiguredGradeComplete(structure, scores, student.id)
+        const remark = remarkFor(gradebook.final, complete)
+        return { student, gradebook, reportedFinal, remark }
       }),
     [students, structure, scores, gradingTemplate, transmutationTable, chedIncrement],
   )
+  // The registrar's tally at the foot of the sheet: count / passed / failed /
+  // incomplete. Reduces over remarks already computed above.
+  const stats = useMemo(() => summarizeClass(rows.map((row) => row.remark)), [rows])
   return (
     <div className="scrollbar-thin overflow-x-auto rounded-lg border border-(--color-border)">
       <table className="border-collapse text-sm">
@@ -120,10 +134,13 @@ export function SummaryTable({
             <th className="whitespace-nowrap px-3 py-1.5 text-right font-medium">
               {finalColumnLabel(t, gradingTemplate)}
             </th>
+            <th className="whitespace-nowrap px-3 py-1.5 text-right font-medium">
+              {t('gradesRemarksLabel')}
+            </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ student, gradebook, reportedFinal }) => (
+          {rows.map(({ student, gradebook, reportedFinal, remark }) => (
             <tr
               key={student.id}
               className="border-b border-(--color-border) hover:bg-(--color-surface-1)/60"
@@ -152,10 +169,26 @@ export function SummaryTable({
               <td className="whitespace-nowrap bg-(--color-accent-500)/10 px-3 py-1.5 text-right font-semibold tabular-nums text-(--color-accent-300)">
                 {fmt(reportedFinal)}
               </td>
+              <td
+                className={cn(
+                  'whitespace-nowrap px-3 py-1.5 text-right text-xs font-semibold',
+                  remark === 'PASSED' && 'text-(--color-success)',
+                  remark === 'FAILED' && 'text-(--color-danger)',
+                  remark === 'INCOMPLETE' && 'text-(--color-ink-faint)',
+                )}
+              >
+                {t(REMARK_LABEL[remark])}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-(--color-border) bg-(--color-surface-2) px-3 py-2 text-xs text-(--color-ink-muted)">
+        <span>{t('gradesStatsCount', { n: stats.count })}</span>
+        <span>{t('gradesStatsPassed', { n: stats.passed })}</span>
+        <span>{t('gradesStatsFailed', { n: stats.failed })}</span>
+        <span>{t('gradesStatsIncomplete', { n: stats.incomplete })}</span>
+      </div>
     </div>
   )
 }

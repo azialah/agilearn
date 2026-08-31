@@ -63,6 +63,8 @@ export const keys = {
   },
 
   grades: {
+    /** Prefix for every grades key, for a blunt invalidate-all. */
+    all: ['grades'] as const,
     structureBase: (classroomId: string) => ['grades', 'structure', classroomId] as const,
     structure: (classroomId: string, courseSubjectId: string = 'all') =>
       [...keys.grades.structureBase(classroomId), courseSubjectId] as const,
@@ -74,6 +76,11 @@ export const keys = {
     // Not classroom-scoped — transmutation tables are shared reference data.
     transmutationTable: (tableId: string = 'default') =>
       ['grades', 'transmutation-table', tableId] as const,
+    transmutationTables: ['grades', 'transmutation-tables'] as const,
+    // Every gradebook the caller can see, in one payload. Not classroom-scoped
+    // on purpose - RLS decides the reach.
+    allGradebooks: (classroomIds: readonly string[]) =>
+      ['grades', 'all-gradebooks', [...classroomIds].sort().join(',')] as const,
   },
 
   attendance: {
