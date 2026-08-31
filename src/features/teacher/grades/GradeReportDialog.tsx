@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/Label'
 import {
   computeConfiguredPeriodFinalGrade,
   computeConfiguredStudentGradebook,
+  findWeightIssues,
   isConfiguredGradeComplete,
   round2,
   type GradebookStructure,
@@ -64,6 +65,10 @@ export function GradeReportDialog({
   const incomplete =
     grade === null ||
     !student ||
+    // A structure that does not total 100% still produces a number, because the
+    // engine renormalizes — but it is not the split the teacher configured, and
+    // this one goes to a guardian. Treat it as not ready to send.
+    findWeightIssues(structure).length > 0 ||
     !isConfiguredGradeComplete(
       structure,
       scores,

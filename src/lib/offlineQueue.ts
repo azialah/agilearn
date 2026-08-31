@@ -10,8 +10,13 @@
  */
 
 const DB_NAME = 'agilearn-offline'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE = 'pending-writes'
+/** Dehydrated TanStack Query cache, so a reload offline still has data to
+ *  show. Same database because it is the same concern and the same lifetime:
+ *  both are dropped on sign-out. See src/lib/queryPersist.ts. */
+const CACHE_STORE = 'query-cache'
+const CACHE_KEY = 'snapshot'
 
 export type QueueTable = 'attendance_records' | 'scores'
 
@@ -37,24 +42,57 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: 'id' })
       }
+      if (!db.objectStoreNames.contains(CACHE_STORE)) {
+        db.createObjectStore(CACHE_STORE)
+      }
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
+    // Reachable since DB_VERSION went to 2: another tab still holding the v1
+    // connection blocks the upgrade, and without this openDb() never settles.
+    request.onblocked = () =>
+      reject(new Error('Agilearn is open in another tab; close it and reload.'))
   })
 }
 
-async function withStore<T>(
+async function withNamedStore<T>(
+  name: string,
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
   const db = await openDb()
   return new Promise<T>((resolve, reject) => {
-    const tx = db.transaction(STORE, mode)
-    const request = run(tx.objectStore(STORE))
+    const tx = db.transaction(name, mode)
+    const request = run(tx.objectStore(name))
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
     tx.oncomplete = () => db.close()
   })
+}
+
+function withStore<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  return withNamedStore(STORE, mode, run)
+}
+
+/** The last dehydrated query cache, or null when nothing has been stored. */
+export async function readCacheSnapshot<T>(): Promise<T | null> {
+  const value = await withNamedStore<T | undefined>(CACHE_STORE, 'readonly', (store) =>
+    store.get(CACHE_KEY),
+  )
+  return value ?? null
+}
+
+export async function writeCacheSnapshot(snapshot: unknown): Promise<void> {
+  await withNamedStore(CACHE_STORE, 'readwrite', (store) =>
+    store.put(snapshot, CACHE_KEY),
+  )
+}
+
+export async function clearCacheSnapshot(): Promise<void> {
+  await withNamedStore(CACHE_STORE, 'readwrite', (store) => store.delete(CACHE_KEY))
 }
 
 /** Replaces any earlier queued write for the same row. */
@@ -62,9 +100,19 @@ export async function enqueueWrite(write: QueuedWrite): Promise<void> {
   await withStore('readwrite', (store) => store.put(write))
 }
 
+const QUEUE_TABLES: readonly QueueTable[] = ['attendance_records', 'scores']
+
 export async function listQueuedWrites(): Promise<QueuedWrite[]> {
   const all = await withStore<QueuedWrite[]>('readonly', (store) => store.getAll())
-  return all.sort((a, b) => a.queuedAt - b.queuedAt)
+  return all
+    .filter(
+      // These records outlive app versions, and the table field is what aims
+      // supabase.from(). Validate on the way out rather than trusting whatever
+      // an older build (or a tampered store) left behind.
+      (write): write is QueuedWrite =>
+        !!write && QUEUE_TABLES.includes(write.table) && typeof write.id === 'string',
+    )
+    .sort((a, b) => a.queuedAt - b.queuedAt)
 }
 
 export async function removeQueuedWrite(id: string): Promise<void> {

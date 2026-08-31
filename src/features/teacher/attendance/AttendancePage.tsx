@@ -1,9 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
 import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
-import { OfflineSyncBar } from './OfflineSyncBar'
 import { ClassroomTabs } from '@/features/teacher/classrooms/ClassroomTabs'
 import { SubjectTabs } from '@/features/teacher/classrooms/SubjectTabs'
 import { Button } from '@/components/ui/Button'
@@ -101,11 +100,24 @@ export function AttendancePage({
   const { toast } = useToast()
   const { t } = useLocale()
 
+  // Absence-streak alerts. Same shape as the low-average reconcile on the
+  // grades page: only send an RPC for a student whose alert state actually
+  // flipped, instead of one write RPC per student every time the session list
+  // changes identity.
+  const lastAlertState = useRef(new Map<string, string>())
+
+  // A different classroom is a different set of incidents; forget what we sent
+  // rather than letting the map grow for the whole session.
+  useEffect(() => {
+    lastAlertState.current = new Map()
+  }, [classroomId])
+
   useEffect(() => {
     const allSessions = allSessionsQuery.data
     if (!allSessions || !students?.length) return
     let cancelled = false
-    const evaluations = students.map((student) => {
+    const seen = lastAlertState.current
+    const changed = students.flatMap((student) => {
       const streak = consecutiveUnexcusedAbsences(
         allSessions.map((session) => ({
           status:
@@ -115,15 +127,26 @@ export function AttendancePage({
           createdAt: session.created_at,
         })),
       )
-      return reconcileNotificationIncident({
-        type: 'absence_streak',
-        classroomId,
-        studentId: student.id,
-        active: streak >= 3,
-        payload: { studentName: studentFullName(student), value: streak },
-      })
+      const active = streak >= 3
+      // Streak length rides in the payload, so a change in it still has to be
+      // sent even when the active flag has not moved.
+      const signature = `${active}:${streak}`
+      if (seen.get(student.id) === signature) return []
+      seen.set(student.id, signature)
+      return [
+        reconcileNotificationIncident({
+          type: 'absence_streak',
+          classroomId,
+          studentId: student.id,
+          active,
+          payload: { studentName: studentFullName(student), value: streak },
+        }),
+      ]
     })
-    void Promise.all(evaluations).catch((error: unknown) => {
+    if (changed.length === 0) return
+    void Promise.all(changed).catch((error: unknown) => {
+      // The send failed, so the cache must not claim it landed.
+      seen.clear()
       if (!cancelled) {
         toast({
           title: t('attendanceAlertsRefreshError'),
@@ -176,7 +199,6 @@ export function AttendancePage({
     <div className="space-y-6">
       <ClassroomHeader classroomId={classroomId} />
       <ClassroomMeta classroomId={classroomId} />
-      <OfflineSyncBar />
       <ClassroomTabs classroomId={classroomId} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

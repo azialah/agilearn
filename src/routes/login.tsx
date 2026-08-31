@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
+import { safeRedirectPath } from '@/lib/safeRedirect'
 import { LoginPage } from '@/features/auth/LoginPage'
 
 interface LoginSearch {
@@ -7,13 +8,13 @@ interface LoginSearch {
 }
 
 export const Route = createFileRoute('/login')({
-  validateSearch: (search: Record<string, unknown>): LoginSearch => {
-    // Only accept same-origin relative paths ("/foo"), never "//host" or an
-    // absolute URL — otherwise ?redirect= becomes an open-redirect after login.
-    const raw = search.redirect
-    const redirect = typeof raw === 'string' && /^\/(?!\/)/.test(raw) ? raw : undefined
-    return { redirect }
-  },
+  // Resolving the candidate against the real origin and comparing is the only
+  // guard that holds. The previous regex only rejected a second forward slash,
+  // so "/\host", "/<TAB>/host" and "/<LF>/host" all passed and the URL parser
+  // resolved every one of them off-origin. See src/lib/safeRedirect.ts.
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    redirect: safeRedirectPath(search.redirect),
+  }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession()
     if (data.session) {

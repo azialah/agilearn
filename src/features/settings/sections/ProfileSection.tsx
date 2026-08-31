@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { KeyRound, Palette } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -16,7 +15,11 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
 import { supabase } from '@/lib/supabase'
-import { signOut, useProfile, useUpdateProfilePreferences } from '@/lib/queries/profiles'
+import {
+  useProfile,
+  useSignOut,
+  useUpdateProfilePreferences,
+} from '@/lib/queries/profiles'
 import { newPasswordSchema, fieldErrors } from '@/features/auth/schemas'
 import type { AvatarColor } from '@/components/ui/Avatar'
 import { SettingsScreenHeader } from '../SettingsScreenHeader'
@@ -27,7 +30,7 @@ export function ProfileSection() {
   const preferences = useUpdateProfilePreferences()
   const { toast } = useToast()
   const { t } = useLocale()
-  const navigate = useNavigate()
+  const signOutAndRedirect = useSignOut()
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -74,8 +77,7 @@ export function ProfileSection() {
 
   async function handleSignOut() {
     try {
-      await signOut()
-      navigate({ to: '/login' })
+      await signOutAndRedirect()
     } catch (error) {
       toast({ title: 'Could not sign out', description: getErrorMessage(error) })
     }

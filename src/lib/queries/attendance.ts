@@ -1,13 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
 import { enqueueWrite } from '@/lib/offlineQueue'
+import { studentFullName } from '@/types/domain'
 import type {
   AttendanceRecord,
   AttendanceRecordInsert,
   ClassSession,
   ClassSessionInsert,
   ClassSessionUpdate,
+  Student,
 } from '@/types/domain'
 
 /** A class session joined with the lightweight status of each of its records. */
@@ -174,10 +177,26 @@ function mergeRecords(
  * Anything else — RLS, a constraint, a bad payload — is a real error and must
  * surface, so it is rethrown.
  */
+function studentNameResolver(
+  queryClient: QueryClient,
+  classroomId: string,
+): (studentId: string) => string {
+  // Read from the cache the roster is already rendered from rather than
+  // fetching: this runs on a failed write, which usually means offline.
+  const students = queryClient.getQueryData<Student[]>(
+    keys.students.byClassroom(classroomId),
+  )
+  return (studentId) => {
+    const student = students?.find((item) => item.id === studentId)
+    return student ? studentFullName(student) : studentId
+  }
+}
+
 async function queueIfOffline(
   inputs: AttendanceRecordInsert[],
   existing: AttendanceRecord[] | undefined,
   error: unknown,
+  nameFor: (studentId: string) => string,
 ): Promise<boolean> {
   const offline = !navigator.onLine || isNetworkError(error)
   if (!offline) return false
@@ -191,7 +210,11 @@ async function queueIfOffline(
       onConflict: 'session_id,student_id',
       baseUpdatedAt: previous?.updated_at ?? null,
       queuedAt: Date.now(),
-      label: `Attendance for student ${input.student_id}`,
+      // Shown verbatim in the conflict row, where the teacher decides whose
+      // version wins. A student uuid told them nothing; the name is the whole
+      // point of the decision. Falls back to the id when the roster is not
+      // cached, which beats showing nothing.
+      label: nameFor(input.student_id),
     })
   }
   window.dispatchEvent(new Event('agilearn-queue-changed'))
@@ -232,7 +255,16 @@ export function useUpsertAttendance(sessionId: string, classroomId: string) {
       return { previous }
     },
     onError: async (error, input, context) => {
-      if (await queueIfOffline([input], context?.previous, error)) return
+      if (
+        await queueIfOffline(
+          [input],
+          context?.previous,
+          error,
+          studentNameResolver(queryClient, classroomId),
+        )
+      ) {
+        return
+      }
       if (context?.previous) queryClient.setQueryData(key, context.previous)
     },
     onSettled: () => {
@@ -268,7 +300,16 @@ export function useBulkUpsertAttendance(sessionId: string, classroomId: string) 
       return { previous }
     },
     onError: async (error, inputs, context) => {
-      if (await queueIfOffline(inputs, context?.previous, error)) return
+      if (
+        await queueIfOffline(
+          inputs,
+          context?.previous,
+          error,
+          studentNameResolver(queryClient, classroomId),
+        )
+      ) {
+        return
+      }
       if (context?.previous) queryClient.setQueryData(key, context.previous)
     },
     onSettled: () => {

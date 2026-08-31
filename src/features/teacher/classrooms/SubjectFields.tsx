@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { useLocale } from '@/lib/locale'
+import { useTransmutationTables } from '@/lib/queries/grades'
 import type {
   CourseSubjectKind,
   CourseSubjectSession,
@@ -37,6 +38,11 @@ export interface SubjectDraft {
   subjectCode: string
   sessionType: CourseSubjectSession
   gradingTemplate: GradingTemplate
+  /** null uses the built-in conversion for the template. */
+  transmutationTableId: string | null
+  /** 0 = off. 60 gives the Philippine college (raw/max)*40+60 convention. */
+  gradeFloor: number
+  ungradedAsZero: boolean
   description: string
   room: string
 }
@@ -47,9 +53,16 @@ export const EMPTY_SUBJECT_DRAFT: SubjectDraft = {
   subjectCode: '',
   sessionType: 'single',
   gradingTemplate: 'custom',
+  transmutationTableId: null,
+  gradeFloor: 0,
+  ungradedAsZero: false,
   description: '',
   room: '',
 }
+
+/** The value the picker uses for "no explicit table" — Radix Select cannot
+ *  hold an empty-string item value. */
+export const NO_TABLE = 'built-in'
 
 /** A major is stored as two rows; a minor as one. */
 export function kindsFor(sessionType: CourseSubjectSession): CourseSubjectKind[] {
@@ -73,6 +86,7 @@ export function SubjectFields({
   idPrefix = 'subject',
   namePlaceholder,
   lockSessionType = false,
+  showScoringPolicy = true,
 }: {
   value: SubjectDraft
   onChange: (next: SubjectDraft) => void
@@ -81,8 +95,16 @@ export function SubjectFields({
   namePlaceholder?: string
   /** Editing one half of an existing pair — the split is already decided. */
   lockSessionType?: boolean
+  /**
+   * Conversion table, grade floor and blank-as-zero. Off in the new-classroom
+   * wizard, which keeps its own flat form shape and is meant to be a fast path
+   * to a classroom — these are grading decisions the teacher makes later, in
+   * the subject dialog, alongside the rest of the gradebook setup.
+   */
+  showScoringPolicy?: boolean
 }) {
   const { t } = useLocale()
+  const conversionTables = useTransmutationTables().data ?? []
   return (
     <div className="space-y-4">
       <Field
@@ -198,6 +220,87 @@ export function SubjectFields({
           </SelectContent>
         </Select>
       </Field>
+
+      {showScoringPolicy && value.gradingTemplate !== 'custom' && (
+        <Field
+          label={t('subjectConversionTableLabel')}
+          htmlFor={`${idPrefix}-conversion-table`}
+          hint={t('subjectConversionTableHint')}
+        >
+          <Select
+            value={value.transmutationTableId ?? NO_TABLE}
+            onValueChange={(next) =>
+              onChange({
+                ...value,
+                transmutationTableId: next === NO_TABLE ? null : next,
+              })
+            }
+          >
+            <SelectTrigger
+              id={`${idPrefix}-conversion-table`}
+              aria-label={t('subjectConversionTableLabel')}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_TABLE}>
+                {t('subjectConversionTableBuiltIn')}
+              </SelectItem>
+              {conversionTables.map((table) => (
+                <SelectItem key={table.id} value={table.id}>
+                  {table.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
+
+      {showScoringPolicy && (
+        <Field
+          label={t('subjectGradeFloorLabel')}
+          htmlFor={`${idPrefix}-grade-floor`}
+          hint={t('subjectGradeFloorHint')}
+        >
+          <Input
+            id={`${idPrefix}-grade-floor`}
+            type="number"
+            min={0}
+            max={99}
+            step={1}
+            value={value.gradeFloor}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                // Empty input reads as NaN; treat it as "off" rather than
+                // writing NaN into a numeric column.
+                gradeFloor: Number.isFinite(event.target.valueAsNumber)
+                  ? Math.min(99, Math.max(0, event.target.valueAsNumber))
+                  : 0,
+              })
+            }
+          />
+        </Field>
+      )}
+
+      {showScoringPolicy && (
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={value.ungradedAsZero}
+            onChange={(event) =>
+              onChange({ ...value, ungradedAsZero: event.target.checked })
+            }
+          />
+          <span>
+            <span className="font-medium">{t('subjectUngradedAsZeroLabel')}</span>
+            <span className="block text-(--color-ink-faint)">
+              {t('subjectUngradedAsZeroHint')}
+            </span>
+          </span>
+        </label>
+      )}
 
       <Field
         label={t('subjectDialogDescriptionLabel')}

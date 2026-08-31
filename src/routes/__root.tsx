@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/Tooltip'
 import { ToastProvider } from '@/components/ui/toast'
 import { CustomCursor } from '@/components/CustomCursor'
 import { NetworkStatusWatcher } from '@/components/NetworkStatusWatcher'
+import { OfflineCache } from '@/components/OfflineCache'
 import { BootSplashDismissal } from '@/components/ui/BootSplashDismissal'
 import { LocaleProvider } from '@/lib/locale'
 import { queryClient } from '@/lib/queryClient'
@@ -21,6 +22,7 @@ function RootComponent() {
           <ToastProvider>
             <CustomCursor />
             <NetworkStatusWatcher />
+            <OfflineCache />
             <Outlet />
           </ToastProvider>
         </TooltipProvider>

@@ -1,0 +1,66 @@
+# Vercel deployment exclusions
+
+# Files and directories not needed for the frontend SPA build are listed here
+
+# Note: .vercelignore does NOT remove files from git; it only excludes them from the Vercel build context
+
+# Documentation
+
+docs/
+dev-updates/
+README.md
+CONTRIBUTING.md
+AGENTS.md
+LICENSE
+
+# Database and backend (managed separately)
+
+supabase/
+
+# Source control and CI
+
+.git/
+.github/
+.gitignore
+
+# Development only
+
+node_modules/
+.env.local
+.env.*.local
+
+# IDE and OS
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build artifacts (handled by Vite)
+
+dist/
+
+# Scripts and tools (dev only)
+
+scripts/
+
+# pnpm workspace (only the root vite build is needed)
+
+pnpm-workspace.yaml
+
+# Testing (CI only)
+
+.vitest/
+coverage/
+
+# Temporary/cache
+
+.turbo/
+.eslintcache
+
+# Public assets are included in the build via index.html
+
+# (vite.config.ts specifies the output directory)

@@ -7,8 +7,12 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import {
   computeConfiguredStudentGradebook,
+  computeReportedFinalGrade,
+  isConfiguredGradeComplete,
+  remarkFor,
   round2,
   type GradebookStructure,
+  type ReportingConfig,
   type ScoreMap,
 } from '@/lib/grading'
 import { studentFullName, type Classroom, type Student } from '@/types/domain'
@@ -45,6 +49,8 @@ export async function buildGradeReportPdf(
   students: Student[],
   structure: GradebookStructure,
   scores: ScoreMap,
+  /** Same contract as the workbook exporter: omitted means raw percentage. */
+  reporting: ReportingConfig = {},
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const font = await doc.embedFont(StandardFonts.Helvetica)
@@ -55,15 +61,20 @@ export async function buildGradeReportPdf(
     return {
       no: student.student_no,
       name: studentFullName(student),
-      final: fmt(book.final),
+      final: fmt(computeReportedFinalGrade(structure, scores, student.id, reporting)),
+      remark: remarkFor(
+        book.final,
+        isConfiguredGradeComplete(structure, scores, student.id),
+      ),
     }
   })
 
   const tableWidth = PAGE.width - MARGIN * 2
   const columns: Column[] = [
     { label: 'Student No', width: tableWidth * 0.16, align: 'left' },
-    { label: 'Name', width: tableWidth * 0.62, align: 'left' },
-    { label: 'Final', width: tableWidth * 0.22, align: 'center' },
+    { label: 'Name', width: tableWidth * 0.5, align: 'left' },
+    { label: 'Final', width: tableWidth * 0.16, align: 'center' },
+    { label: 'Remarks', width: tableWidth * 0.18, align: 'center' },
   ]
 
   const rowHeight = 22

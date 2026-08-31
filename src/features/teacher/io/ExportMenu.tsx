@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/toast'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { useStudents } from '@/lib/queries/students'
 import { useGradebookStructure, useScores } from '@/lib/queries/grades'
+import { findWeightIssues, type ReportingConfig } from '@/lib/grading'
 import { buildFilename, type ExportKind } from './parsing'
 import {
   buildGradeSheetWorkbook,
@@ -24,23 +25,57 @@ import { ChevronDownIcon, DownloadIcon, PdfIcon, SheetIcon } from './icons'
 
 export interface ExportMenuProps {
   classroomId: string
+  /**
+   * The subject on screen. Omitted from the classroom header, where no subject
+   * is selected and a whole-classroom sheet is the right thing; supplied from
+   * the grades page, where exporting Lecture + Laboratory fused into one sheet
+   * was simply wrong. It also keeps the score cache subject-scoped, so Lecture
+   * scores stop clobbering Laboratory's entry.
+   */
+  courseSubjectId?: string
+  /**
+   * Which number the Final column should hold. Supplied by the grades page,
+   * which already knows the subject's template and resolved table. Without it
+   * the sheet prints the raw percentage while the screen shows the converted
+   * grade — same student, two different numbers.
+   */
+  reporting?: ReportingConfig
 }
 
-export function ExportMenu({ classroomId }: ExportMenuProps) {
+export function ExportMenu({
+  classroomId,
+  courseSubjectId,
+  reporting = {},
+}: ExportMenuProps) {
   const { toast } = useToast()
   const [busy, setBusy] = useState<ExportKind | null>(null)
 
   const classroom = useClassroom(classroomId)
   const students = useStudents(classroomId)
-  const structure = useGradebookStructure(classroomId)
+  const structure = useGradebookStructure(classroomId, courseSubjectId)
   const activityIds = useMemo(
     () => (structure.data?.activities ?? []).map((a) => a.id),
     [structure.data],
   )
-  const scores = useScores(classroomId, activityIds)
+  const scores = useScores(classroomId, activityIds, courseSubjectId)
+
+  // A wrong number on screen is recoverable; a wrong FAILED on a PDF that
+  // leaves the building is not. The grades page warns about weights that miss
+  // 100%, but nothing here does, so refuse rather than export a grade the
+  // teacher did not actually configure.
+  const weightIssues = structure.data ? findWeightIssues(structure.data) : []
 
   async function run(kind: ExportKind, task: () => Promise<void>) {
     if (busy) return
+    if (weightIssues.length > 0) {
+      toast({
+        title: 'Fix the grade weights first',
+        description:
+          'One or more levels do not total 100%. Open Structure to correct them, then export.',
+        tone: 'error',
+      })
+      return
+    }
     setBusy(kind)
     try {
       await task()
@@ -79,6 +114,7 @@ export function ExportMenu({ classroomId }: ExportMenuProps) {
         students.data ?? [],
         structure.data ?? { periods: [], components: [], categories: [], activities: [] },
         scores.data ?? {},
+        reporting,
       )
       downloadWorkbook(wb, buildFilename(room.course_code, 'grade-sheet'))
       toast({ title: 'Grade sheet exported', tone: 'success' })
@@ -93,6 +129,7 @@ export function ExportMenu({ classroomId }: ExportMenuProps) {
         students.data ?? [],
         structure.data ?? { periods: [], components: [], categories: [], activities: [] },
         scores.data ?? {},
+        reporting,
       )
       downloadPdf(bytes, buildFilename(room.course_code, 'grade-report'))
       toast({ title: 'Grade report exported', tone: 'success' })
@@ -102,7 +139,7 @@ export function ExportMenu({ classroomId }: ExportMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={!!busy}>
+        <Button variant="outline" size="sm" disabled={!!busy || !structure.isSuccess}>
           {busy ? <Spinner className="size-4" /> : <DownloadIcon />}
           Export
           <ChevronDownIcon className="size-3.5 opacity-70" />

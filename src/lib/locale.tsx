@@ -573,6 +573,30 @@ const en = {
   attendanceStatusAbsentShort: 'A',
 
   // --- grades ---
+  gradesWeightIssueTitle: 'Weights do not add up to 100%',
+  gradesWeightIssuePeriods: 'Grading periods total {total}%.',
+  gradesWeightIssueComponents: 'Components total {total}%.',
+  gradesWeightIssueCategories: 'Categories in {period} · {component} total {total}%.',
+  gradesWeightIssueExplanation:
+    'Grades are still calculated by scaling these to 100%, so the numbers below are usable — but they are probably not the split you intended.',
+  subjectConversionTableLabel: 'Conversion table',
+  subjectConversionTableHint:
+    'Which published table converts the computed percentage into a reported grade.',
+  subjectConversionTableBuiltIn: 'Built-in formula for this template',
+  subjectGradeFloorLabel: 'Lowest possible grade',
+  subjectGradeFloorHint:
+    'Set to 60 for the usual college transmutation, where a score of 0 still reports 60. Leave at 0 to report the raw percentage.',
+  subjectUngradedAsZeroLabel: 'Count blank scores as zero',
+  subjectUngradedAsZeroHint:
+    'Matches a spreadsheet. Note that an activity you have created but not yet graded will pull every student down until you enter the scores.',
+  gradesRemarksLabel: 'Remarks',
+  gradesRemarkPassed: 'PASSED',
+  gradesRemarkFailed: 'FAILED',
+  gradesRemarkIncomplete: 'INCOMPLETE',
+  gradesStatsCount: '{n} students',
+  gradesStatsPassed: '{n} passed',
+  gradesStatsFailed: '{n} failed',
+  gradesStatsIncomplete: '{n} incomplete',
   gradesStructureLabel: 'Structure',
   gradesExportButton: 'Export',
   gradesPreviewReportButton: 'Preview report',
@@ -653,7 +677,7 @@ const en = {
   gradesDeleteCategoryLabel: 'Delete category',
   gradesAddCategoryButton: 'Add {component} category',
   gradesStructureFooterHint:
-    'Each period and component needs a 100% total before Agilearn can publish a final grade. The Σ badge turns red when a category set is incomplete.',
+    'Aim for a 100% total at every level. The Σ badge turns red when a set misses it — grades are still calculated by scaling to 100%, but they will not be the split you intended.',
   gradesActivitiesSectionTitle: 'Activities',
   gradesAddActivityButton: 'Add activity',
   gradesNoActivitiesInPeriod: 'No activities in {period} yet.',
@@ -1483,6 +1507,31 @@ const tl: Record<keyof typeof en, string> = {
   attendanceStatusAbsentLabel: 'Lumiban',
   attendanceStatusAbsentShort: 'L',
 
+  gradesWeightIssueTitle: 'Hindi umaabot sa 100% ang mga timbang',
+  gradesWeightIssuePeriods: 'Umaabot lamang sa {total}% ang mga grading period.',
+  gradesWeightIssueComponents: 'Umaabot lamang sa {total}% ang mga component.',
+  gradesWeightIssueCategories:
+    'Umaabot sa {total}% ang mga kategorya sa {period} · {component}.',
+  gradesWeightIssueExplanation:
+    'Kinakalkula pa rin ang mga marka sa pamamagitan ng pag-scale ng mga ito sa 100%, kaya magagamit ang mga numero sa ibaba — ngunit malamang na hindi ito ang hatiang ninanais mo.',
+  subjectConversionTableLabel: 'Talaan ng conversion',
+  subjectConversionTableHint:
+    'Kung aling nakalathalang talaan ang magko-convert ng kinalkulang porsyento tungo sa iniuulat na grado.',
+  subjectConversionTableBuiltIn: 'Likas na pormula para sa template na ito',
+  subjectGradeFloorLabel: 'Pinakamababang posibleng grado',
+  subjectGradeFloorHint:
+    'Itakda sa 60 para sa karaniwang transmutation sa kolehiyo, kung saan ang markang 0 ay nagiging 60 pa rin. Iwanang 0 upang iulat ang tunay na porsyento.',
+  subjectUngradedAsZeroLabel: 'Ibilang na zero ang mga blangkong marka',
+  subjectUngradedAsZeroHint:
+    'Katulad ng spreadsheet. Tandaan na ang gawaing nagawa mo na ngunit hindi pa namamarkahan ay magpapababa sa lahat ng mag-aaral hangga’t hindi mo naililagay ang mga marka.',
+  gradesRemarksLabel: 'Marka',
+  gradesRemarkPassed: 'PASADO',
+  gradesRemarkFailed: 'BAGSAK',
+  gradesRemarkIncomplete: 'KULANG',
+  gradesStatsCount: '{n} na mag-aaral',
+  gradesStatsPassed: '{n} pasado',
+  gradesStatsFailed: '{n} bagsak',
+  gradesStatsIncomplete: '{n} kulang',
   gradesStructureLabel: 'Structure',
   gradesExportButton: 'I-export',
   gradesPreviewReportButton: 'I-preview ang ulat',
@@ -1568,7 +1617,7 @@ const tl: Record<keyof typeof en, string> = {
   gradesDeleteCategoryLabel: 'Tanggalin ang kategorya',
   gradesAddCategoryButton: 'Magdagdag ng kategorya sa {component}',
   gradesStructureFooterHint:
-    'Kailangang umabot sa 100% ang bawat period at component bago makapaglabas si Agilearn ng final grade. Namumula ang Σ badge kapag hindi kumpleto ang isang set ng kategorya.',
+    'Layuning umabot sa 100% ang bawat antas. Namumula ang Σ badge kapag hindi ito naabot — kinakalkula pa rin ang mga marka sa pamamagitan ng pag-scale sa 100%, ngunit hindi ito ang hatiang ninanais mo.',
   gradesActivitiesSectionTitle: 'Mga gawain',
   gradesAddActivityButton: 'Magdagdag ng gawain',
   gradesNoActivitiesInPeriod: 'Wala pang gawain sa {period}.',

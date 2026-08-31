@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   computeConfiguredPeriodFinalGrade,
   computeTransmutedPeriodGrade,
+  findWeightIssues,
   computeTransmutedStudentGradebook,
   hasValidTransmutationTable,
   transmuteGrade,
@@ -168,14 +169,17 @@ describe('computeTransmutedPeriodGrade', () => {
     activities: [activity('a1', 'p1', 'cat', 100)],
   }
 
-  it('transmutes a period whose weight sum is not exactly 1 as null (upstream null propagates)', () => {
+  // Weights that miss 100% used to blank the whole level, which a teacher could
+  // not tell apart from "nothing graded yet". They now renormalize and grade,
+  // and the mismatch is reported separately so the UI can warn about it.
+  it('renormalizes a period whose weights do not total 100% and reports the issue', () => {
     const brokenStructure: GradebookStructure = {
       ...structure,
       categories: [category('cat', 'comp', 'p1', 0.5)], // does not sum to 1
     }
     expect(
       computeConfiguredPeriodFinalGrade(brokenStructure, scores({ a1: 80 }), S, 'p1'),
-    ).toBeNull()
+    ).toBe(80)
     expect(
       computeTransmutedPeriodGrade(
         brokenStructure,
@@ -184,7 +188,14 @@ describe('computeTransmutedPeriodGrade', () => {
         'p1',
         SIMPLE_TABLE,
       ),
-    ).toBeNull()
+    ).toBe(90)
+    expect(findWeightIssues(brokenStructure)).toEqual([
+      { level: 'category', periodId: 'p1', componentId: 'comp', totalPercent: 50 },
+    ])
+  })
+
+  it('reports no issue for a structure that totals 100% at every level', () => {
+    expect(findWeightIssues(structure)).toEqual([])
   })
 
   it('transmutes a complete period through the table', () => {

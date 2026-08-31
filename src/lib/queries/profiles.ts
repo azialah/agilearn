@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate, useRouter } from '@tanstack/react-router'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { REMEMBER_KEY, supabase } from '@/lib/supabase'
 import { keys } from '@/lib/queries/keys'
-import { clearQueue } from '@/lib/offlineQueue'
+import { clearLastRoute } from '@/lib/lastRoute'
+import { clearCacheSnapshot, clearQueue } from '@/lib/offlineQueue'
 import {
   composeFullName,
   type AppRole,
@@ -27,7 +29,7 @@ export function useSession() {
   })
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       // Sign-out is the one place every caller routes through, so the whole
       // cache is dropped here rather than per call site — otherwise classrooms,
       // grades and attendance survive the sign-out and the next account on this
@@ -39,7 +41,14 @@ export function useSession() {
         // holds one teacher's unsent attendance keyed by student; replaying it
         // under the next account on this device would fail RLS anyway, but the
         // pending list would still expose the previous teacher's rows.
-        void clearQueue()
+        // Only on a real sign-out. A cold start with no restorable session
+        // also arrives here as INITIAL_SESSION/null, and dropping the queue
+        // then would discard attendance the teacher marked offline before they
+        // ever got the chance to reconnect and flush it.
+        if (event === 'SIGNED_OUT') void clearQueue()
+        // The cache snapshot is a copy of one teacher's classrooms, rosters and
+        // grades; it is safe to drop on any session loss.
+        void clearCacheSnapshot()
       }
       queryClient.setQueryData(keys.session, session)
     })
@@ -298,5 +307,50 @@ export function useUpdateProfileRole() {
 
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  if (!error) return
+  // supabase-js returns a network error BEFORE clearing local storage, so a
+  // teacher on a dropped connection would be told sign-out failed and be left
+  // signed in with everything still cached on the device. Falling back to a
+  // local sign-out is the safer failure: worst case the refresh token stays
+  // valid server-side until it expires, which beats an unlocked session on a
+  // shared laptop.
+  const { error: localError } = await supabase.auth.signOut({ scope: 'local' })
+  if (localError) throw localError
+}
+
+/**
+ * Sign out and land on /login.
+ *
+ * Navigating alone is not enough. `defaultPreload: 'intent'` means hovering the
+ * sign-out control preloads /login, whose `beforeLoad` runs while the user is
+ * still authenticated, resolves `redirect({ to: '/teacher/dashboard' })`, and
+ * caches that match — so the post-sign-out navigate resolves against the cached
+ * result and bounces straight back to the dashboard. `router.invalidate()`
+ * drops the resolved matches so the guard re-runs against the empty session.
+ *
+ * Both call sites route through this hook rather than repeating the sequence,
+ * so the ordering cannot drift between them.
+ */
+export function useSignOut() {
+  const router = useRouter()
+  const navigate = useNavigate()
+
+  return useCallback(async () => {
+    try {
+      await signOut()
+    } finally {
+      // Device-local leftovers, cleared even if the sign-out call itself threw.
+      // Neither is secret, but on a shared laptop they leak the previous
+      // teacher's last classroom path and silently inherit their "remember me"
+      // choice at the next sign-in.
+      clearLastRoute()
+      try {
+        localStorage.removeItem(REMEMBER_KEY)
+      } catch {
+        // Private mode — nothing was persisted to begin with.
+      }
+    }
+    await router.invalidate()
+    await navigate({ to: '/login' })
+  }, [router, navigate])
 }

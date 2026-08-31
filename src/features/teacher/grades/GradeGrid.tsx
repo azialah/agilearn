@@ -10,11 +10,11 @@ import {
 import { Maximize2, Minimize2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import {
+  categoriesFor,
   computeCategoryPercent,
-  computeChedFinalGrade,
   computeConfiguredPeriodComponentGrade,
   computeConfiguredStudentGradebook,
-  computeTransmutedStudentGradebook,
+  computeReportedFinalGrade,
   round2,
   type GradebookStructure,
   type ScoreMap,
@@ -37,14 +37,6 @@ interface LeafInfo {
   maxScore?: number
   editIndex?: number
 }
-const belongsToComponent = (
-  category: GradebookStructure['categories'][number],
-  componentId: string,
-) =>
-  category.grade_component_id === componentId ||
-  (category.grade_component_id === null &&
-    ((componentId === 'legacy-lecture' && category.component === 'lecture') ||
-      (componentId === 'legacy-laboratory' && category.component === 'laboratory')))
 const STICKY =
   'sticky left-0 z-20 bg-(--color-surface-1) border-r border-(--color-border-strong)'
 const fmt = (value: number | null | undefined) =>
@@ -77,6 +69,12 @@ export function GradeGrid({
   chedIncrement?: number
 }) {
   const upsertScore = useUpsertScore()
+  // Only used if a write has to be parked offline, where the conflict row shows
+  // it verbatim and "Score for student <uuid>" would tell the teacher nothing.
+  const scoreLabel = (activityId: string, student: Student) =>
+    `${studentFullName(student)} — ${
+      structure.activities.find((activity) => activity.id === activityId)?.name ?? ''
+    }`.trim()
   const { toast } = useToast()
   const { t } = useLocale()
   const [selected, setSelected] = useState<CellPos>({ row: 0, col: 0 })
@@ -106,12 +104,7 @@ export function GradeGrid({
     ]
     info.set('student', { kind: 'student' })
     for (const component of structure.components) {
-      const categories = structure.categories.filter(
-        (category) =>
-          belongsToComponent(category, component.id) &&
-          (category.grading_period_id === periodId ||
-            category.grading_period_id === null),
-      )
+      const categories = categoriesFor(structure, periodId, component.id)
       if (!categories.length) continue
       const categoryGroups: ColumnDef<Student, unknown>[] = []
       for (const category of categories) {
@@ -207,36 +200,22 @@ export function GradeGrid({
     [students, structure, scores],
   )
   // Same "Final" concept as the raw percentage above, converted for display
-  // when the subject reports DepEd-transmuted or CHED grades instead.
+  // when the subject reports DepEd-transmuted or CHED grades instead. Shares
+  // computeReportedFinalGrade with SummaryTable and both exporters so the four
+  // cannot disagree about what a student's final actually is.
   const reportedFinals = useMemo(
     () =>
       new Map(
-        students.map((student) => {
-          const value =
-            (gradingTemplate === 'basic_education' ||
-              gradingTemplate === 'senior_high') &&
-            transmutationTable
-              ? computeTransmutedStudentGradebook(
-                  structure,
-                  scores,
-                  student.id,
-                  transmutationTable,
-                ).final
-              : gradingTemplate === 'higher_education'
-                ? computeChedFinalGrade(structure, scores, student.id, chedIncrement)
-                : (gradebooks.get(student.id)?.final ?? null)
-          return [student.id, value]
-        }),
+        students.map((student) => [
+          student.id,
+          computeReportedFinalGrade(structure, scores, student.id, {
+            gradingTemplate,
+            table: transmutationTable,
+            chedIncrement,
+          }),
+        ]),
       ),
-    [
-      students,
-      structure,
-      scores,
-      gradingTemplate,
-      transmutationTable,
-      chedIncrement,
-      gradebooks,
-    ],
+    [students, structure, scores, gradingTemplate, transmutationTable, chedIncrement],
   )
   const table = useReactTable({
     data: students,
@@ -265,6 +244,7 @@ export function GradeGrid({
           activityId,
           studentId: student.id,
           score: value,
+          label: scoreLabel(activityId, student),
         },
         {
           onError: (error) =>
@@ -289,6 +269,7 @@ export function GradeGrid({
                 activityId,
                 studentId: student.id,
                 score: previous,
+                label: scoreLabel(activityId, student),
               },
               {
                 onSuccess: () =>
@@ -353,6 +334,7 @@ export function GradeGrid({
             activityId: activity.activityId,
             studentId: student.id,
             score: result.value,
+            label: scoreLabel(activity.activityId, student),
           })
         }
         applied += 1
@@ -480,6 +462,9 @@ export function GradeGrid({
                   let value: number | null = null
                   let emphasize = false
                   if (info.kind === 'catpct')
+                    // structure.policy makes this column show the same
+                    // "tab. score" the teacher's own sheet shows, rather than
+                    // an unfloored percentage the totals below would not match.
                     value = computeCategoryPercent(
                       structure.activities.filter(
                         (activity) =>
@@ -488,6 +473,7 @@ export function GradeGrid({
                       ),
                       scores,
                       student.id,
+                      structure.policy,
                     )
                   if (info.kind === 'periodgrade') {
                     value = computeConfiguredPeriodComponentGrade(

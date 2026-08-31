@@ -33,6 +33,9 @@ function draftFromSubject(subject?: CourseSubject): SubjectDraft {
     subjectCode: subject.subject_code ?? '',
     sessionType: subject.session_type,
     gradingTemplate: subject.grading_template as GradingTemplate,
+    transmutationTableId: subject.transmutation_table_id,
+    gradeFloor: subject.grade_floor,
+    ungradedAsZero: subject.ungraded_as_zero,
     description: subject.description ?? '',
     room: subject.room ?? '',
   }
@@ -92,6 +95,9 @@ export function SubjectFormDialog({
       subject_code: draft.subjectCode.trim(),
       session_type: draft.sessionType,
       grading_template: draft.gradingTemplate,
+      transmutation_table_id: draft.transmutationTableId,
+      grade_floor: draft.gradeFloor,
+      ungraded_as_zero: draft.ungradedAsZero,
       description: draft.description.trim(),
       room: draft.room.trim(),
     }

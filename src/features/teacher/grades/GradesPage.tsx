@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState, lazy } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, lazy } from 'react'
 import { Mail } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
@@ -28,6 +28,7 @@ import {
 } from '@/features/teacher/notifications/evaluators'
 import { useToast } from '@/components/ui/toast'
 import { useLocale } from '@/lib/locale'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 const ExportMenu = lazy(() =>
   import('@/features/teacher/io/ExportMenu').then((module) => ({
     default: module.ExportMenu,
@@ -39,6 +40,7 @@ import { GradeGrid } from './GradeGrid'
 import { SummaryTable } from './SummaryTable'
 import { GradeReportDialog } from './GradeReportDialog'
 import { CombinedFinalPreview } from './CombinedFinalPreview'
+import { WeightIssuesBanner } from './WeightIssuesBanner'
 
 type View = { kind: 'period'; periodId: string } | { kind: 'summary' }
 
@@ -83,11 +85,29 @@ export function GradesPage({
     (subject) => subject.id === activeSubjectId,
   )
   const gradingTemplate = activeSubject?.grading_template as GradingTemplate | undefined
+  const explicitTableId = activeSubject?.transmutation_table_id ?? undefined
+  // DepEd templates always resolve a table (falling back to the is_default one).
+  // A college subject only uses one when it has been given an explicit table --
+  // otherwise it must keep falling through to the built-in CHED formula rather
+  // than silently borrowing the DepEd default, which is a completely different
+  // scale.
   const needsTransmutation =
-    gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high'
-  const transmutationQuery = useTransmutationTable(
-    activeSubject?.transmutation_table_id ?? undefined,
-    needsTransmutation,
+    gradingTemplate === 'basic_education' ||
+    gradingTemplate === 'senior_high' ||
+    (gradingTemplate === 'higher_education' && !!explicitTableId)
+  const transmutationQuery = useTransmutationTable(explicitTableId, needsTransmutation)
+  const reporting = useMemo(
+    () => ({
+      gradingTemplate,
+      table: needsTransmutation ? transmutationQuery.data : undefined,
+      chedIncrement: activeSubject?.ched_increment,
+    }),
+    [
+      gradingTemplate,
+      needsTransmutation,
+      transmutationQuery.data,
+      activeSubject?.ched_increment,
+    ],
   )
   const combinationsQuery = useSubjectGradeCombinations(classroomId)
   const subjectGradebooks = useSubjectGradebooks(
@@ -130,29 +150,56 @@ export function GradesPage({
   const students = studentsQuery.data ?? []
   const nextPeriodPosition = Math.max(-1, ...periods.map((p) => p.position)) + 1
 
+  // Low-average alerts. Two things keep this off the typing path:
+  //
+  // 1. It runs on debounced scores, so entering a row of marks reconciles once
+  //    when the teacher pauses rather than on every committed cell.
+  // 2. It only sends an RPC for students whose alert state actually flipped.
+  //    Previously every render fired one write RPC per student - a 40-student
+  //    class meant 40 round trips per keystroke-commit, each running five
+  //    validation subqueries server-side - even though at most one student's
+  //    average had moved across the threshold.
+  const debouncedScores = useDebouncedValue(scores, 1200)
+  const lastAlertState = useRef(new Map<string, boolean>())
+
+  // A different subject is a different set of incidents; forget what we sent.
+  useEffect(() => {
+    lastAlertState.current = new Map()
+  }, [activeSubjectId])
+
   useEffect(() => {
     if (!structure || !activeSubjectId || !activeSubject || students.length === 0) return
     let cancelled = false
-    const evaluations = students.map((student) => {
+    const seen = lastAlertState.current
+    const changed = students.flatMap((student) => {
       const finalGrade = computeConfiguredStudentGradebook(
         structure,
-        scores,
+        debouncedScores,
         student.id,
       ).final
-      return reconcileNotificationIncident({
-        type: 'low_average',
-        classroomId,
-        studentId: student.id,
-        courseSubjectId: activeSubjectId,
-        active: shouldNotifyLowAverage(finalGrade),
-        payload: {
-          studentName: studentFullName(student),
-          value: finalGrade ?? LOW_AVERAGE_THRESHOLD,
-          courseSubjectName: activeSubject.name,
-        },
-      })
+      const active = shouldNotifyLowAverage(finalGrade)
+      if (seen.get(student.id) === active) return []
+      seen.set(student.id, active)
+      return [
+        reconcileNotificationIncident({
+          type: 'low_average',
+          classroomId,
+          studentId: student.id,
+          courseSubjectId: activeSubjectId,
+          active,
+          payload: {
+            studentName: studentFullName(student),
+            value: finalGrade ?? LOW_AVERAGE_THRESHOLD,
+            courseSubjectName: activeSubject.name,
+          },
+        }),
+      ]
     })
-    void Promise.all(evaluations).catch((error: unknown) => {
+    if (changed.length === 0) return
+    void Promise.all(changed).catch((error: unknown) => {
+      // The send failed, so the cache must not claim it landed - otherwise the
+      // retry never happens and the alert is silently lost.
+      seen.clear()
       if (!cancelled) {
         toast({
           title: t('gradesAlertsRefreshErrorToast'),
@@ -164,7 +211,16 @@ export function GradesPage({
     return () => {
       cancelled = true
     }
-  }, [activeSubject, activeSubjectId, classroomId, scores, structure, students, toast])
+  }, [
+    activeSubject,
+    activeSubjectId,
+    classroomId,
+    debouncedScores,
+    structure,
+    students,
+    toast,
+    t,
+  ])
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
@@ -190,7 +246,11 @@ export function GradesPage({
           </Button>
         }
       >
-        <ExportMenu classroomId={classroomId} />
+        <ExportMenu
+          classroomId={classroomId}
+          courseSubjectId={activeSubjectId}
+          reporting={reporting}
+        />
       </Suspense>
       <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
         <Mail className="size-4" /> {t('gradesPreviewReportButton')}
@@ -228,9 +288,14 @@ export function GradesPage({
         </div>
       )}
 
+      {!loading && structure && <WeightIssuesBanner structure={structure} />}
+
       {loading ? (
         <GridSkeleton />
-      ) : structureQuery.isError ? (
+      ) : // A background refetch failing is the normal offline case, and the
+      // hydrated cache still has something worth showing. Only surface the
+      // error state when there is genuinely nothing to render.
+      structureQuery.isError && !structure ? (
         <EmptyState
           icon={<GradeIcon />}
           title={t('gradesLoadErrorTitle')}

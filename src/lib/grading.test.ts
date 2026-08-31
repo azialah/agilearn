@@ -6,6 +6,7 @@ import {
   computeConfiguredStudentGradebook,
   computeCombinedFinalGrade,
   computeFinalGrade,
+  findWeightIssues,
   hasExactWeightTotal,
   isConfiguredGradeComplete,
   computePeriodComponentGrade,
@@ -354,5 +355,85 @@ describe('configured grade components', () => {
     const map = scores({ mq: 80, mp: 90, me: null, fq: 75, fp: 95 })
     expect(isConfiguredGradeComplete(structure, map, S, midterm)).toBe(false)
     expect(isConfiguredGradeComplete(structure, map, S)).toBe(false)
+  })
+})
+
+describe('weights that do not total 100%', () => {
+  // The footgun this replaced: grading_periods.weight defaults to 1.0 and
+  // PeriodDialog sends 1 for a blank share, so two hand-added periods came out
+  // as [1, 1]. hasExactWeightTotal then blanked every component and final while
+  // the dialog told the teacher "resulting share: 50%". Renormalize instead,
+  // and report the mismatch so it can be surfaced rather than hidden.
+  const twoDefaultPeriods: GradebookStructure = {
+    periods: [period('midterm', 1, 0), period('finals', 1, 1)],
+    components: [component('overall', 'Overall', 1)],
+    categories: [
+      configuredCategory('mid-cat', 'overall', 'midterm', 1),
+      configuredCategory('fin-cat', 'overall', 'finals', 1),
+    ],
+    activities: [
+      activity('m1', 'midterm', 'mid-cat', 100),
+      activity('f1', 'finals', 'fin-cat', 100),
+    ],
+  }
+
+  it('grades a [1, 1] period split as 50/50 instead of returning null', () => {
+    const book = computeConfiguredStudentGradebook(
+      twoDefaultPeriods,
+      scores({ m1: 90, f1: 70 }),
+      S,
+    )
+    expect(book.perPeriod.midterm.overall).toBe(90)
+    expect(book.perPeriod.finals.overall).toBe(70)
+    expect(book.components.overall).toBe(80)
+    expect(book.final).toBe(80)
+  })
+
+  it('reports the period total so the UI can warn', () => {
+    expect(findWeightIssues(twoDefaultPeriods)).toEqual([
+      { level: 'period', totalPercent: 200 },
+    ])
+  })
+
+  it('renormalizes an under-weighted set the same way', () => {
+    const underWeighted: GradebookStructure = {
+      ...twoDefaultPeriods,
+      periods: [period('midterm', 0.2, 0), period('finals', 0.2, 1)],
+    }
+    expect(
+      computeConfiguredStudentGradebook(underWeighted, scores({ m1: 90, f1: 70 }), S)
+        .final,
+    ).toBe(80)
+    expect(findWeightIssues(underWeighted)).toEqual([
+      { level: 'period', totalPercent: 40 },
+    ])
+  })
+
+  it('still honours a deliberate uneven split', () => {
+    const weighted: GradebookStructure = {
+      ...twoDefaultPeriods,
+      periods: [period('midterm', 0.4, 0), period('finals', 0.6, 1)],
+    }
+    expect(
+      computeConfiguredStudentGradebook(weighted, scores({ m1: 90, f1: 70 }), S).final,
+    ).toBe(78)
+    expect(findWeightIssues(weighted)).toEqual([])
+  })
+
+  it('leaves computeCombinedFinalGrade gated - a missing subject must not renormalize', () => {
+    // Lecture 40 / Laboratory 60 with Lecture absent must NOT become 100% Lab.
+    expect(computeCombinedFinalGrade([{ grade: 80, weight: 0.6 }])).toBeNull()
+    expect(
+      computeCombinedFinalGrade([
+        { grade: null, weight: 0.4 },
+        { grade: 80, weight: 0.6 },
+      ]),
+    ).toBeNull()
+    expect(
+      computeCombinedFinalGrade([
+        { grade: 75, weight: 0.4 },
+        { grade: 80, weight: 0.6 },
+      ]),
+    ).toBe(78)
   })
 })
