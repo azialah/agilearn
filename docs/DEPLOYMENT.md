@@ -140,6 +140,30 @@ Keep `src/lib/database.types.ts` in sync with the migrations.
    **VITE_SUPABASE_ANON_KEY** (Production + Preview).
 4. Deploy. SPA routes fall back to `/index.html` automatically.
 
+## 7b. Grade emails (Resend + Edge Function)
+
+Grade emails are sent by the `send-grade-emails` Edge Function from
+`grades.no-reply@agilearn.net`.
+
+1. In [Resend](https://resend.com), add and verify the `agilearn.net` domain
+   (the SPF and DKIM DNS records it lists), then create an API key with sending
+   access.
+2. Store the key as a function secret. It is never a `VITE_` variable:
+
+   ```bash
+   supabase secrets set RESEND_API_KEY=re_...
+   ```
+
+3. Deploy the function (JWT verification stays on, per `supabase/config.toml`):
+
+   ```bash
+   supabase functions deploy send-grade-emails
+   ```
+
+Locally, copy `supabase/functions/.env.example` to `supabase/functions/.env`, put a
+Resend **test** key in it, and run
+`supabase functions serve send-grade-emails --env-file supabase/functions/.env`.
+
 ## 8. Verify Row Level Security
 
 Confirm the policies actually isolate tenants:

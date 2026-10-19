@@ -21,6 +21,12 @@ import {
   type TransmutationTable,
 } from '@/lib/grading'
 import { studentFullName, type GradingTemplate, type Student } from '@/types/domain'
+import { orderByIds, type GridViewConfig } from '@/lib/gradeSheetConfig'
+import {
+  useGradeSheetConfig,
+  DEFAULT_GRADE_SHEET_CONFIG,
+} from '@/lib/queries/gradeSheetConfig'
+import { GridViewDialog } from './GridViewDialog'
 import { StudentFormDialog } from '@/features/teacher/classrooms/StudentFormDialog'
 import { finalColumnLabel } from './SummaryTable'
 import { useUpsertScore } from '@/lib/queries/grades'
@@ -81,6 +87,19 @@ export function GradeGrid({
   const [editing, setEditing] = useState<CellPos | null>(null)
   const [editSeed, setEditSeed] = useState<string>()
   const [fullScreen, setFullScreen] = useState(false)
+  const sheetConfig = useGradeSheetConfig(classroomId, courseSubjectId)
+  const view: GridViewConfig =
+    sheetConfig.data?.gridView ?? DEFAULT_GRADE_SHEET_CONFIG.gridView
+  // Display order and visibility only — grades below still use every
+  // component, so hiding one never changes a student's final.
+  const visibleComponents = useMemo(
+    () =>
+      orderByIds(structure.components, view.componentOrder).filter(
+        (component) => !view.hiddenComponentIds.includes(component.id),
+      ),
+    [structure.components, view.componentOrder, view.hiddenComponentIds],
+  )
+  const compact = view.density === 'compact'
 
   // Escape exits full-screen from anywhere in the grid, matching every other
   // full-screen/overlay surface in the app.
@@ -103,7 +122,7 @@ export function GradeGrid({
       }) as ColumnDef<Student, unknown>,
     ]
     info.set('student', { kind: 'student' })
-    for (const component of structure.components) {
+    for (const component of visibleComponents) {
       const categories = categoriesFor(structure, periodId, component.id)
       if (!categories.length) continue
       const categoryGroups: ColumnDef<Student, unknown>[] = []
@@ -134,11 +153,14 @@ export function GradeGrid({
             ),
           }) as ColumnDef<Student, unknown>
         })
-        const pctId = `cat:${category.id}`
-        info.set(pctId, { kind: 'catpct', categoryId: category.id })
-        leaves.push(
-          helper.display({ id: pctId, header: '%' }) as ColumnDef<Student, unknown>,
-        )
+        if (view.showCategoryPercent) {
+          const pctId = `cat:${category.id}`
+          info.set(pctId, { kind: 'catpct', categoryId: category.id })
+          leaves.push(
+            helper.display({ id: pctId, header: '%' }) as ColumnDef<Student, unknown>,
+          )
+        }
+        if (!leaves.length) continue
         categoryGroups.push(
           helper.group({
             id: `group:${category.id}`,
@@ -147,14 +169,17 @@ export function GradeGrid({
           }) as ColumnDef<Student, unknown>,
         )
       }
-      const gradeId = `period:${component.id}`
-      info.set(gradeId, { kind: 'periodgrade', componentId: component.id })
-      categoryGroups.push(
-        helper.display({
-          id: gradeId,
-          header: t('gradesPeriodGradeColumnHeader', { component: component.name }),
-        }) as ColumnDef<Student, unknown>,
-      )
+      if (view.showPeriodGrade) {
+        const gradeId = `period:${component.id}`
+        info.set(gradeId, { kind: 'periodgrade', componentId: component.id })
+        categoryGroups.push(
+          helper.display({
+            id: gradeId,
+            header: t('gradesPeriodGradeColumnHeader', { component: component.name }),
+          }) as ColumnDef<Student, unknown>,
+        )
+      }
+      if (!categoryGroups.length) continue
       cols.push(
         helper.group({
           id: `component:${component.id}`,
@@ -163,32 +188,46 @@ export function GradeGrid({
         }) as ColumnDef<Student, unknown>,
       )
     }
-    const summary: ColumnDef<Student, unknown>[] = structure.components.map(
-      (component) => {
-        const id = `summary:${component.id}`
-        info.set(id, { kind: 'component', componentId: component.id })
-        return helper.display({ id, header: component.name }) as ColumnDef<
-          Student,
-          unknown
-        >
-      },
-    )
-    info.set('final', { kind: 'final' })
-    summary.push(
-      helper.display({
-        id: 'final',
-        header: finalColumnLabel(t, gradingTemplate),
-      }) as ColumnDef<Student, unknown>,
-    )
-    cols.push(
-      helper.group({
-        id: 'overall',
-        header: t('gradesOverallColumnHeader'),
-        columns: summary,
-      }) as ColumnDef<Student, unknown>,
-    )
+    const summary: ColumnDef<Student, unknown>[] = view.showComponentSummary
+      ? visibleComponents.map((component) => {
+          const id = `summary:${component.id}`
+          info.set(id, { kind: 'component', componentId: component.id })
+          return helper.display({ id, header: component.name }) as ColumnDef<
+            Student,
+            unknown
+          >
+        })
+      : []
+    if (view.showFinal) {
+      info.set('final', { kind: 'final' })
+      summary.push(
+        helper.display({
+          id: 'final',
+          header: finalColumnLabel(t, gradingTemplate),
+        }) as ColumnDef<Student, unknown>,
+      )
+    }
+    if (summary.length) {
+      cols.push(
+        helper.group({
+          id: 'overall',
+          header: t('gradesOverallColumnHeader'),
+          columns: summary,
+        }) as ColumnDef<Student, unknown>,
+      )
+    }
     return { editableActivities: editable, leafInfo: info, columns: cols }
-  }, [structure, periodId, gradingTemplate, t])
+  }, [
+    structure,
+    periodId,
+    gradingTemplate,
+    t,
+    visibleComponents,
+    view.showCategoryPercent,
+    view.showPeriodGrade,
+    view.showComponentSummary,
+    view.showFinal,
+  ])
   const gradebooks = useMemo(
     () =>
       new Map(
@@ -358,7 +397,7 @@ export function GradeGrid({
       )}
       onPaste={handlePaste}
     >
-      <table className="border-collapse text-sm">
+      <table className={cn('border-collapse', compact ? 'text-xs' : 'text-sm')}>
         <thead className="bg-(--color-surface-2) text-xs text-(--color-ink-faint)">
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id} className="border-b border-(--color-border)">
@@ -408,12 +447,15 @@ export function GradeGrid({
                           trigger={
                             <button
                               type="button"
-                              className="flex w-full flex-col items-start px-3 py-1.5 text-left hover:bg-(--color-surface-2)"
+                              className={cn(
+                                'flex w-full flex-col items-start px-3 text-left hover:bg-(--color-surface-2)',
+                                compact ? 'py-0.5' : 'py-1.5',
+                              )}
                             >
                               <span className="font-medium">
                                 {studentFullName(student)}
                               </span>
-                              {student.student_no && (
+                              {view.showStudentNo && student.student_no && (
                                 <span className="text-xs text-(--color-ink-faint)">
                                   {student.student_no}
                                 </span>
@@ -497,7 +539,8 @@ export function GradeGrid({
                     <td
                       key={column.id}
                       className={cn(
-                        'whitespace-nowrap border-r border-(--color-border) px-3 py-1.5 text-right tabular-nums',
+                        'whitespace-nowrap border-r border-(--color-border) px-3 text-right tabular-nums',
+                        compact ? 'py-0.5' : 'py-1.5',
                         emphasize
                           ? 'font-semibold text-(--color-ink)'
                           : 'text-(--color-ink-muted)',
@@ -515,6 +558,15 @@ export function GradeGrid({
         </tbody>
       </table>
     </div>
+  )
+
+  const viewButton = (
+    <GridViewDialog
+      classroomId={classroomId}
+      courseSubjectId={courseSubjectId}
+      components={structure.components}
+      view={view}
+    />
   )
 
   const toggleButton = (
@@ -535,7 +587,10 @@ export function GradeGrid({
   if (fullScreen) {
     return createPortal(
       <div className="fixed inset-0 z-100 flex flex-col gap-3 overflow-auto bg-(--color-surface-0) p-4">
-        <div className="flex justify-end">{toggleButton}</div>
+        <div className="flex justify-end gap-2">
+          {viewButton}
+          {toggleButton}
+        </div>
         {grid}
       </div>,
       document.body,
@@ -544,7 +599,10 @@ export function GradeGrid({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-end">{toggleButton}</div>
+      <div className="flex justify-end gap-2">
+        {viewButton}
+        {toggleButton}
+      </div>
       {grid}
     </div>
   )

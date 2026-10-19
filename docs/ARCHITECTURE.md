@@ -24,6 +24,30 @@ decide what that user can read or write; the app never sees rows it isn't allowe
 to. There is no privileged backend path — no service-role key exists in this
 codebase.
 
+The one server-side piece is the `send-grade-emails` Edge Function (Deno). It
+exists because sending email needs a secret (the Resend API key) that cannot ship
+to the browser. It is invoked with the teacher's JWT, builds its Supabase client
+from that JWT and the anon key (so RLS applies exactly as in the SPA), accepts
+only ids, and reads every address, grade and CC/BCC address from the database.
+
+### Posted grades and grade emails (migration 0040)
+
+- `posted_grades` holds finished Lecture / Laboratory / term grades imported from
+  a teacher's own sheet (`Last Name | First Name | SchoolID | Lecture |
+  Laboratory | Midterm Grade`), per subject + student + term. They are shown and
+  emailed as-is and never feed `scores` or the grade engine. A blank term grade is
+  filled in as `lecture × 40% + laboratory × 60%` by `midtermFromComponents()` in
+  `grading.ts`.
+- `classrooms.student_email_domain` + `students.student_no` form each student's
+  address (`202110190@gordoncollege.edu.ph`); `classrooms.grade_email_cc/_bcc`
+  are copied on every email.
+- The slideshow can present a posted set (subject + term), with the hint
+  "Actual Lecture × 40% + Actual Laboratory × 60% = Midterm Grade".
+- `grade_email_log` is the append-only send history; it also stops accidental
+  double sends unless the teacher opts to send again.
+- Mail goes from `grades.no-reply@agilearn.net` through Resend's batch API, with
+  `reply_to` set to the teacher's profile email.
+
 ## Layers (and the rules between them)
 
 ```

@@ -9,6 +9,9 @@ import {
   findWeightIssues,
   hasExactWeightTotal,
   isConfiguredGradeComplete,
+  midtermFromComponents,
+  postedGradeMismatch,
+  roundWhole,
   computePeriodComponentGrade,
   computeStudentGradebook,
   round2,
@@ -435,5 +438,47 @@ describe('weights that do not total 100%', () => {
         { grade: 80, weight: 0.6 },
       ]),
     ).toBe(78)
+  })
+})
+
+describe('midtermFromComponents', () => {
+  it('weighs lecture 40% and laboratory 60%, to two decimals', () => {
+    // Rows from a class-record sheet: CUBALAN 95 / 85 → 89, CARAAN 76 / 97.
+    expect(midtermFromComponents(95, 85)).toBe(89)
+    expect(midtermFromComponents(76, 97)).toBe(88.6)
+    expect(midtermFromComponents(85.5, 90.25)).toBe(88.35)
+  })
+
+  it('is null when either half is missing', () => {
+    expect(midtermFromComponents(null, 90)).toBeNull()
+    expect(midtermFromComponents(90, null)).toBeNull()
+  })
+})
+
+describe('postedGradeMismatch', () => {
+  it('flags a term grade that is not Lecture 40% + Laboratory 60%', () => {
+    expect(postedGradeMismatch(95, 85, 89)).toBe(false)
+    expect(postedGradeMismatch(85.5, 90.25, 88.35)).toBe(false)
+    expect(postedGradeMismatch(85.5, 90.25, 88.5)).toBe(true)
+    expect(postedGradeMismatch(88, 92, 85)).toBe(true)
+  })
+
+  it('allows whole-number sheet grades that rounding explains', () => {
+    // The sheet's Lec / Lab are rounded too: 92 / 94 → 93.2 printed as 94.
+    expect(postedGradeMismatch(92, 94, 94)).toBe(false)
+    expect(postedGradeMismatch(95, 85, 90)).toBe(true)
+  })
+
+  it('never flags incomplete rows', () => {
+    expect(postedGradeMismatch(null, 92, 85)).toBe(false)
+    expect(postedGradeMismatch(88, 92, null)).toBe(false)
+  })
+})
+
+describe('roundWhole', () => {
+  it('rounds half up to a whole number', () => {
+    expect(roundWhole(88.5)).toBe(89)
+    expect(roundWhole(88.49)).toBe(88)
+    expect(roundWhole(0.4 * 92.5 + 0.6 * 92.5)).toBe(93)
   })
 })

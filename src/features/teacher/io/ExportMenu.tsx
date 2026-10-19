@@ -12,7 +12,15 @@ import {
 import { useToast } from '@/components/ui/toast'
 import { useClassroom } from '@/lib/queries/classrooms'
 import { useStudents } from '@/lib/queries/students'
-import { useGradebookStructure, useScores } from '@/lib/queries/grades'
+import { useCourseSubjects } from '@/lib/queries/academicWorkspace'
+import {
+  useGradebookStructure,
+  useScores,
+  useSubjectGradeCombinations,
+  useSubjectGradebooks,
+} from '@/lib/queries/grades'
+import { useGradeSheetConfig } from '@/lib/queries/gradeSheetConfig'
+import { DEFAULT_EXPORT_LAYOUT } from '@/lib/gradeSheetConfig'
 import { findWeightIssues, type ReportingConfig } from '@/lib/grading'
 import { buildFilename, type ExportKind } from './parsing'
 import {
@@ -21,6 +29,11 @@ import {
   downloadWorkbook,
 } from './workbook'
 import { buildGradeReportPdf, downloadPdf } from './pdf'
+import { ExportLayoutDialog } from './ExportLayoutDialog'
+import { findLecLabPair } from './lecLabPair'
+import { usePostedGrades } from '@/lib/queries/postedGrades'
+import { recordedTermGrades } from '@/features/teacher/posted-grades/postedGradeSets'
+import type { LecLabBooks } from './exportLayout'
 import { ChevronDownIcon, DownloadIcon, PdfIcon, SheetIcon } from './icons'
 
 export interface ExportMenuProps {
@@ -52,12 +65,49 @@ export function ExportMenu({
 
   const classroom = useClassroom(classroomId)
   const students = useStudents(classroomId)
+  const subjects = useCourseSubjects(classroomId)
+  const subject = subjects.data?.find((row) => row.id === courseSubjectId) ?? null
+  // Lecture and Laboratory live in separate subjects; the class-record columns
+  // (MIDTERM GRADE LEC / LAB / MIDTERM GRADE) need both gradebooks.
+  const combinations = useSubjectGradeCombinations(classroomId)
+  const lecLab = useMemo(
+    () => findLecLabPair(subjects.data ?? [], courseSubjectId, combinations.data ?? []),
+    [subjects.data, courseSubjectId, combinations.data],
+  )
+  const pairIds = useMemo(
+    () => (lecLab ? [lecLab.lecture.id, lecLab.laboratory.id] : []),
+    [lecLab],
+  )
+  const pairBooks = useSubjectGradebooks(classroomId, pairIds)
+  const pair = useMemo<LecLabBooks | undefined>(() => {
+    if (!lecLab) return undefined
+    const lecture = pairBooks.gradebooks.get(lecLab.lecture.id)
+    const laboratory = pairBooks.gradebooks.get(lecLab.laboratory.id)
+    return lecture && laboratory
+      ? { lecture, laboratory, weights: lecLab.weights }
+      : undefined
+  }, [lecLab, pairBooks.gradebooks])
+  const pairLoading = !!lecLab && (!pair || pairBooks.isLoading)
+  // A MIDTERM GRADE the teacher recorded on their own sheet is printed as is.
+  const posted = usePostedGrades(classroomId)
+  const recorded = useMemo(
+    () =>
+      recordedTermGrades(
+        posted.data ?? [],
+        pairIds.length ? pairIds : courseSubjectId ? [courseSubjectId] : [],
+      ),
+    [posted.data, pairIds, courseSubjectId],
+  )
   const structure = useGradebookStructure(classroomId, courseSubjectId)
   const activityIds = useMemo(
     () => (structure.data?.activities ?? []).map((a) => a.id),
     [structure.data],
   )
   const scores = useScores(classroomId, activityIds, courseSubjectId)
+  // Layouts are per subject; the classroom header (no subject) keeps the default.
+  const sheetConfig = useGradeSheetConfig(classroomId, courseSubjectId)
+  const exportLayout = sheetConfig.data?.exportLayout ?? DEFAULT_EXPORT_LAYOUT
+  const [layoutOpen, setLayoutOpen] = useState(false)
 
   // A wrong number on screen is recoverable; a wrong FAILED on a PDF that
   // leaves the building is not. The grades page warns about weights that miss
@@ -115,6 +165,10 @@ export function ExportMenu({
         structure.data ?? { periods: [], components: [], categories: [], activities: [] },
         scores.data ?? {},
         reporting,
+        exportLayout,
+        subject,
+        pair,
+        recorded,
       )
       downloadWorkbook(wb, buildFilename(room.course_code, 'grade-sheet'))
       toast({ title: 'Grade sheet exported', tone: 'success' })
@@ -137,33 +191,62 @@ export function ExportMenu({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={!!busy || !structure.isSuccess}>
-          {busy ? <Spinner className="size-4" /> : <DownloadIcon />}
-          Export
-          <ChevronDownIcon className="size-3.5 opacity-70" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel>Download</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => void exportTemplate()}>
-          <SheetIcon />
-          Roster template (.xlsx)
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => void exportGradeSheet()}
-          disabled={!classroom.data}
-        >
-          <SheetIcon />
-          Grade sheet (.xlsx)
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void exportReport()} disabled={!classroom.data}>
-          <PdfIcon />
-          Grade report (.pdf)
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" disabled={!!busy || !structure.isSuccess}>
+            {busy ? <Spinner className="size-4" /> : <DownloadIcon />}
+            Export
+            <ChevronDownIcon className="size-3.5 opacity-70" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-56">
+          <DropdownMenuLabel>Download</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => void exportTemplate()}>
+            <SheetIcon />
+            Roster template (.xlsx)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => void exportGradeSheet()}
+            disabled={!classroom.data || pairLoading}
+          >
+            <SheetIcon />
+            Grade sheet (.xlsx)
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => void exportReport()}
+            disabled={!classroom.data}
+          >
+            <PdfIcon />
+            Grade report (.pdf)
+          </DropdownMenuItem>
+          {courseSubjectId && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setLayoutOpen(true)}
+                disabled={!structure.data}
+              >
+                <SheetIcon />
+                Customize grade sheet…
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {courseSubjectId && structure.data && (
+        <ExportLayoutDialog
+          open={layoutOpen}
+          onOpenChange={setLayoutOpen}
+          classroomId={classroomId}
+          courseSubjectId={courseSubjectId}
+          layout={exportLayout}
+          structure={structure.data}
+          reporting={reporting}
+          pair={pair}
+        />
+      )}
+    </>
   )
 }

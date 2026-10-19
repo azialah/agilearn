@@ -1,6 +1,7 @@
 /**
  * Workbook builders for the two spreadsheet exports (roster template + grade
- * sheet) and the shared browser download trigger.
+ * sheet) and the shared browser download trigger. The grade sheet's columns
+ * are resolved by exportLayout.ts.
  *
  * SheetJS community edition writes structure, column widths and freeze panes but
  * not cell fills/fonts (those are Pro-only), so the "styling" here matches the
@@ -9,18 +10,16 @@
  */
 
 import * as XLSX from 'xlsx'
+import type { GradebookStructure, ReportingConfig, ScoreMap } from '@/lib/grading'
+import { DEFAULT_EXPORT_LAYOUT, type ExportLayout } from '@/lib/gradeSheetConfig'
+import type { Classroom, CourseSubject, Student } from '@/types/domain'
 import {
-  categoriesFor,
-  computeConfiguredStudentGradebook,
-  computeReportedFinalGrade,
-  isConfiguredGradeComplete,
-  remarkFor,
-  round2,
-  type GradebookStructure,
-  type ReportingConfig,
-  type ScoreMap,
-} from '@/lib/grading'
-import type { Activity, Classroom, Student } from '@/types/domain'
+  buildGradeSheetTable,
+  gradeSheetTitleLines,
+  type LecLabBooks,
+  type RecordedGrades,
+  type SheetCell,
+} from './exportLayout'
 
 const TEMPLATE_HEADERS = ['Student No', 'Last Name', 'First Name', 'Middle Name'] as const
 // The middle name may be written in full — the importer keeps only the initial.
@@ -41,52 +40,19 @@ export function buildRosterTemplateWorkbook(): XLSX.WorkBook {
   return wb
 }
 
-/** Order activities by grading period, then component, then category. */
-function orderedActivityColumns(structure: GradebookStructure): Activity[] {
-  const columns: Activity[] = []
-  for (const period of structure.periods) {
-    for (const component of structure.components) {
-      const categories = categoriesFor(structure, period.id, component.id)
-      for (const category of categories) {
-        const activities = structure.activities.filter(
-          (a) => a.category_id === category.id && a.grading_period_id === period.id,
-        )
-        columns.push(...activities)
-      }
-    }
-  }
-  return columns
-}
-
-function labelFor(activity: Activity, structure: GradebookStructure): string {
-  const category = structure.categories.find((c) => c.id === activity.category_id)
-  const period = structure.periods.find((p) => p.id === activity.grading_period_id)
-  const parts = [period?.name, category?.name, activity.name].filter(Boolean)
-  return `${parts.join(' / ')} (${activity.max_score})`
-}
-
-function cell(value: number | null): number | string {
-  return value === null ? '' : round2(value)
-}
-
-/** Name the Final column for what it actually holds, matching the on-screen
- *  label — "Final Grade" reads as a percentage, which it is not for a DepEd or
- *  college subject. */
-function finalHeaderFor(gradingTemplate?: string): string {
-  if (gradingTemplate === 'basic_education' || gradingTemplate === 'senior_high') {
-    return 'Transmuted Grade'
-  }
-  if (gradingTemplate === 'higher_education') return 'Grade Equivalent'
-  return 'Final Grade'
-}
-
 /**
- * Grade sheet: roster + every activity score + the computed period, component
- * and final grades (from the shared grading engine, using the classroom's
- * component weights).
+ * Grade sheet: roster + computed grades (from the shared grading engine), laid
+ * out by the subject's configured export layout. The default is the class
+ * record format:
+ *
+ *   ClassCode CourseCode            (title block, one merged row per line)
+ *   Course Title
+ *   Schedule · Course/Year/Block
+ *                         |        MIDTERM          |   (period band row)
+ *   # | Name | Student No. | GRADE LEC | GRADE LAB | GRADE
  */
 export function buildGradeSheetWorkbook(
-  _classroom: Classroom,
+  classroom: Classroom,
   students: Student[],
   structure: GradebookStructure,
   scores: ScoreMap,
@@ -94,56 +60,51 @@ export function buildGradeSheetWorkbook(
    *  which is what this exporter used to emit unconditionally — including for
    *  DepEd and college subjects whose screen showed a converted grade. */
   reporting: ReportingConfig = {},
+  layout: ExportLayout = DEFAULT_EXPORT_LAYOUT,
+  subject?: CourseSubject | null,
+  /** Lecture + Laboratory as separate subjects: the class-record columns read both. */
+  pair?: LecLabBooks,
+  /** Term grades recorded on the teacher's own sheet; printed instead of recomputing. */
+  recorded?: RecordedGrades,
 ): XLSX.WorkBook {
-  const activityColumns = orderedActivityColumns(structure)
+  const table = buildGradeSheetTable(
+    students,
+    structure,
+    scores,
+    reporting,
+    layout,
+    pair,
+    recorded,
+  )
+  const width = Math.max(1, table.header.length)
+  const lastCol = width - 1
+  const aoa: SheetCell[][] = []
+  const merges: XLSX.Range[] = []
 
-  const header: string[] = ['Student No', 'Last Name', 'First Name', 'MI']
-  for (const activity of activityColumns) header.push(labelFor(activity, structure))
-  for (const period of structure.periods) {
-    for (const component of structure.components) {
-      header.push(`${period.name} / ${component.name}`)
-    }
+  for (const line of gradeSheetTitleLines(classroom, subject)) {
+    merges.push({ s: { r: aoa.length, c: 0 }, e: { r: aoa.length, c: lastCol } })
+    aoa.push([line])
   }
-  for (const component of structure.components) header.push(`${component.name} grade`)
-  header.push(finalHeaderFor(reporting.gradingTemplate))
-  header.push('Remarks')
-
-  const aoa: (string | number)[][] = [header]
-
-  for (const student of students) {
-    const book = computeConfiguredStudentGradebook(structure, scores, student.id)
-    const row: (string | number)[] = [
-      student.student_no,
-      student.last_name,
-      student.first_name,
-      student.middle_initial ?? '',
-    ]
-    for (const activity of activityColumns) {
-      const score = scores[activity.id]?.[student.id]
-      row.push(score === null || score === undefined ? '' : score)
+  if (table.bands.length) {
+    const bandRow: SheetCell[] = Array.from({ length: width }, () => '')
+    for (const band of table.bands) {
+      bandRow[band.start] = band.label
+      if (band.span > 1)
+        merges.push({
+          s: { r: aoa.length, c: band.start },
+          e: { r: aoa.length, c: band.start + band.span - 1 },
+        })
     }
-    for (const period of structure.periods) {
-      for (const component of structure.components) {
-        row.push(cell(book.perPeriod[period.id]?.[component.id] ?? null))
-      }
-    }
-    for (const component of structure.components)
-      row.push(cell(book.components[component.id]))
-    row.push(cell(computeReportedFinalGrade(structure, scores, student.id, reporting)))
-    row.push(
-      remarkFor(book.final, isConfiguredGradeComplete(structure, scores, student.id)),
-    )
-    aoa.push(row)
+    aoa.push(bandRow)
   }
+  aoa.push(table.header, ...table.rows)
 
   const ws = XLSX.utils.aoa_to_sheet(aoa)
-  ws['!cols'] = header.map((label, index) => {
-    if (index < 4) return { wch: [14, 20, 20, 6][index] }
-    return { wch: Math.min(28, Math.max(12, label.length + 2)) }
-  })
+  ws['!cols'] = table.widths.map((wch) => ({ wch }))
+  if (merges.length) ws['!merges'] = merges
 
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Grade Sheet')
+  XLSX.utils.book_append_sheet(wb, ws, table.sheetName)
   return wb
 }
 
