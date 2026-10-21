@@ -183,6 +183,25 @@ export function computeCombinedFinalGrade(
   )
 }
 
+/**
+ * One period's grade across separate subjects, e.g. Midterm Lecture × 40% +
+ * Midterm Laboratory × 60%. Unrounded, so a class-record sheet can round once
+ * with {@link roundWhole}. Null until every subject has a grade for the period
+ * and the weights total 100%.
+ */
+export function computeCombinedPeriodGrade(
+  inputs: readonly WeightedFinalInput[],
+): number | null {
+  if (
+    inputs.length < 2 ||
+    !hasExactWeightTotal(inputs.map((input) => input.weight)) ||
+    inputs.some((input) => input.grade === null)
+  ) {
+    return null
+  }
+  return inputs.reduce((total, input) => total + (input.grade ?? 0) * input.weight, 0)
+}
+
 /** Existing classrooms have no persisted component rows. Keep their historical
  * lecture/laboratory categories readable until a teacher explicitly adopts the
  * new component structure. */
@@ -285,6 +304,45 @@ export function computeConfiguredStudentGradebook(
   }
 }
 
+/**
+ * One period's row on a class-record grade sheet: each component's grade and
+ * the period grade, `Σ component grade × component weight` (e.g. Lecture 40% +
+ * Laboratory 60%), all unrounded so the caller rounds once at the end. The
+ * period grade is null unless every component has a grade — a sheet should not
+ * print a midterm grade built from the lecture half alone.
+ */
+export function computePeriodSheetRow(
+  structure: GradebookStructure,
+  scores: ScoreMap,
+  studentId: string,
+  periodId: string,
+): { components: Record<string, number | null>; grade: number | null } {
+  const components: Record<string, number | null> = {}
+  let total = 0
+  let totalWeight = 0
+  let complete = structure.components.length > 0
+  for (const component of structure.components) {
+    const grade = computeConfiguredPeriodComponentGrade(
+      structure,
+      scores,
+      studentId,
+      periodId,
+      component.id,
+    )
+    components[component.id] = grade
+    if (grade === null) {
+      complete = false
+      continue
+    }
+    total += grade * component.weight
+    totalWeight += component.weight
+  }
+  return {
+    components,
+    grade: complete && totalWeight > 0 ? total / totalWeight : null,
+  }
+}
+
 /** Combine configured components for a single grading period. */
 export function computeConfiguredPeriodFinalGrade(
   structure: GradebookStructure,
@@ -340,9 +398,53 @@ export const DEFAULT_WEIGHTS: ComponentWeights = {
   laboratory: 0.6,
 }
 
+/**
+ * Round half-up to a whole number, as printed on a class-record grade sheet
+ * (88.5 → 89). The epsilon keeps 88.4999999… from a weighted sum on the right
+ * side of the half.
+ */
+export function roundWhole(value: number): number {
+  return Math.round(value + 1e-9)
+}
+
 /** Round half-up to two decimal places. */
 export function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
+/**
+ * Term grade for posted (imported) grades: Lecture 40% + Laboratory 60%
+ * ({@link DEFAULT_WEIGHTS}), the split printed on the class-record sheet
+ * ("MIDTERM GRADE LEC (40%)", "MIDTERM GRADE LAB (60%)"). Rounded to two
+ * decimals; null when either half is missing.
+ */
+export function midtermFromComponents(
+  lecture: number | null,
+  laboratory: number | null,
+): number | null {
+  if (lecture === null || laboratory === null) return null
+  return round2(
+    lecture * DEFAULT_WEIGHTS.lecture + laboratory * DEFAULT_WEIGHTS.laboratory,
+  )
+}
+
+/**
+ * Whether a posted term grade disagrees with Lecture 40% + Laboratory 60%.
+ *
+ * A whole-number sheet grade was computed from unrounded Lecture and Laboratory
+ * grades, then rounded — and the Lecture and Laboratory it shows are rounded
+ * too — so it only counts as a mismatch when it is a full point or more away.
+ * A decimal grade must agree to within 0.01. False when any value is missing.
+ */
+export function postedGradeMismatch(
+  lecture: number | null,
+  laboratory: number | null,
+  termGrade: number | null,
+): boolean {
+  const expected = midtermFromComponents(lecture, laboratory)
+  if (expected === null || termGrade === null) return false
+  const gap = Math.abs(expected - termGrade)
+  return Number.isInteger(termGrade) ? gap >= 1 : gap > 0.01
 }
 
 function scoreFor(

@@ -21,9 +21,12 @@ a shared teaching-modules library into one calm, dark-leaning workspace.
 - **Security model:** Postgres Row Level Security is the boundary. Teachers only
   ever see their own classrooms; RLS enforces it regardless of UI bugs.
 
-There is **no backend server, no Edge Functions, no payments, no i18n**. The React
-SPA talks directly to Supabase (Auth + Postgres + Storage) using the anon key,
-and RLS does the access control.
+There is **no backend server, no payments, no i18n**, and exactly **one Edge
+Function** (`supabase/functions/send-grade-emails`, Deno), which emails posted
+grades to students via Resend. Everything else: the React SPA talks directly to
+Supabase (Auth + Postgres + Storage) using the anon key, and RLS does the access
+control. The function also runs as the calling teacher (their JWT + anon key), so
+RLS still applies there.
 
 ---
 
@@ -252,6 +255,9 @@ Every interactive element needs an accessible name.
 - **Private storage.** The `teaching-modules` bucket is private; never make it
   public or generate long-lived public URLs for it.
 - **Don't hand-manage the auth session** — the Supabase client owns it.
+- **Resend key is a function secret.** `RESEND_API_KEY` lives only in
+  `supabase/functions/.env` (local, gitignored) or `supabase secrets set`
+  (hosted). Never `VITE_`-prefix it or reference it from `src/`.
 - **No secrets in git.** Never `git add` `.env`. `.gitignore` enforces it.
 - **No AI attributions** in code, comments, commits, or docs (house rule).
 
@@ -279,8 +285,12 @@ Every interactive element needs an accessible name.
 **Vite SPA (no SSR):** Agilearn is an interactive internal tool, not SEO-heavy.
 Fast HMR, simple deploy (static + SPA rewrite on Vercel).
 
-**No backend / Edge Functions:** the SPA talks straight to Supabase with the anon
-key; RLS enforces access. Fewer moving parts, no server to run.
+**No backend, one Edge Function:** the SPA talks straight to Supabase with the
+anon key; RLS enforces access. Fewer moving parts, no server to run. The single
+exception is `send-grade-emails`: sending mail needs a server-held Resend key, so
+it lives in a Deno Edge Function that reads only ids from the request and loads
+every address and grade itself under the caller's RLS. Don't add more functions
+without the same justification.
 
 **RLS over app-level auth:** the DB enforces access regardless of UI bugs.
 Teachers are isolated to their own classrooms by `owns_classroom()`.

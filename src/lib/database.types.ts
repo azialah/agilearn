@@ -432,9 +432,12 @@ export type Database = {
           course_code: string
           course_name: string
           created_at: string
+          grade_email_bcc: string[]
+          grade_email_cc: string[]
           id: string
           owner_id: string
           school_level: Database['public']['Enums']['teaching_level'] | null
+          student_email_domain: string | null
           term_name: string
           updated_at: string
           year: string
@@ -448,9 +451,12 @@ export type Database = {
           course_code?: string
           course_name?: string
           created_at?: string
+          grade_email_bcc?: string[]
+          grade_email_cc?: string[]
           id?: string
           owner_id: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
+          student_email_domain?: string | null
           term_name?: string
           updated_at?: string
           year?: string
@@ -464,9 +470,12 @@ export type Database = {
           course_code?: string
           course_name?: string
           created_at?: string
+          grade_email_bcc?: string[]
+          grade_email_cc?: string[]
           id?: string
           owner_id?: string
           school_level?: Database['public']['Enums']['teaching_level'] | null
+          student_email_domain?: string | null
           term_name?: string
           updated_at?: string
           year?: string
@@ -726,6 +735,246 @@ export type Database = {
             columns: ['course_subject_id', 'classroom_id']
             isOneToOne: false
             referencedRelation: 'course_subjects'
+            referencedColumns: ['id', 'classroom_id']
+          },
+        ]
+      }
+      grade_sheet_configs: {
+        Row: {
+          classroom_id: string
+          course_subject_id: string
+          created_at: string
+          export_layout: Json
+          grid_view: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          course_subject_id: string
+          created_at?: string
+          export_layout?: Json
+          grid_view?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          course_subject_id?: string
+          created_at?: string
+          export_layout?: Json
+          grid_view?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'grade_sheet_configs_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'grade_sheet_configs_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'v_class_roster'
+            referencedColumns: ['classroom_id']
+          },
+          {
+            foreignKeyName: 'grade_sheet_configs_subject_classroom_fkey'
+            columns: ['course_subject_id', 'classroom_id']
+            isOneToOne: true
+            referencedRelation: 'course_subjects'
+            referencedColumns: ['id', 'classroom_id']
+          },
+        ]
+      }
+      grade_import_presets: {
+        Row: {
+          classroom_id: string
+          created_at: string
+          id: string
+          mapping: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string
+          id?: string
+          mapping: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string
+          id?: string
+          mapping?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'grade_import_presets_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'grade_import_presets_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'v_class_roster'
+            referencedColumns: ['classroom_id']
+          },
+        ]
+      }
+      grade_email_log: {
+        Row: {
+          classroom_id: string
+          course_subject_id: string
+          created_at: string
+          error: string | null
+          id: string
+          recipient: string
+          resend_id: string | null
+          sent_by: string | null
+          status: string
+          student_id: string
+          term: string
+        }
+        Insert: {
+          classroom_id: string
+          course_subject_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          recipient: string
+          resend_id?: string | null
+          sent_by?: string | null
+          status: string
+          student_id: string
+          term: string
+        }
+        Update: {
+          classroom_id?: string
+          course_subject_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          recipient?: string
+          resend_id?: string | null
+          sent_by?: string | null
+          status?: string
+          student_id?: string
+          term?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'grade_email_log_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'grade_email_log_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'v_class_roster'
+            referencedColumns: ['classroom_id']
+          },
+          {
+            foreignKeyName: 'grade_email_log_sent_by_fkey'
+            columns: ['sent_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'grade_email_log_subject_classroom_fkey'
+            columns: ['course_subject_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'course_subjects'
+            referencedColumns: ['id', 'classroom_id']
+          },
+          {
+            foreignKeyName: 'grade_email_log_student_classroom_fkey'
+            columns: ['student_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'students'
+            referencedColumns: ['id', 'classroom_id']
+          },
+        ]
+      }
+      posted_grades: {
+        Row: {
+          classroom_id: string
+          course_subject_id: string
+          created_at: string
+          id: string
+          laboratory: number | null
+          lecture: number | null
+          student_id: string
+          term: string
+          term_grade: number | null
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          course_subject_id: string
+          created_at?: string
+          id?: string
+          laboratory?: number | null
+          lecture?: number | null
+          student_id: string
+          term?: string
+          term_grade?: number | null
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          course_subject_id?: string
+          created_at?: string
+          id?: string
+          laboratory?: number | null
+          lecture?: number | null
+          student_id?: string
+          term?: string
+          term_grade?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'posted_grades_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'posted_grades_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'v_class_roster'
+            referencedColumns: ['classroom_id']
+          },
+          {
+            foreignKeyName: 'posted_grades_subject_classroom_fkey'
+            columns: ['course_subject_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'course_subjects'
+            referencedColumns: ['id', 'classroom_id']
+          },
+          {
+            foreignKeyName: 'posted_grades_student_classroom_fkey'
+            columns: ['student_id', 'classroom_id']
+            isOneToOne: false
+            referencedRelation: 'students'
             referencedColumns: ['id', 'classroom_id']
           },
         ]

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -8,8 +9,11 @@ import { useSlideshowData } from './useSlideshowData'
 import { SlidePlayer } from './SlidePlayer'
 
 export function SlideshowPage({ classroomId }: { classroomId: string }) {
-  const { classroom, students, periods, components, isLoading, isError } =
-    useSlideshowData(classroomId)
+  // The subject presented in gradebook mode; picked in the player.
+  const [subjectId, setSubjectId] = useState<string>()
+  const data = useSlideshowData(classroomId, subjectId)
+  const { classroom, students, periods, components, postedSets, isLoading, isError } =
+    data
 
   if (isLoading) {
     return <RouteSkeleton />
@@ -60,6 +64,13 @@ export function SlideshowPage({ classroomId }: { classroomId: string }) {
       students={students}
       periods={periods}
       components={components}
+      postedSets={postedSets}
+      subjects={data.subjects}
+      gradebookSubjectId={data.gradebookSubjectId}
+      onGradebookSubjectChange={setSubjectId}
+      lecLab={data.lecLab}
+      periodFormula={data.periodFormula}
+      gradesLoading={data.gradesLoading}
     />
   )
 }

@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import type { Classroom, GradeComponentRecord, GradingPeriod } from '@/types/domain'
+import type {
+  Classroom,
+  CourseSubject,
+  GradeComponentRecord,
+  GradingPeriod,
+} from '@/types/domain'
+import type { PostedGradeSet } from '@/features/teacher/posted-grades/postedGradeSets'
+import type { LecLabPair } from '@/features/teacher/io/lecLabPair'
 import type { SlideshowStudent } from './useSlideshowData'
 import { buildSlides, slideAt, slideCounter } from './sequencing'
-import { AverageSlide, GradeBreakdownSlide } from './Slides'
+import { AverageSlide, GradeBreakdownSlide, PostedGradeSlide } from './Slides'
 import { ProgressBar } from './ProgressBar'
 import { ThemePicker } from './ThemePicker'
 import { DEFAULT_THEME_ID, themeById, type SlideshowThemeId } from './themes'
@@ -17,6 +25,23 @@ interface SlidePlayerProps {
   students: SlideshowStudent[]
   periods: GradingPeriod[]
   components: GradeComponentRecord[]
+  postedSets: PostedGradeSet[]
+  subjects: CourseSubject[]
+  gradebookSubjectId: string | undefined
+  onGradebookSubjectChange: (subjectId: string) => void
+  lecLab: LecLabPair | null
+  periodFormula: string
+  gradesLoading: boolean
+}
+
+/** Source values for the computed gradebook (vs. a posted set's key). */
+const GRADEBOOK_PREFIX = 'gradebook:'
+const gradebookSource = (subjectId: string | undefined) =>
+  `${GRADEBOOK_PREFIX}${subjectId ?? ''}`
+
+const KIND_SUFFIX: Record<string, string> = {
+  lecture: ' (Lecture)',
+  laboratory: ' (Laboratory)',
 }
 
 export function SlidePlayer({
@@ -24,6 +49,13 @@ export function SlidePlayer({
   students,
   periods,
   components,
+  postedSets,
+  subjects,
+  gradebookSubjectId,
+  onGradebookSubjectChange,
+  lecLab,
+  periodFormula,
+  gradesLoading,
 }: SlidePlayerProps) {
   const navigate = useNavigate()
   const reducedMotion = usePrefersReducedMotion()
@@ -34,8 +66,34 @@ export function SlidePlayer({
     toggle: toggleFullscreen,
   } = useFullscreen(rootRef)
 
+  // Posted grades (imported Lecture / Laboratory / term grade) take over when
+  // the classroom has any; the computed gradebook stays one pick away.
+  const [source, setSource] = useState(
+    postedSets[0]?.key ?? gradebookSource(gradebookSubjectId),
+  )
+  const postedSet = postedSets.find((set) => set.key === source) ?? null
+  const subject = subjects.find((row) => row.id === gradebookSubjectId)
+  const courseLabel = subject
+    ? ([subject.name, subject.subject_code || subject.course_code] as const)
+    : undefined
+  // A Lecture + Laboratory pair is presented as one class-record slide per
+  // student; the Final Average slide would only cover one of the two subjects.
+  const onePerStudent = !postedSet && !!lecLab
+  const postedStudents = useMemo(() => {
+    if (!postedSet) return []
+    const byStudent = new Map(postedSet.rows.map((row) => [row.student_id, row]))
+    return students.flatMap((student) => {
+      const posted = byStudent.get(student.student.id)
+      return posted ? [{ student, posted }] : []
+    })
+  }, [postedSet, students])
+
   const slides = useMemo(() => buildSlides(students.length), [students.length])
-  const total = slides.length
+  const total = postedSet
+    ? postedStudents.length
+    : onePerStudent
+      ? students.length
+      : slides.length
 
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -85,15 +143,38 @@ export function SlidePlayer({
     return () => window.removeEventListener('keydown', onKey)
   }, [next, prev, exit])
 
-  const current = slideAt(index, total)
+  const current = onePerStudent
+    ? { studentIndex: index % Math.max(total, 1), kind: 'breakdown' as const }
+    : slideAt(index, slides.length)
   const currentStudent = students[current.studentIndex]
-  const counter = slideCounter(index, total)
+  const counter = slideCounter(index, slides.length)
+  const currentPosted = postedSet ? postedStudents[index % Math.max(total, 1)] : undefined
+  const position = total === 0 ? 0 : (index % total) + 1
+  const counterText = postedSet
+    ? `Student ${position} of ${total} · ${postedSet.term} Grade`
+    : onePerStudent
+      ? `Student ${position} of ${total} · Lecture + Laboratory`
+      : `Student ${counter.studentNumber} of ${counter.totalStudents} · ${counter.kindLabel}`
+
+  const selectSource = (value: string) => {
+    setSource(value)
+    setIndex(0)
+    if (value.startsWith(GRADEBOOK_PREFIX)) {
+      const subjectId = value.slice(GRADEBOOK_PREFIX.length)
+      if (subjectId) onGradebookSubjectChange(subjectId)
+    }
+  }
+  // Offer the picker whenever there is more than one thing to present.
+  const sourceCount = postedSets.length + Math.max(subjects.length, 1)
 
   const slideTransition = reducedMotion
     ? { duration: 0.12 }
     : { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }
 
-  return (
+  // Portalled to <body>: the app's page-enter animation leaves a transform on
+  // <main>, which would turn this full-screen `fixed inset-0` stage into a box
+  // the width of the content column.
+  return createPortal(
     <div
       ref={rootRef}
       style={theme.vars as React.CSSProperties}
@@ -123,13 +204,34 @@ export function SlidePlayer({
               className="absolute inset-0"
               style={{
                 background:
-                  current.kind === 'average'
+                  postedSet || current.kind === 'average'
                     ? 'var(--ss-bg-average)'
                     : 'var(--ss-bg-breakdown)',
               }}
             />
             <div className="relative flex w-full items-center justify-center">
-              {currentStudent &&
+              {postedSet ? (
+                currentPosted ? (
+                  <PostedGradeSlide
+                    student={currentPosted.student}
+                    classroom={classroom}
+                    subjectName={postedSet.subjectName}
+                    subjectCode={postedSet.subjectCode}
+                    term={postedSet.term}
+                    lecture={currentPosted.posted.lecture}
+                    laboratory={currentPosted.posted.laboratory}
+                    termGrade={currentPosted.posted.term_grade}
+                    reducedMotion={reducedMotion}
+                  />
+                ) : (
+                  <p className="text-white/60">
+                    None of this classroom's students have {postedSet.term} grades posted.
+                  </p>
+                )
+              ) : gradesLoading ? (
+                <p className="text-white/60">Loading grades…</p>
+              ) : (
+                currentStudent &&
                 (current.kind === 'breakdown' ? (
                   <GradeBreakdownSlide
                     student={currentStudent}
@@ -137,6 +239,8 @@ export function SlidePlayer({
                     periods={periods}
                     components={components}
                     reducedMotion={reducedMotion}
+                    courseLabel={courseLabel}
+                    periodFormula={periodFormula}
                   />
                 ) : (
                   <AverageSlide
@@ -145,8 +249,10 @@ export function SlidePlayer({
                     periods={periods}
                     components={components}
                     reducedMotion={reducedMotion}
+                    courseLabel={courseLabel}
                   />
-                ))}
+                ))
+              )}
             </div>
           </motion.div>
         </AnimatePresence>
@@ -154,6 +260,36 @@ export function SlidePlayer({
 
       {/* Top controls */}
       <div className="absolute right-3 top-3 z-20 flex flex-wrap items-center justify-end gap-2 sm:right-5 sm:top-5">
+        {sourceCount > 1 && (
+          <select
+            aria-label="Grades source"
+            value={source}
+            onChange={(event) => selectSource(event.target.value)}
+            className="h-8 max-w-56 truncate rounded-lg border border-white/15 bg-white/5 px-2 text-sm text-white backdrop-blur-sm"
+          >
+            {postedSets.map((set) => (
+              <option key={set.key} value={set.key} className="text-black">
+                {set.label}
+              </option>
+            ))}
+            {subjects.length > 0 ? (
+              subjects.map((row) => (
+                <option
+                  key={row.id}
+                  value={gradebookSource(row.id)}
+                  className="text-black"
+                >
+                  {row.name}
+                  {KIND_SUFFIX[row.kind] ?? ''} — gradebook
+                </option>
+              ))
+            ) : (
+              <option value={gradebookSource(undefined)} className="text-black">
+                Gradebook (computed)
+              </option>
+            )}
+          </select>
+        )}
         <ThemePicker
           value={themeId}
           onChange={setThemeId}
@@ -195,7 +331,7 @@ export function SlidePlayer({
       {/* Slide counter */}
       <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center">
         <span className="rounded-full border border-white/10 bg-black/30 px-4 py-1 text-xs text-white/55 backdrop-blur-sm">
-          Student {counter.studentNumber} of {counter.totalStudents} · {counter.kindLabel}
+          {counterText}
         </span>
       </div>
 
@@ -205,7 +341,8 @@ export function SlidePlayer({
         slideKey={index}
         onComplete={next}
       />
-    </div>
+    </div>,
+    document.body,
   )
 }
 

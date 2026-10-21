@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState, lazy } from 'react'
-import { Mail } from 'lucide-react'
+import { Mail, Send, Upload } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ClassroomHeader } from '@/features/teacher/classrooms/ClassroomHeader'
 import { ClassroomMeta } from '@/features/teacher/classrooms/ClassroomMeta'
@@ -32,6 +32,21 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue'
 const ExportMenu = lazy(() =>
   import('@/features/teacher/io/ExportMenu').then((module) => ({
     default: module.ExportMenu,
+  })),
+)
+const ClassRecordImportDialog = lazy(() =>
+  import('@/features/teacher/io/ClassRecordImportDialog').then((module) => ({
+    default: module.ClassRecordImportDialog,
+  })),
+)
+const PostedGradesImportDialog = lazy(() =>
+  import('@/features/teacher/posted-grades/PostedGradesImportDialog').then((module) => ({
+    default: module.PostedGradesImportDialog,
+  })),
+)
+const SendGradeEmailsDialog = lazy(() =>
+  import('@/features/teacher/posted-grades/SendGradeEmailsDialog').then((module) => ({
+    default: module.SendGradeEmailsDialog,
   })),
 )
 import { StructurePanel } from './StructurePanel'
@@ -236,6 +251,25 @@ export function GradesPage({
           }
         />
       )}
+      {activeSubjectId && (
+        <Suspense
+          fallback={
+            <Button variant="outline" size="sm" disabled>
+              <Upload className="size-4" /> {t('gradesImportClassRecordButton')}
+            </Button>
+          }
+        >
+          <ClassRecordImportDialog
+            classroomId={classroomId}
+            courseSubjectId={activeSubjectId}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Upload className="size-4" /> {t('gradesImportClassRecordButton')}
+              </Button>
+            }
+          />
+        </Suspense>
+      )}
       <Suspense
         fallback={
           <Button variant="outline" size="sm" disabled>
@@ -255,6 +289,43 @@ export function GradesPage({
       <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
         <Mail className="size-4" /> {t('gradesPreviewReportButton')}
       </Button>
+      {activeSubjectId && activeSubject && (
+        <Suspense
+          fallback={
+            <Button variant="outline" size="sm" disabled>
+              <Upload className="size-4" /> Import posted grades
+            </Button>
+          }
+        >
+          <PostedGradesImportDialog
+            classroomId={classroomId}
+            courseSubjectId={activeSubjectId}
+            subjectName={activeSubject.name}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Upload className="size-4" /> Import posted grades
+              </Button>
+            }
+          />
+        </Suspense>
+      )}
+      <Suspense
+        fallback={
+          <Button variant="outline" size="sm" disabled>
+            <Send className="size-4" /> Email grades
+          </Button>
+        }
+      >
+        <SendGradeEmailsDialog
+          classroomId={classroomId}
+          courseSubjectId={activeSubjectId}
+          trigger={
+            <Button variant="outline" size="sm">
+              <Send className="size-4" /> Email grades
+            </Button>
+          }
+        />
+      </Suspense>
     </div>
   )
 

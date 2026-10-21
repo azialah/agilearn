@@ -77,6 +77,17 @@ export const keys = {
     transmutationTable: (tableId: string = 'default') =>
       ['grades', 'transmutation-table', tableId] as const,
     transmutationTables: ['grades', 'transmutation-tables'] as const,
+    /** Grid view + export layout for one subject's grade sheet. */
+    sheetConfig: (classroomId: string, courseSubjectId: string) =>
+      ['grades', 'sheet-config', classroomId, courseSubjectId] as const,
+    /** Saved class-record import mappings, shared by a classroom's subjects. */
+    importPresets: (classroomId: string) =>
+      ['grades', 'import-presets', classroomId] as const,
+    /** Finished grades imported from a teacher's sheet (migration 0040). */
+    posted: (classroomId: string) => ['grades', 'posted', classroomId] as const,
+    /** Grade-email send history for one subject + term. */
+    emailLog: (classroomId: string, courseSubjectId: string, term: string) =>
+      ['grades', 'email-log', classroomId, courseSubjectId, term] as const,
     // Every gradebook the caller can see, in one payload. Not classroom-scoped
     // on purpose - RLS decides the reach.
     allGradebooks: (classroomIds: readonly string[]) =>
