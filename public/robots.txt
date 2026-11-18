@@ -1,0 +1,10 @@
+# Agilearn: public marketing pages are crawlable; the signed-in app is not.
+User-agent: *
+Allow: /
+Allow: /teacher/signup
+Disallow: /teacher/
+Disallow: /admin/
+Disallow: /settings
+Disallow: /forgot-password
+
+Sitemap: https://agilearn.vercel.app/sitemap.txt

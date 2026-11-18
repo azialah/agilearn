@@ -57,3 +57,29 @@ export function useDismissDomainRequest() {
     },
   })
 }
+
+interface SubmitDomainRequestInput {
+  name: string
+  school: string
+  domain: string
+  message?: string
+}
+
+/** Public (anon) request to approve a school's email domain for sign-up. */
+export function useSubmitDomainRequest() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: SubmitDomainRequestInput) => {
+      const { error } = await supabase.rpc('submit_domain_request', {
+        p_name: input.name,
+        p_school: input.school,
+        p_domain: input.domain,
+        p_message: input.message || undefined,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.domainRequests })
+    },
+  })
+}

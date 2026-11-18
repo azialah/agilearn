@@ -10,7 +10,7 @@
     <link
       rel="preload"
       as="style"
-      href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
       onload="
         this.rel = 'stylesheet'
         this.onload = null
@@ -19,7 +19,7 @@
     <noscript>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
       />
     </noscript>
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
@@ -28,11 +28,69 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#faf5ec" />
+    <meta name="theme-color" content="#fffaf6" />
     <meta
       name="description"
-      content="Agilearn: school management platform for teachers and administrators."
+      content="Rosters, attendance and weighted lecture and lab grades in one place. Every final is computed as you go, so posting grades takes minutes, not a weekend."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Agilearn" />
+    <meta property="og:locale" content="en_PH" />
+    <meta
+      property="og:title"
+      content="Agilearn | Class records, attendance and weighted grades for Filipino teachers"
+    />
+    <meta
+      property="og:description"
+      content="Rosters, attendance and weighted lecture and lab grades in one place. Every final is computed as you go, so posting grades takes minutes, not a weekend."
+    />
+    <meta property="og:url" content="https://agilearn.vercel.app/" />
+    <meta property="og:image" content="https://agilearn.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Agilearn: Your FINALS handled. Rosters, attendance and weighted grades in one place."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Agilearn | Class records, attendance and weighted grades for Filipino teachers"
+    />
+    <meta
+      name="twitter:description"
+      content="Rosters, attendance and weighted lecture and lab grades in one place. Every final is computed as you go."
+    />
+    <meta name="twitter:image" content="https://agilearn.vercel.app/og-image.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://agilearn.vercel.app/#website",
+            "name": "Agilearn",
+            "url": "https://agilearn.vercel.app/",
+            "inLanguage": "en-PH"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Agilearn",
+            "url": "https://agilearn.vercel.app/",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web, iOS, Android",
+            "description": "Class records with weighted lecture and lab finals, offline attendance, a private teaching-modules library and per-student grade emails for Filipino teachers.",
+            "image": "https://agilearn.vercel.app/og-image.png",
+            "author": {
+              "@type": "Person",
+              "name": "John Neo Lopez",
+              "url": "https://johnneo-portfolio.netlify.app/",
+              "sameAs": ["https://www.linkedin.com/in/johnneomlpz"]
+            }
+          }
+        ]
+      }
+    </script>
     <!-- Installed-PWA (iOS): run standalone without Safari chrome / URL bar. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -49,13 +107,13 @@
         align-items: center;
         justify-content: center;
         gap: 1rem;
-        background: #faf5ec;
+        background: #fffaf6;
         color: #2e2118;
-        font-family: 'Stack Sans Text', ui-sans-serif, system-ui, sans-serif;
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
         transition: opacity 180ms ease-out;
       }
       /* Intentionally NOT theme-aware: the OS-drawn splash always uses the
-         manifest's background_color (#faf5ec), so matching it here makes the
+         manifest's background_color (#fffaf6), so matching it here makes the
          native→web handoff seamless. A theme-aware splash produced a hard
          cream→dark cut at that boundary. */
       #app-boot-splash[data-ready='true'] {
@@ -80,7 +138,9 @@
         }
       }
     </style>
-    <title>Agilearn</title>
+    <title>
+      Agilearn | Class records, attendance and weighted grades for Filipino teachers
+    </title>
     <!-- Apply the stored/system theme before first paint to avoid a flash. -->
     <script>
       ;(function () {
@@ -105,7 +165,7 @@
           // the 'white' theme flashes the default light palette first.
           document.documentElement.classList.toggle('calm-white', t === 'white')
           var m = document.querySelector('meta[name="theme-color"]')
-          if (m) m.setAttribute('content', dark ? '#17110d' : '#faf5ec')
+          if (m) m.setAttribute('content', dark ? '#17110d' : '#fffaf6')
         } catch (e) {}
       })()
     </script>

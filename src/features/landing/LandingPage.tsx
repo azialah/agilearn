@@ -1,430 +1,395 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { motion, useReducedMotion, type Variants } from 'motion/react'
-import { Button } from '@/components/ui/Button'
-import { PublicHeader } from '@/features/public/PublicHeader'
-import { PublicFooter } from '@/features/public/PublicFooter'
+import { useReducedMotion } from 'motion/react'
+import { ArrowRight } from 'lucide-react'
+import { computeFinalGrade } from '@/lib/grading'
+import { MarketingShell } from '@/features/public/MarketingShell'
+import { FaqAccordion } from '@/features/public/FaqAccordion'
+import { LANDING_FAQ } from '@/features/public/faq'
+import { useMagnetic, useScrollFrame } from '@/features/public/fx'
+import { usePageMeta } from '@/features/public/usePageMeta'
+import { RollingNumber, SplitFlap } from './bits'
+import { StartCta } from './StartCta'
 import {
-  CalendarIcon,
-  ChevronRightIcon,
-  GradeIcon,
-  ModuleIcon,
-  SlideshowIcon,
-} from '@/components/icons'
-import { ScrollGradient } from './ScrollGradient'
-import { FlowingTextBackdrop } from './FlowingTextBackdrop'
-import { Typewriter } from './Typewriter'
-import { LayoutTextFlip } from './LayoutTextFlip'
-import { MagneticButton } from './MagneticButton'
-import { ProductMock } from './ProductMock'
-import { AgilaStory } from './AgilaStory'
-import { MultiplierDemo } from './MultiplierDemo'
-import { Reveal, RevealWords } from './Reveal'
-import { MoreFeatures } from './MoreFeatures'
-import { Faq } from './Faq'
-import { RequestAccess } from './RequestAccess'
-import { HeroWorkspace } from './HeroWorkspace'
+  ClassRecordSection,
+  FeaturesBento,
+  PrivacyBand,
+  TermSection,
+} from './LandingSections'
 
-const HEADLINE = [
-  'Grades,',
-  'attendance,',
-  'and',
-  'modules.',
-  'One',
-  'calm',
-  'workspace.',
-]
-
-const HERO_PHRASES = [
-  'Import a roster in seconds.',
-  'Weighted final grades, computed live.',
-  'Attendance that adds itself up.',
-  'A shared library for every module.',
-] as const
-
-const AUDIENCE_WORDS = [
-  'Instructors',
-  'Faculty',
-  'Teachers',
-  'Part-Time Instructors',
-  'Professors',
-  'Deans',
-  'Program Coordinators',
-] as const
-
-const FEATURES = [
-  {
-    icon: GradeIcon,
-    title: 'Grades',
-    body: 'Weighted lecture and laboratory grading with final grades computed for you.',
-  },
-  {
-    icon: CalendarIcon,
-    title: 'Attendance',
-    body: 'Run sessions and track per-student attendance with live class rates.',
-  },
-  {
-    icon: ModuleIcon,
-    title: 'Modules',
-    body: 'A shared cloud library for lesson plans, activities, and resources.',
-  },
-  {
-    icon: SlideshowIcon,
-    title: 'Slideshow',
-    body: 'Turn any class into a polished, presentable grade slideshow in a click.',
-  },
-]
-
-function Hero() {
-  const reduce = useReducedMotion()
-
-  const container: Variants = {
-    hidden: {},
-    show: { transition: { staggerChildren: reduce ? 0 : 0.06, delayChildren: 0.1 } },
-  }
-  const word: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : '0.6em' },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-    },
-  }
-  const fade: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : 14 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
-  }
-
-  return (
-    <section className="relative isolate mx-auto flex min-h-[80dvh] max-w-4xl flex-col items-center justify-center px-6 py-16 text-center sm:min-h-[85dvh]">
-      <FlowingTextBackdrop />
-
-      {/* Warm focus glow behind the headline for depth. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[38%] z-[-5] h-64 w-152 max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,var(--color-accent-400),transparent_70%)] opacity-[0.13] blur-2xl"
-      />
-
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="flex flex-col items-center"
-      >
-        <motion.p
-          variants={fade}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-(--color-border) bg-(--color-surface-1)/70 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-(--color-ink-muted) backdrop-blur-sm"
-        >
-          <span className="size-1.5 rounded-full bg-(--color-accent-400)" />
-          Built for
-          <LayoutTextFlip
-            words={AUDIENCE_WORDS}
-            wordClassName="text-(--color-accent-350) normal-case tracking-normal"
-          />
-        </motion.p>
-
-        <h1 className="text-balance font-display text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
-          {HEADLINE.map((token, index) => {
-            const highlight = token === 'workspace.'
-            return (
-              <span key={`${token}-${index}`} className="inline-block overflow-hidden">
-                <motion.span
-                  variants={word}
-                  className={
-                    highlight
-                      ? 'relative mr-[0.25em] inline-block text-(--color-accent-350)'
-                      : 'mr-[0.25em] inline-block'
-                  }
-                >
-                  {token}
-                  {highlight && (
-                    <motion.span
-                      aria-hidden
-                      className="absolute -bottom-1 left-0 h-[0.08em] w-full origin-left rounded-full bg-(--color-accent-400)"
-                      initial={{ scaleX: reduce ? 1 : 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{
-                        delay: reduce ? 0 : 1,
-                        duration: 0.6,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                    />
-                  )}
-                </motion.span>
-              </span>
-            )
-          })}
-        </h1>
-
-        <motion.p
-          variants={fade}
-          className="mx-auto mt-6 flex min-h-[1.6em] max-w-xl items-center justify-center font-mono text-base text-(--color-ink-muted) sm:text-lg"
-        >
-          <Typewriter phrases={HERO_PHRASES} />
-        </motion.p>
-
-        <motion.div
-          variants={fade}
-          className="mt-9 flex flex-col items-center justify-center gap-3 lg:flex-row"
-        >
-          <Link to="/login">
-            <MagneticButton className="inline-block">
-              <Button
-                size="lg"
-                className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
-              >
-                Get started
-                <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
-                  <ChevronRightIcon />
-                </span>
-              </Button>
-            </MagneticButton>
-          </Link>
-          <a href="#features">
-            <Button size="lg" variant="outline">
-              Explore features
-            </Button>
-          </a>
-        </motion.div>
-
-        <motion.div
-          variants={fade}
-          className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-(--color-ink-muted) sm:text-sm"
-        >
-          {['Weighted grades', 'Live attendance', 'Shared teaching modules'].map(
-            (item) => (
-              <span key={item} className="inline-flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-(--color-accent-400)" />
-                {item}
-              </span>
-            ),
-          )}
-        </motion.div>
-      </motion.div>
-
-      <HeroWorkspace />
-    </section>
-  )
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  eyebrow?: string
-  title: string
-  subtitle?: string
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="mx-auto max-w-2xl text-center"
-    >
-      {eyebrow && (
-        <p className="text-xs font-medium uppercase tracking-widest text-(--color-accent-350)">
-          {eyebrow}
-        </p>
-      )}
-      <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-        {title}
-      </h2>
-      {subtitle && <p className="mt-3 text-base text-(--color-ink-muted)">{subtitle}</p>}
-    </motion.div>
-  )
-}
-
-function Features() {
-  const reduce = useReducedMotion()
-  const container: Variants = {
-    hidden: {},
-    show: { transition: { staggerChildren: reduce ? 0 : 0.1 } },
-  }
-  const card: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : 24 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-  }
-
-  return (
-    <section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-20">
-      <SectionHeading
-        eyebrow="Everything in one place"
-        title="Four tools, one flow"
-        subtitle="No spreadsheets stitched together. Grades, attendance, modules, and presentations that all know about each other."
-      />
-
-      <motion.div
-        variants={container}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.2 }}
-        className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {FEATURES.map((feature, index) => {
-          const IconComp = feature.icon
-          // Alternate surface vs. faint-accent tint so the row reads as a
-          // rhythm rather than four identical tiles.
-          const tinted = index % 2 === 1
-          return (
-            <motion.div
-              key={feature.title}
-              variants={card}
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className={
-                // No backdrop-blur here: cards sit over a near-solid surface, so
-                // the blur is barely visible but costs compositing on every paint.
-                tinted
-                  ? 'group rounded-lg border border-(--color-accent-500)/25 bg-(--color-accent-500)/8 p-5'
-                  : 'group rounded-lg border border-(--color-border) bg-(--color-surface-1)/95 p-5'
-              }
-            >
-              <div className="mb-4 flex size-11 items-center justify-center rounded-md bg-(--color-accent-500)/15 text-xl text-(--color-accent-300) transition-colors group-hover:bg-(--color-accent-500)/25">
-                <IconComp />
-              </div>
-              <h3 className="font-display font-medium text-(--color-ink)">
-                {feature.title}
-              </h3>
-              <p className="mt-1.5 text-sm text-(--color-ink-muted)">{feature.body}</p>
-            </motion.div>
-          )
-        })}
-      </motion.div>
-    </section>
-  )
-}
-
-function Showcase() {
-  return (
-    <section className="mx-auto max-w-6xl px-6 py-20">
-      <SectionHeading
-        title="A gradebook that does the math"
-        subtitle="Enter scores; Agilearn keeps the weighted final grade current and ready to present."
-      />
-      <div className="mt-14">
-        <ProductMock />
-      </div>
-    </section>
-  )
-}
-
-function CallToAction() {
-  return (
-    <section className="mx-auto max-w-4xl px-6 py-20">
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.4 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="relative overflow-hidden rounded-(--radius-xl) border border-(--color-border) bg-(--color-surface-1) px-6 py-16 text-center shadow-(--shadow-card) sm:py-20"
-      >
-        {/* Layered warm ambience: a top halo, a soft floor wash, and a 1px lit
-            top edge for a refined, elevated surface. All single-accent. */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_120%_at_50%_-10%,var(--color-accent-500),transparent_60%)] opacity-[0.14]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[radial-gradient(60%_100%_at_50%_120%,var(--color-accent-400),transparent_70%)] opacity-[0.08]" />
-        <div className="pointer-events-none absolute inset-0 rounded-(--radius-xl) shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
-        {/* Oversized brand mark bleeding off the corner — a quiet watermark,
-            not a decoration competing with the copy. */}
-        <img
-          src="/icon-192.png"
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-16 -right-14 size-64 rotate-12 opacity-[0.05] sm:size-80"
-        />
-        <div className="relative">
-          <h2 className="text-balance font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            Ready when your class is.
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-pretty text-base text-(--color-ink-muted) sm:text-lg">
-            Sign in and pick up right where your teaching leaves off.
-          </p>
-          <div className="mx-auto mt-7 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-(--color-ink-muted)">
-            <span className="flex items-center gap-1.5">
-              <GradeIcon className="size-4 text-(--color-accent-350)" />
-              Weighted grades
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CalendarIcon className="size-4 text-(--color-accent-350)" />
-              Live attendance
-            </span>
-            <span className="flex items-center gap-1.5">
-              <ModuleIcon className="size-4 text-(--color-accent-350)" />
-              Shared modules
-            </span>
-          </div>
-          <div className="relative mt-8 flex justify-center">
-            {/* Focal glow behind the primary action so the CTA reads as the
-                one place to look. */}
-            <div className="pointer-events-none absolute -inset-x-8 -inset-y-6 bg-[radial-gradient(50%_120%_at_50%_50%,var(--color-accent-400),transparent_70%)] opacity-[0.16] blur-xl" />
-            <Link to="/login" className="relative">
-              <MagneticButton className="inline-block">
-                <Button
-                  size="lg"
-                  className="group gap-2.5 pr-2.5 shadow-[0_10px_30px_-10px_var(--color-accent-500)] active:scale-[0.98]"
-                >
-                  Sign in to Agilearn
-                  <span className="flex size-6 items-center justify-center rounded-full bg-(--color-accent-fg)/15 text-base transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
-                    <ChevronRightIcon />
-                  </span>
-                </Button>
-              </MagneticButton>
-            </Link>
-          </div>
-          <p className="relative mt-5 text-sm text-(--color-ink-faint)">
-            Sign in with your school email — no setup, no waiting.
-          </p>
-        </div>
-      </motion.div>
-    </section>
-  )
-}
-
-function Testimonial() {
-  return (
-    <section className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-      <div className="text-center">
-        <blockquote className="text-balance font-display text-2xl font-medium leading-snug tracking-tight text-(--color-ink) sm:text-3xl">
-          <RevealWords text="“Grade season used to eat my weekends. I set the weights once, and every final was ready before the deadline.”" />
-        </blockquote>
-        <Reveal delay={1} y={12}>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full bg-(--color-accent-500)/20 text-sm font-semibold text-(--color-accent-300)">
-              MS
-            </span>
-            <div className="text-left text-sm">
-              <p className="font-medium text-(--color-ink)">Maribeth Suarez</p>
-              <p className="text-(--color-ink-faint)">Senior high math teacher</p>
-            </div>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  )
-}
+const BOARD_WORDS = ['FINALS', 'GRADES', 'ROSTERS', 'MODULES', 'RECORDS']
 
 export function LandingPage() {
+  usePageMeta(
+    'Agilearn | Class records, attendance and weighted grades for Filipino teachers',
+    'Rosters, attendance and weighted lecture and lab grades in one place. Every final is computed as you go, so posting grades takes minutes, not a weekend.',
+    '/',
+  )
+  useLandingMotion()
+
   return (
-    <div className="relative min-h-dvh bg-(--color-surface-0) text-(--color-ink)">
-      <ScrollGradient />
+    <MarketingShell variant="landing">
+      <Hero />
+      <Marquee />
+      <ClassRecordSection />
+      <TermSection />
+      <WeightsEngine />
+      <FeaturesBento />
+      <PrivacyBand />
+      <section className="c-faq" id="faq" aria-label="FAQ">
+        <div className="c-wrap c-faq-grid">
+          <div className="c-sec-head c-sec-head-grid">
+            <h2>
+              Questions <span className="it">teachers ask.</span>
+            </h2>
+            <Link to="/about" hash="faq" className="c-open">
+              Open page <ArrowRight className="ico" aria-hidden="true" />
+            </Link>
+          </div>
+          <FaqAccordion items={LANDING_FAQ} />
+        </div>
+      </section>
+      <StartCta />
+    </MarketingShell>
+  )
+}
 
-      <PublicHeader />
+/**
+ * Page-wide scroll motion, one rAF per frame: the class-record frame tilts flat
+ * as it enters (--p), stacked term cards shrink and dim as the next covers them
+ * (--s/--b), hero chips drift (data-par), and [data-inview] blocks get `.in` once.
+ */
+function useLandingMotion() {
+  const reduce = useReducedMotion() ?? false
 
-      <main className="relative">
-        <Hero />
-        <AgilaStory />
-        <MultiplierDemo />
-        <Features />
-        <Showcase />
-        <MoreFeatures />
-        <Testimonial />
-        <Faq />
-        <RequestAccess />
-        <CallToAction />
-      </main>
+  useScrollFrame(() => {
+    const vh = window.innerHeight
+    const frame = document.querySelector<HTMLElement>('[data-reveal]')
+    if (frame) {
+      const top = frame.getBoundingClientRect().top
+      const p = reduce ? 1 : Math.min(1, Math.max(0, (vh - top) / (vh * 0.75)))
+      frame.style.setProperty('--p', p.toFixed(3))
+    }
+    if (reduce) return
+    const y = window.scrollY
+    document.querySelectorAll<HTMLElement>('[data-par]').forEach((el) => {
+      el.style.transform = `translateY(${(-y * Number(el.dataset.par)).toFixed(1)}px)`
+    })
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.c-card'))
+    cards.forEach((c, i) => {
+      const r = c.getBoundingClientRect()
+      let cover = 0
+      for (let j = i + 1; j < cards.length; j++) {
+        const rj = cards[j].getBoundingClientRect()
+        cover += Math.min(1, Math.max(0, (r.bottom - rj.top) / r.height))
+      }
+      c.style.setProperty('--s', (1 - 0.05 * cover).toFixed(3))
+      c.style.setProperty('--b', (1 - 0.1 * cover).toFixed(3))
+    })
+  })
 
-      <PublicFooter />
-    </div>
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>('[data-inview], .c-card')
+    if (typeof IntersectionObserver === 'undefined') {
+      els.forEach((el) => el.classList.add('in'))
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return
+          en.target.classList.add('in')
+          io.unobserve(en.target)
+        })
+      },
+      // threshold 0 + bottom margin: blocks taller than the viewport still reveal.
+      { threshold: 0, rootMargin: '0px 0px -25% 0px' },
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+}
+
+function Hero() {
+  const magnetic = useMagnetic()
+  return (
+    <section className="c-hero" aria-label="Overview">
+      <span className="c-sticker">
+        <span className="l">Made for Filipino classrooms</span>
+        <span className="s">For Filipino classrooms</span>
+      </span>
+      <div className="c-chip a" data-par="0.18" aria-hidden="true">
+        <small>Final grade · live</small>
+        <b>88.20</b>
+        <span className="pill live">Live</span>
+      </div>
+      <div className="c-chip b" data-par="0.32" aria-hidden="true">
+        <small>Present today</small>
+        <b>38 / 42</b>
+      </div>
+      <div className="c-wrap">
+        <span className="c-kick">
+          <i />
+          For teachers with a school email
+        </span>
+        <h1 className="c-h1">
+          <span className="sr">Your grades, rosters and finals, handled.</span>
+          <span aria-hidden="true">
+            <span className="row">Your</span>
+            <SplitFlap words={BOARD_WORDS} />
+            <span className="row it">handled.</span>
+          </span>
+        </h1>
+        <div className="c-hero-foot">
+          <div className="c-hf-l">
+            <p className="sub">
+              Rosters, attendance and weighted lecture and lab grades in one place. Every
+              final is computed as you go, so posting grades takes minutes, not a weekend.
+            </p>
+            <div className="c-ctas">
+              <Link to="/teacher/signup" className="c-btn amber c-mag" {...magnetic}>
+                Start as a teacher <ArrowRight className="ico" aria-hidden="true" />
+              </Link>
+              <Link to="/login" className="c-btn ghost">
+                Sign in
+              </Link>
+            </div>
+          </div>
+          <div className="c-proof" role="img" aria-label="Sample live numbers">
+            <div className="c-pchip">
+              <b>88.20</b>
+              <small>
+                Final grade
+                <br />
+                live
+              </small>
+            </div>
+            <div className="c-pchip">
+              <b>38 / 42</b>
+              <small>
+                Present
+                <br />
+                today
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const ROW_A = ['Prelim', '*to', 'Midterm', '*to', 'Finals', '*without the weekend']
+const ROW_B = [
+  'Class records',
+  'Attendance',
+  'Weighted finals',
+  'Modules',
+  'Grade emails',
+  'Slideshow',
+]
+
+function Star() {
+  return (
+    <svg className="c-star" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 0c.8 6.4 4.6 10.9 12 12-7.4 1.1-11.2 5.6-12 12-.8-6.4-4.6-10.9-12-12 7.4-1.1 11.2-5.6 12-12z" />
+    </svg>
+  )
+}
+
+function MarqueeItems({ items }: { items: string[] }) {
+  return items.map((t, i) =>
+    t.startsWith('*') ? (
+      <span key={i}>
+        <em>{t.slice(1)}</em>
+        {t === '*without the weekend' && <Star />}
+      </span>
+    ) : (
+      <span key={i}>
+        {t}
+        <Star />
+      </span>
+    ),
+  )
+}
+
+/**
+ * Two crossing ribbons. Speed follows scroll velocity (and reverses when you
+ * scroll up); paused on hover, off-screen, and under reduced motion.
+ */
+function Marquee() {
+  const reduce = useReducedMotion() ?? false
+  const ref = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const root = ref.current
+    if (!root || reduce) return
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('.c-row')).map((el) => ({
+      el,
+      x: 0,
+      dir: Number(el.dataset.dir),
+      speed: Number(el.dataset.speed),
+    }))
+    let paused = false
+    let visible = true
+    let lastY = window.scrollY
+    let vel = 0
+    let raf = 0
+    const io = new IntersectionObserver(([en]) => {
+      visible = en.isIntersecting
+    })
+    io.observe(root)
+    const enter = () => (paused = true)
+    const leave = () => (paused = false)
+    root.addEventListener('pointerenter', enter)
+    root.addEventListener('pointerleave', leave)
+    const loop = () => {
+      const y = window.scrollY
+      vel += (y - lastY - vel) * 0.12
+      lastY = y
+      if (!paused && visible && !document.hidden) {
+        const boost = 1 + Math.min(7, Math.abs(vel) * 0.35)
+        const flip = vel < -0.4 ? -1 : 1
+        rows.forEach((r) => {
+          const third = r.el.scrollWidth / 3
+          r.x += r.dir * flip * r.speed * boost
+          if (r.x <= -third) r.x += third
+          if (r.x > 0) r.x -= third
+          r.el.style.transform = `translateX(${r.x.toFixed(1)}px)`
+        })
+      }
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => {
+      cancelAnimationFrame(raf)
+      io.disconnect()
+      root.removeEventListener('pointerenter', enter)
+      root.removeEventListener('pointerleave', leave)
+    }
+  }, [reduce])
+
+  return (
+    <section ref={ref} className="c-marq" aria-hidden="true">
+      <div className="c-marq-in">
+        <div className="c-band two">
+          <div className="c-row" data-dir="1" data-speed="0.6">
+            {[0, 1, 2].map((k) => (
+              <MarqueeItems key={k} items={ROW_A} />
+            ))}
+          </div>
+        </div>
+        <div className="c-band one">
+          <div className="c-row" data-dir="-1" data-speed="0.9">
+            {[0, 1, 2].map((k) => (
+              <MarqueeItems key={k} items={ROW_B} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+type EngineKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
+
+/** Keycap weights demo. The final uses computeFinalGrade, same as the gradebook. */
+function WeightsEngine() {
+  const [w, setW] = useState(40)
+  const [lab, setLab] = useState(91)
+  const [down, setDown] = useState<EngineKey | null>(null)
+  const lec = 84
+  const armed = useRef(false)
+  const final = computeFinalGrade(lec, lab, w / 100, (100 - w) / 100) ?? 0
+
+  function press(k: string): boolean {
+    if (k === 'ArrowLeft') setW((v) => Math.max(0, v - 5))
+    else if (k === 'ArrowRight') setW((v) => Math.min(100, v + 5))
+    else if (k === 'ArrowUp') setLab((v) => Math.min(100, v + 1))
+    else if (k === 'ArrowDown') setLab((v) => Math.max(0, v - 1))
+    else return false
+    setDown(k)
+    return true
+  }
+
+  useEffect(() => {
+    if (!down) return
+    const t = window.setTimeout(() => setDown(null), 140)
+    return () => window.clearTimeout(t)
+  }, [down])
+
+  // Arrow keys drive the demo only while the pointer (or focus) is on the panel.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!armed.current) return
+      const t = e.target
+      if (t instanceof Element && t.closest('input, textarea, select')) return
+      if (press(e.key)) e.preventDefault()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  const keyProps = (k: EngineKey, cls: string, label: string, glyph: string) => (
+    <button
+      type="button"
+      className={`c-key ${cls}${down === k ? ' down' : ''}`}
+      aria-label={label}
+      onClick={() => press(k)}
+    >
+      {glyph}
+    </button>
+  )
+
+  return (
+    <section className="c-engine" id="weights" aria-label="Grade weights">
+      <div className="c-wrap c-eng">
+        <div>
+          <span className="eyebrow">Weighted the way your syllabus is</span>
+          <div className="c-split c-mt-14">
+            <RollingNumber value={String(w)} />
+            <span className="sl">/</span>
+            <RollingNumber value={String(100 - w)} />
+          </div>
+          <p className="sr" aria-live="polite">
+            Lecture {w} percent, laboratory {100 - w} percent. Final grade{' '}
+            {final.toFixed(2)}.
+          </p>
+          <div className="c-split-lab">
+            <span>Lecture</span>
+            <span>Laboratory</span>
+          </div>
+          <Link to="/how-it-works" hash="weights" className="c-open">
+            Open page <ArrowRight className="ico" aria-hidden="true" />
+          </Link>
+        </div>
+        <div
+          className="c-eng-panel"
+          onPointerEnter={() => (armed.current = true)}
+          onPointerLeave={() => (armed.current = false)}
+          onFocus={() => (armed.current = true)}
+          onBlur={() => (armed.current = false)}
+        >
+          <div className="c-keys" role="group" aria-label="Adjust weights and lab score">
+            {keyProps('ArrowUp', 'up-k', 'Raise lab score', '↑')}
+            {keyProps('ArrowLeft', 'left-k', 'Lower lecture weight', '←')}
+            {keyProps('ArrowDown', 'down-k', 'Lower lab score', '↓')}
+            {keyProps('ArrowRight', 'right-k', 'Raise lecture weight', '→')}
+          </div>
+          <p className="c-hint">
+            Hover here and press <kbd>←</kbd>
+            <kbd>→</kbd> to shift the split, <kbd>↑</kbd>
+            <kbd>↓</kbd> to change the lab score. Or tap the keys.
+          </p>
+          <div className="c-final">
+            <small>Ramos, K. · final grade</small>
+            <RollingNumber value={final.toFixed(2)} />
+            <span data-formula>
+              {(w / 100).toFixed(2)} × {lec} + {((100 - w) / 100).toFixed(2)} × {lab}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }

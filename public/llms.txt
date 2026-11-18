@@ -1,0 +1,23 @@
+# Agilearn
+
+> Agilearn is a school-management workspace for Filipino teachers: class records with weighted lecture and laboratory finals, offline-capable attendance, a private teaching-modules library, per-student grade emails and grade slideshows. Made in the Philippines.
+
+Key facts:
+
+- Teachers sign up themselves with a school email on an approved domain; admin accounts are set up by the Agilearn team.
+- Final grade = lecture weight × lecture grade + laboratory weight × laboratory grade (for example 0.40 × 84 + 0.60 × 91 = 88.20). The weights are set per class.
+- Access control is enforced by the database (Postgres row-level security): a teacher sees only their own classes.
+- Grades and attendance are treated as sensitive personal information under the Philippine Data Privacy Act of 2012 (RA 10173).
+- It installs as a web app on phones; attendance keeps working offline and syncs later.
+
+## Pages
+
+- [Home](https://agilearn.vercel.app/): overview, the class record, the term in four stops, grade weights demo, features, privacy and FAQ
+- [How it works](https://agilearn.vercel.app/how-it-works): what a teacher does in week 1, prelim, midterm and finals, and how weights work
+- [Features](https://agilearn.vercel.app/features): class record, attendance, modules library, grade emails, slideshow, admins and approved schools
+- [About](https://agilearn.vercel.app/about): the name (Agila is Filipino for eagle), principles, the developer and FAQ
+
+## Legal
+
+- [Privacy Notice](https://agilearn.vercel.app/privacy): draft written to follow RA 10173, pending legal review
+- [Terms of Use](https://agilearn.vercel.app/terms): draft, pending legal review
