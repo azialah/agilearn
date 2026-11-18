@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn'
 import { useScrollFrame } from './fx'
 import { SiteNav } from './SiteNav'
 import { SiteFooter } from './SiteFooter'
+import type { PublicPath } from './site'
 import './marketing.css'
 
 interface Props {
@@ -111,13 +112,7 @@ export function PageHero({
 }
 
 /** "Next page" card at the bottom of each public page. */
-export function NextPage({
-  to,
-  label,
-}: {
-  to: '/how-it-works' | '/features' | '/about' | '/privacy' | '/terms'
-  label: string
-}) {
+export function NextPage({ to, label }: { to: PublicPath; label: string }) {
   return (
     <div className="c-wrap">
       <Link to={to} className="pg-next">

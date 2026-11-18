@@ -34,6 +34,11 @@ export type PublicPath =
   | '/about'
   | '/privacy'
   | '/terms'
+  | '/grade-weights'
+  | '/security'
+  | '/faq'
+  | '/developer'
+  | '/request-access'
   | '/login'
   | '/teacher/signup'
 
@@ -48,10 +53,10 @@ export const FOOTER_COLUMNS: { title: string; links: FooterLink[] }[] = [
     title: 'Product',
     links: [
       { label: 'How it works', to: '/how-it-works' },
-      { label: 'Grade weights', to: '/how-it-works', hash: 'weights' },
+      { label: 'Grade weights', to: '/grade-weights' },
       { label: 'All features', to: '/features' },
-      { label: 'Privacy and security', to: '/privacy', hash: 'p-protect' },
-      { label: 'FAQ', to: '/about', hash: 'faq' },
+      { label: 'Privacy and security', to: '/security' },
+      { label: 'FAQ', to: '/faq' },
     ],
   },
   {
@@ -59,14 +64,14 @@ export const FOOTER_COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: 'Start as a teacher', to: '/teacher/signup' },
       { label: 'Sign in', to: '/login' },
-      { label: 'Request access for your school', to: '/', hash: 'get-started' },
+      { label: 'Request access for your school', to: '/request-access' },
     ],
   },
   {
     title: 'Company',
     links: [
       { label: 'About Agilearn', to: '/about' },
-      { label: 'The developer', to: '/about', hash: 'developer' },
+      { label: 'The developer', to: '/developer' },
       { label: 'Privacy Notice', to: '/privacy' },
       { label: 'Terms of Use', to: '/terms' },
     ],

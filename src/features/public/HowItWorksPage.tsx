@@ -1,4 +1,5 @@
-import { Mail, Presentation, Table2, WifiOff } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ArrowRight, Mail, Presentation, Table2, WifiOff } from 'lucide-react'
 import { MarketingShell, NextPage, PageHero } from './MarketingShell'
 import { usePageMeta } from './usePageMeta'
 
@@ -288,6 +289,9 @@ export function HowItWorksPage() {
             <b>88.20</b>. Change the split and every final in the class updates. The
             landing page and the gradebook use the same calculation.
           </p>
+          <Link to="/grade-weights" className="c-open">
+            Open page <ArrowRight className="ico" aria-hidden="true" />
+          </Link>
         </div>
       </section>
       <NextPage to="/features" label="Features" />

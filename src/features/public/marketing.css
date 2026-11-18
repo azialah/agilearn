@@ -3833,7 +3833,8 @@
   text-transform: uppercase;
   color: var(--m-solid);
 }
-.dev-body h3 {
+.dev-body h3,
+.dev-body .dev-name {
   font-size: 36px;
   line-height: 1;
   margin-top: 8px;
@@ -4108,7 +4109,8 @@
     height: 140px;
     font-size: 40px;
   }
-  .dev-body h3 {
+  .dev-body h3,
+  .dev-body .dev-name {
     font-size: 48px;
   }
   .c-foot-legal {
@@ -4402,4 +4404,66 @@
   .c-word.live span {
     animation: none;
   }
+}
+/* Phone menu button: a 44px pill that matches the header's capsule buttons,
+   with a two-bar mark that evens out on hover/press. */
+.c .c-nav .m-menu {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--m-ink) 7%, transparent);
+  color: var(--m-ink);
+  cursor: pointer;
+  transition:
+    background-color 0.25s,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.c .c-nav .m-menu:hover {
+  background: color-mix(in srgb, var(--m-solid) 22%, transparent);
+}
+.c .c-nav .m-menu:active {
+  transform: scale(0.94);
+}
+.c-burger {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  width: 18px;
+}
+.c-burger i {
+  display: block;
+  height: 2px;
+  width: 18px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.c-burger i:last-child {
+  width: 11px;
+}
+.m-menu:hover .c-burger i:last-child,
+.m-menu:focus-visible .c-burger i:last-child {
+  width: 18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .c .c-nav .m-menu,
+  .c-burger i {
+    transition: none;
+  }
+}
+.c-req-done {
+  max-width: 560px;
+}
+.c-req-done b {
+  font-size: 20px;
+}
+.c-req .note {
+  font-size: 14px;
+  color: var(--m-muted);
+}
+.c-req .note a {
+  font-weight: 700;
+  text-decoration: underline;
 }

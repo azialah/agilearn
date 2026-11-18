@@ -1,67 +1,9 @@
-import { useState } from 'react'
-import { ShieldCheck, Table2, WifiOff } from 'lucide-react'
-import { FaqAccordion, type FaqItem } from './FaqAccordion'
-import { LANDING_FAQ } from './faq'
+import { Link } from '@tanstack/react-router'
+import { ArrowRight, ShieldCheck, Table2, WifiOff } from 'lucide-react'
+import { FaqAccordion } from './FaqAccordion'
+import { FULL_FAQ } from './faq'
 import { MarketingShell, NextPage, PageHero } from './MarketingShell'
-import { CONTACT_EMAIL } from './site'
 import { usePageMeta } from './usePageMeta'
-
-const ABOUT_FAQ: FaqItem[] = [
-  ...LANDING_FAQ.map((f) =>
-    f.q.startsWith('My school')
-      ? {
-          ...f,
-          a: 'Enter your school email at the bottom of the home page. If your domain isn’t approved yet, you can request access for your school right there.',
-        }
-      : f.q.startsWith('Can I import')
-        ? {
-            ...f,
-            a: 'Import rosters and class records from Excel or CSV, and export grades to PDF or a spreadsheet.',
-          }
-        : f,
-  ),
-  {
-    q: 'Who can see my class records?',
-    a: 'Only you and Agilearn’s admins. The Privacy Notice explains how class records are protected under the Data Privacy Act of 2012.',
-  },
-]
-
-/** Developer email with a Copy button; falls back to selecting the text. */
-function CopyEmail() {
-  const [note, setNote] = useState('')
-  function selectIt(el: HTMLElement | null) {
-    if (!el) return
-    const range = document.createRange()
-    range.selectNodeContents(el)
-    const sel = window.getSelection()
-    sel?.removeAllRanges()
-    sel?.addRange(range)
-    setNote('Selected. Press Ctrl+C or ⌘C to copy.')
-  }
-  return (
-    <div className="dev-email">
-      <span className="mono" id="dev-email">
-        {CONTACT_EMAIL}
-      </span>
-      <button
-        type="button"
-        onClick={() => {
-          const el = document.getElementById('dev-email')
-          if (!navigator.clipboard) return selectIt(el)
-          navigator.clipboard.writeText(CONTACT_EMAIL).then(
-            () => setNote('Copied'),
-            () => selectIt(el),
-          )
-        }}
-      >
-        Copy email
-      </button>
-      <span className="dev-copied" role="status">
-        {note}
-      </span>
-    </div>
-  )
-}
 
 export function AboutPage() {
   usePageMeta(
@@ -143,55 +85,38 @@ export function AboutPage() {
         </div>
       </section>
 
-      <section className="pg-sec" id="developer">
-        <div className="c-wrap">
-          <span className="eyebrow">The developer</span>
-          <div className="dev-card">
-            <span className="dev-av" aria-hidden="true">
-              JNL
-            </span>
-            <div className="dev-body">
-              <span className="dev-role">Designed and built by</span>
-              <h3>John Neo Lopez</h3>
-              <p>
-                Agilearn is designed, built and maintained by John Neo Lopez. For
-                questions about the product, partnerships or bringing Agilearn to your
-                school, get in touch.
-              </p>
-              <div className="dev-links">
-                <a
-                  href="https://johnneo-portfolio.netlify.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Portfolio <span aria-hidden="true">↗</span>
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/johnneomlpz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  LinkedIn <span aria-hidden="true">↗</span>
-                </a>
-              </div>
-              <CopyEmail />
-            </div>
+      <section className="pg-sec">
+        <div className="c-wrap ab-links">
+          <div>
+            <span className="eyebrow">The developer</span>
+            <h2 className="pg-h2">
+              Designed and built <span className="it">in the Philippines.</span>
+            </h2>
+            <p className="sub">
+              Agilearn is designed, built and maintained by John Neo Lopez.
+            </p>
+            <Link to="/developer" className="c-open">
+              Meet the developer <ArrowRight className="ico" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="pg-sec" id="faq">
+      <section className="pg-sec">
         <div className="c-wrap c-faq-grid">
           <div className="c-sec-head c-sec-head-grid">
             <span className="eyebrow">FAQ</span>
             <h2 className="pg-h2">
               Questions <span className="it">teachers ask.</span>
             </h2>
+            <Link to="/faq" className="c-open">
+              All questions <ArrowRight className="ico" aria-hidden="true" />
+            </Link>
           </div>
-          <FaqAccordion items={ABOUT_FAQ} />
+          <FaqAccordion items={FULL_FAQ.slice(0, 3)} />
         </div>
       </section>
-      <NextPage to="/privacy" label="Privacy Notice" />
+      <NextPage to="/developer" label="The developer" />
     </MarketingShell>
   )
 }

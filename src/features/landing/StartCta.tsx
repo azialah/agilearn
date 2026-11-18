@@ -4,31 +4,23 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useMagnetic } from '@/features/public/fx'
 import { emailDomain } from '@/features/public/site'
 import { allowedDomainsQuery } from '@/lib/queries/profiles'
-import { useSubmitDomainRequest } from '@/lib/queries/domainRequests'
 import { useOnboardingStore } from '@/features/teacher/onboarding/onboardingStore'
 
 const IDLE_NOTE = 'We’ll take you to sign-up with this email filled in.'
 
 /**
  * Final CTA. A school email on an approved domain goes straight to sign-up with
- * the email filled in; any other domain opens a short request-access form
- * (submit_domain_request) that lands in the admins' domain-requests queue.
+ * the email filled in; any other domain goes to /request-access with it filled in.
  */
 export function StartCta() {
   const magnetic = useMagnetic()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setOnboardingEmail = useOnboardingStore((s) => s.setEmail)
-  const submitRequest = useSubmitDomainRequest()
 
   const [email, setEmail] = useState('')
   const [note, setNote] = useState(IDLE_NOTE)
   const [checking, setChecking] = useState(false)
-  const [requestFor, setRequestFor] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [school, setSchool] = useState('')
-  const [message, setMessage] = useState('')
-  const [sent, setSent] = useState(false)
 
   async function onEmail(e: FormEvent) {
     e.preventDefault()
@@ -46,38 +38,11 @@ export function StartCta() {
     }
     setChecking(false)
     if (allowed && !allowed.includes(domain)) {
-      setRequestFor(domain)
-      setNote(`${domain} isn’t approved yet. Request access for your school below.`)
+      void navigate({ to: '/request-access', search: { domain } })
       return
     }
     setOnboardingEmail(email.trim().toLowerCase())
     void navigate({ to: '/teacher/signup' })
-  }
-
-  function onRequest(e: FormEvent) {
-    e.preventDefault()
-    if (!requestFor) return
-    if (!name.trim() || !school.trim()) {
-      setNote('Add your name and school so the Agilearn team can follow up.')
-      return
-    }
-    submitRequest.mutate(
-      {
-        name: name.trim(),
-        school: school.trim(),
-        domain: requestFor,
-        message: message.trim(),
-      },
-      {
-        onSuccess: () => {
-          setSent(true)
-          setNote(
-            `Request sent for ${requestFor}. You can sign up once the Agilearn team approves it.`,
-          )
-        },
-        onError: (err) => setNote(err.message || 'That didn’t go through. Try again.'),
-      },
-    )
   }
 
   return (
@@ -114,14 +79,7 @@ export function StartCta() {
                 type="email"
                 name="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (requestFor) {
-                    setRequestFor(null)
-                    setSent(false)
-                    setNote(IDLE_NOTE)
-                  }
-                }}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@yourschool.edu.ph"
                 aria-label="School email"
                 aria-describedby="cta-note"
@@ -143,47 +101,6 @@ export function StartCta() {
               {note}
             </span>
           </form>
-          {requestFor && !sent && (
-            <form
-              className="c-req"
-              onSubmit={onRequest}
-              aria-label="Request access for your school"
-            >
-              <label>
-                <span>Your name</span>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                  placeholder="Juan dela Cruz"
-                  required
-                />
-              </label>
-              <label>
-                <span>School</span>
-                <input
-                  value={school}
-                  onChange={(e) => setSchool(e.target.value)}
-                  autoComplete="organization"
-                  placeholder="Gordon College"
-                  required
-                />
-              </label>
-              <label className="wide">
-                <span>Message (optional)</span>
-                <input
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Anything the Agilearn team should know?"
-                />
-              </label>
-              <button type="submit" className="c-btn" disabled={submitRequest.isPending}>
-                {submitRequest.isPending
-                  ? 'Sending…'
-                  : `Request access for ${requestFor}`}
-              </button>
-            </form>
-          )}
         </div>
       </div>
     </section>

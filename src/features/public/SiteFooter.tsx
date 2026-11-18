@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import type { CSSVars } from '@/features/landing/bits'
 import { useMagnetic } from './fx'
-import { DEVELOPER, FOOTER_COLUMNS } from './site'
+import { FOOTER_COLUMNS } from './site'
 
 const WORD = 'Agilearn'.split('')
 
@@ -112,18 +112,6 @@ export function SiteFooter() {
               <PhFlag />
               Made in the Philippines for Filipino classrooms
             </span>
-          </span>
-          <span className="c-foot-dev">
-            Designed and built by{' '}
-            <Link to="/about" hash="developer">
-              {DEVELOPER.name}
-            </Link>
-            <a href={DEVELOPER.portfolio} target="_blank" rel="noopener noreferrer">
-              Portfolio ↗<span className="sr">(opens in a new tab)</span>
-            </a>
-            <a href={DEVELOPER.linkedin} target="_blank" rel="noopener noreferrer">
-              LinkedIn ↗<span className="sr">(opens in a new tab)</span>
-            </a>
           </span>
         </div>
         <div

@@ -13,9 +13,14 @@ Key facts:
 ## Pages
 
 - [Home](https://agilearn.vercel.app/): overview, the class record, the term in four stops, grade weights demo, features, privacy and FAQ
-- [How it works](https://agilearn.vercel.app/how-it-works): what a teacher does in week 1, prelim, midterm and finals, and how weights work
+- [How it works](https://agilearn.vercel.app/how-it-works): what a teacher does in week 1, prelim, midterm and finals
+- [Grade weights](https://agilearn.vercel.app/grade-weights): the final-grade formula, with an interactive example
 - [Features](https://agilearn.vercel.app/features): class record, attendance, modules library, grade emails, slideshow, admins and approved schools
-- [About](https://agilearn.vercel.app/about): the name (Agila is Filipino for eagle), principles, the developer and FAQ
+- [Privacy and security](https://agilearn.vercel.app/security): row-level security, approved school domains, private storage and per-student grade emails
+- [FAQ](https://agilearn.vercel.app/faq): sign-up, approved schools, weights, imports, offline attendance and privacy
+- [About](https://agilearn.vercel.app/about): the name (Agila is Filipino for eagle) and principles
+- [The developer](https://agilearn.vercel.app/developer): John Neo Lopez, who designs and builds Agilearn
+- [Request access](https://agilearn.vercel.app/request-access): ask for a school email domain to be approved for sign-up
 
 ## Legal
 

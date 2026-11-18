@@ -9,12 +9,9 @@ import {
 } from '@tanstack/react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeFinalGrade } from '@/lib/grading'
+import { keys } from '@/lib/queries/keys'
 import robots from '../../../public/robots.txt?raw'
 import sitemap from '../../../public/sitemap.txt?raw'
-import howSrc from './HowItWorksPage.tsx?raw'
-import legalSrc from './LegalPages.tsx?raw'
-import aboutSrc from './AboutPage.tsx?raw'
-import ctaSrc from '../landing/StartCta.tsx?raw'
 
 vi.mock('@/lib/supabase', () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
@@ -47,7 +44,25 @@ beforeEach(() => {
   window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
 })
 
-async function renderAt(ui: () => ReactNode, entries: string[] = ['/']) {
+const PUBLIC_PAGES = [
+  '/',
+  '/how-it-works',
+  '/grade-weights',
+  '/features',
+  '/security',
+  '/faq',
+  '/about',
+  '/developer',
+  '/request-access',
+  '/privacy',
+  '/terms',
+]
+
+async function renderAt(
+  ui: () => ReactNode,
+  entries: string[] = ['/'],
+  qc: QueryClient = new QueryClient(),
+) {
   const rootRoute = createRootRoute({ component: ui })
   const router = createRouter({
     routeTree: rootRoute,
@@ -56,7 +71,6 @@ async function renderAt(ui: () => ReactNode, entries: string[] = ['/']) {
       initialIndex: entries.length - 1,
     }),
   })
-  const qc = new QueryClient()
   await act(async () => {
     render(
       <QueryClientProvider client={qc}>
@@ -68,36 +82,16 @@ async function renderAt(ui: () => ReactNode, entries: string[] = ['/']) {
 }
 
 describe('public site data', () => {
-  it('points every footer link at a real public route, never password reset', async () => {
+  it('gives every footer link its own page (no in-page jumps), never password reset', async () => {
     const { FOOTER_COLUMNS } = await import('./site')
-    const routes = [
-      '/',
-      '/how-it-works',
-      '/features',
-      '/about',
-      '/privacy',
-      '/terms',
-      '/login',
-      '/teacher/signup',
-    ]
     const links = FOOTER_COLUMNS.flatMap((c) => c.links)
     expect(links.length).toBeGreaterThan(10)
-    for (const l of links) expect(routes).toContain(l.to)
+    for (const l of links) {
+      expect([...PUBLIC_PAGES, '/login', '/teacher/signup']).toContain(l.to)
+      expect(l.hash, l.label).toBeUndefined()
+    }
+    expect(new Set(links.map((l) => l.to)).size).toBe(links.length)
     expect(JSON.stringify(FOOTER_COLUMNS)).not.toMatch(/forgot|reset/i)
-  })
-
-  it('has an element for every hash the footer links to', async () => {
-    const { FOOTER_COLUMNS } = await import('./site')
-    const file: Record<string, string> = {
-      '/how-it-works': howSrc,
-      '/privacy': legalSrc,
-      '/about': aboutSrc,
-      '/': ctaSrc,
-    }
-    for (const l of FOOTER_COLUMNS.flatMap((c) => c.links)) {
-      if (!l.hash) continue
-      expect(file[l.to], `${l.to}#${l.hash}`).toMatch(new RegExp(`id="${l.hash}"`))
-    }
   })
 
   it('parses school-email domains', async () => {
@@ -109,7 +103,7 @@ describe('public site data', () => {
   })
 
   it('lists every public page in the sitemap and keeps the app out of robots', () => {
-    for (const p of ['/', '/how-it-works', '/features', '/about', '/privacy', '/terms']) {
+    for (const p of PUBLIC_PAGES) {
       expect(sitemap).toContain(`https://agilearn.vercel.app${p}\n`)
     }
     expect(robots).toMatch(/Disallow: \/teacher\//)
@@ -125,6 +119,11 @@ describe('marketing copy', () => {
     const { FeaturesPage } = await import('./FeaturesPage')
     const { AboutPage } = await import('./AboutPage')
     const { PrivacyPage, TermsPage } = await import('./LegalPages')
+    const { GradeWeightsPage } = await import('./GradeWeightsPage')
+    const { SecurityPage } = await import('./SecurityPage')
+    const { FaqPage } = await import('./FaqPage')
+    const { DeveloperPage } = await import('./DeveloperPage')
+    const { RequestAccessPage } = await import('./RequestAccessPage')
     for (const Page of [
       LandingPage,
       HowItWorksPage,
@@ -132,6 +131,11 @@ describe('marketing copy', () => {
       AboutPage,
       PrivacyPage,
       TermsPage,
+      GradeWeightsPage,
+      SecurityPage,
+      FaqPage,
+      DeveloperPage,
+      RequestAccessPage,
     ]) {
       await renderAt(() => <Page />)
       expect(document.body.textContent ?? '').not.toMatch(/\b(bugs?|errors?)\b/i)
@@ -266,5 +270,45 @@ describe('stress', () => {
       const open = document.querySelectorAll('details[open]').length
       expect(open).toBeLessThanOrEqual(1)
     }
+  })
+})
+
+describe('request access', () => {
+  it('accepts a bare domain or a full school email', async () => {
+    const { toDomain } = await import('./RequestAccessPage')
+    expect(toDomain(' GordonCollege.edu.ph ')).toBe('gordoncollege.edu.ph')
+    expect(toDomain('t@school.edu.ph')).toBe('school.edu.ph')
+    expect(toDomain('not a domain')).toBeNull()
+    expect(toDomain('')).toBeNull()
+  })
+
+  it('sends an unapproved CTA email to /request-access with its domain', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(keys.allowedDomains, ['gordoncollege.edu.ph'])
+    const { StartCta } = await import('@/features/landing/StartCta')
+    const router = await renderAt(() => <StartCta />, ['/'], qc)
+    fireEvent.change(screen.getByLabelText('School email'), {
+      target: { value: 'me@newschool.edu.ph' },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(router.state.location.pathname).toBe('/request-access')
+    expect(router.state.location.search).toEqual({ domain: 'newschool.edu.ph' })
+  })
+
+  it('keeps the developer email off every page but /developer', async () => {
+    const { CONTACT_EMAIL } = await import('./site')
+    const { AboutPage } = await import('./AboutPage')
+    const { SiteFooter } = await import('./SiteFooter')
+    for (const Page of [AboutPage, SiteFooter]) {
+      await renderAt(() => <Page />)
+      expect(document.body.textContent).not.toContain(CONTACT_EMAIL)
+      cleanup()
+    }
+    const { DeveloperPage } = await import('./DeveloperPage')
+    await renderAt(() => <DeveloperPage />)
+    expect(document.body.textContent).toContain(CONTACT_EMAIL)
   })
 })

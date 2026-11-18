@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
-import { Menu } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useMagnetic, useScrollFrame, scrollToId } from './fx'
 import { LANDING_SECTIONS, PAGE_LINKS } from './site'
@@ -169,7 +168,10 @@ export function SiteNav({ variant }: Props) {
           aria-controls="site-menu"
           onClick={() => setOpen(true)}
         >
-          <Menu className="ico" aria-hidden="true" />
+          <span className="c-burger" aria-hidden="true">
+            <i />
+            <i />
+          </span>
         </button>
       </div>
       <div

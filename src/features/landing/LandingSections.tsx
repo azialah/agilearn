@@ -627,7 +627,7 @@ export function FeaturesBento() {
   )
 }
 
-export function PrivacyBand() {
+export function PrivacyBand({ openPage = true }: { openPage?: boolean }) {
   return (
     <section className="c-priv" id="privacy" aria-label="Privacy" data-inview>
       <div className="c-wrap">
@@ -640,9 +640,11 @@ export function PrivacyBand() {
             Every read and write is checked by the database itself, so your classes stay
             visible only to you and Agilearn&apos;s admins.
           </p>
-          <Link to="/privacy" hash="p-protect" className="c-open">
-            Open page <ArrowRight className="ico" aria-hidden="true" />
-          </Link>
+          {openPage && (
+            <Link to="/security" className="c-open">
+              Open page <ArrowRight className="ico" aria-hidden="true" />
+            </Link>
+          )}
         </div>
         <ul className="c-plist">
           <li>
