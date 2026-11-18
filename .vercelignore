@@ -47,9 +47,9 @@ dist/
 
 scripts/
 
-# pnpm workspace (only the root vite build is needed)
-
-pnpm-workspace.yaml
+# Keep pnpm-workspace.yaml in the build context: its `allowBuilds` answer for
+# puppeteer is what lets `pnpm install --frozen-lockfile` pass (pnpm 11 exits 1
+# with ERR_PNPM_IGNORED_BUILDS when a dependency's build script is unanswered).
 
 # Testing (CI only)
 
