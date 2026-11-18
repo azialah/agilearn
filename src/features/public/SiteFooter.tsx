@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
+import type { CSSVars } from '@/features/landing/bits'
 import { useMagnetic } from './fx'
 import { DEVELOPER, FOOTER_COLUMNS } from './site'
 
@@ -49,6 +51,19 @@ function PhFlag() {
 
 export function SiteFooter() {
   const magnetic = useMagnetic()
+  const wordRef = useRef<HTMLDivElement>(null)
+
+  // The wordmark's ambient weight wave (CSS, `.live`) runs only while it's on
+  // screen; hovering hands control to the pointer-proximity effect above.
+  useEffect(() => {
+    const el = wordRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([en]) =>
+      el.classList.toggle('live', en.isIntersecting),
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   return (
     <footer className="c-foot">
       <div className="c-wrap">
@@ -112,13 +127,16 @@ export function SiteFooter() {
           </span>
         </div>
         <div
+          ref={wordRef}
           className="c-word"
           aria-hidden="true"
           onPointerMove={onWordMove}
           onPointerLeave={onWordLeave}
         >
           {WORD.map((ch, i) => (
-            <span key={i}>{ch}</span>
+            <span key={i} style={{ '--i': i } as CSSVars}>
+              {ch}
+            </span>
           ))}
         </div>
       </div>

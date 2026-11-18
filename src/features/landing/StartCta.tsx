@@ -84,7 +84,26 @@ export function StartCta() {
     <section className="c-cta" id="get-started" aria-label="Get started">
       <div className="c-wrap">
         <div className="c-cta-card">
-          <div className="c-slot" aria-hidden="true" />
+          <div className="c-slot" aria-hidden="true">
+            {/* Decorative. Phones get the portrait shot (subject on top, copy over
+                its white bottom); wider cards keep copy on the wide shot's calm left. */}
+            <picture>
+              <source
+                media="(max-width: 719px)"
+                srcSet="/images/cta-classroom-portrait.webp"
+                width={1024}
+                height={1536}
+              />
+              <img
+                src="/images/cta-classroom.webp"
+                alt=""
+                width={1920}
+                height={819}
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+          </div>
           <span className="eyebrow">Get started</span>
           <h2>
             Start your next grading <span className="it">period.</span>

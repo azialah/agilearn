@@ -26,9 +26,16 @@ export default defineConfig({
         'icon-512-maskable.png',
       ],
       manifest: {
+        // Stable app identity (Chrome/Android, Safari 16.4+), independent of start_url.
+        id: '/',
         name: 'Agilearn',
         short_name: 'Agilearn',
-        description: 'School management platform for teachers and administrators.',
+        // Also the description in Chrome's richer install sheet (keep < ~320 chars).
+        description:
+          'Class records with weighted lecture and lab finals, offline attendance, teaching modules and per-student grade emails for Filipino teachers.',
+        lang: 'en-PH',
+        dir: 'ltr',
+        categories: ['education', 'productivity'],
         display: 'standalone',
         start_url: '/',
         scope: '/',
@@ -47,6 +54,42 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        // Android/desktop Chrome show the richer install sheet only with these.
+        // Same aspect ratio per form factor; JPEG/PNG; long side <= 2.3x short.
+        screenshots: [
+          {
+            src: 'screenshots/narrow.jpg',
+            sizes: '390x844',
+            type: 'image/jpeg',
+            form_factor: 'narrow',
+            label: 'Agilearn home: your grades, rosters and finals, handled',
+          },
+          {
+            src: 'screenshots/wide.jpg',
+            sizes: '1280x800',
+            type: 'image/jpeg',
+            form_factor: 'wide',
+            label: 'Agilearn home on desktop',
+          },
+        ],
+        // Long-press / right-click jump points; _auth redirects to /login first.
+        shortcuts: [
+          {
+            name: 'Dashboard',
+            url: '/teacher/dashboard',
+            icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Classrooms',
+            url: '/teacher/classrooms',
+            icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Calendar',
+            url: '/teacher/calendar',
+            icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       },
       workbox: {
         // Without this, the workbox default covers js/css/html only, so an
@@ -61,7 +104,15 @@ export default defineConfig({
         // the runtime rule below.
         globPatterns: ['**/*.{js,css,html,woff2,svg,ico,webmanifest}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/auth/, /supabase\.co/],
+        // Plain files opened directly (robots, sitemap, llms.txt, images) must
+        // get the real file, not the SPA shell.
+        navigateFallbackDenylist: [
+          /^\/auth/,
+          /supabase\.co/,
+          /\.(?:txt|xml|json|png|jpe?g|webp|svg)$/,
+        ],
+        // iOS 27 / Chrome: static routes that skip the worker (see public/sw-routes.js).
+        importScripts: ['/sw-routes.js'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

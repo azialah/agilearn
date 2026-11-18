@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useCanGoBack, useRouter } from '@tanstack/react-router'
 import { useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
@@ -15,24 +15,20 @@ interface Props {
 
 /**
  * Page frame for the public marketing surface: header, footer, the floating
- * back-to-top button (after the first screen) and the phone CTA dock (after the hero).
+ * back-to-top button (after the first screen).
  */
 export function MarketingShell({ variant, children }: Props) {
   const reduce = useReducedMotion() ?? false
-  const rootRef = useRef<HTMLDivElement>(null)
   const [fab, setFab] = useState(false)
-  const [dock, setDock] = useState(false)
 
   useScrollFrame(() => {
     const y = window.scrollY
-    const hero = rootRef.current?.querySelector<HTMLElement>('.c-hero')
     setFab(y > window.innerHeight * 0.9)
-    setDock(!!hero && y > hero.offsetHeight * 0.85)
   })
 
   return (
     <div className="c-root">
-      <div ref={rootRef} className={cn('m c', variant === 'page' && 'pg')}>
+      <div className={cn('m c', variant === 'page' && 'pg')}>
         <a href="#main" className="c-skip">
           Skip to content
         </a>
@@ -52,14 +48,6 @@ export function MarketingShell({ variant, children }: Props) {
             <ArrowRight className="ico" aria-hidden="true" />
             <span aria-hidden="true">Back to top</span>
           </button>
-        </div>
-        <div className={cn('c-dock', dock && 'show')} inert={!dock}>
-          <Link to="/teacher/signup" className="c-btn amber">
-            Start as a teacher
-          </Link>
-          <Link to="/login" className="c-btn ghost">
-            Sign in
-          </Link>
         </div>
       </div>
     </div>

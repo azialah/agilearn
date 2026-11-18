@@ -9,8 +9,12 @@ function dismiss() {
   if (!splash || splash.dataset.ready === 'true') return
   splash.dataset.ready = 'true'
   const remove = () => splash.remove()
-  splash.addEventListener('transitionend', remove, { once: true })
-  window.setTimeout(remove, 400)
+  // The splash's own opacity fade is the last step of the iris reveal (see
+  // index.html); children's transitions bubble here too, so filter for it.
+  splash.addEventListener('transitionend', (e) => {
+    if (e.target === splash && e.propertyName === 'opacity') remove()
+  })
+  window.setTimeout(remove, 1100)
 }
 
 /**
