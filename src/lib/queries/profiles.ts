@@ -1,5 +1,10 @@
 import { useCallback, useEffect } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import type { Session } from '@supabase/supabase-js'
 import { REMEMBER_KEY, supabase } from '@/lib/supabase'
@@ -94,18 +99,19 @@ export function useProfiles() {
 }
 
 /** Allowlisted sign-up email domains (readable by anon for the signup pre-check). */
+/** Shared options so non-hook callers (the landing CTA) can `ensureQueryData` it. */
+export const allowedDomainsQuery = queryOptions({
+  queryKey: keys.allowedDomains,
+  staleTime: 5 * 60 * 1000,
+  queryFn: async (): Promise<string[]> => {
+    const { data, error } = await supabase.from('allowed_email_domains').select('domain')
+    if (error) throw error
+    return (data ?? []).map((d) => d.domain)
+  },
+})
+
 export function useAllowedDomains() {
-  return useQuery({
-    queryKey: keys.allowedDomains,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from('allowed_email_domains')
-        .select('domain')
-      if (error) throw error
-      return (data ?? []).map((d) => d.domain)
-    },
-  })
+  return useQuery(allowedDomainsQuery)
 }
 
 interface CompleteProfileInput {

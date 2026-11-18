@@ -262,7 +262,8 @@ function CredentialsStep({ onDone }: { onDone: (email: string) => void }) {
     isError: domainsError,
   } = useAllowedDomains()
   const { toast } = useToast()
-  const [email, setEmail] = useState('')
+  // Prefilled when the visitor typed their school email on the landing page.
+  const [email, setEmail] = useState(() => useOnboardingStore.getState().email)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [consented, setConsented] = useState(false)

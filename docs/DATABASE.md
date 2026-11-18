@@ -1,17 +1,13 @@
 # DATABASE.md — Agilearn PostgreSQL Schema & RLS Policies
 
 **Stack:** PostgreSQL via Supabase (local + hosted)
-**Source of truth:** `supabase/migrations/0001`–`0038` (38 files, applied in order)
-**Last updated:** August 31, 2026
+**Source of truth:** `supabase/migrations/0001`–`0040` (40 files, applied in order)
+**Last updated:** November 18, 2026
 
-> `README.md` and `docs/ARCHITECTURE.md` currently describe "10 tables" citing only
-> migrations `0001`–`0006`. That was accurate for that slice but is now **stale** — 32
-> further migrations ran after it. This file is a plain-English map of the schema as
-> it actually stands at HEAD: **26 tables, 11 enums, 3 views, 22 live functions**
-> (1 dropped), RLS on every table plus 2 storage buckets. It describes shape and
-> intent, not exact SQL — the migrations themselves are the only literal source; for
-> the exact `CREATE TABLE` / `CREATE POLICY` text, open the file named next to each
-> table below.
+> A plain-English map of the schema at HEAD: **30 tables, 11 enums, 3 views**, RLS
+> on every table, plus 2 storage buckets. It describes shape and intent, not exact
+> SQL — the migrations are the only literal source; open the file named next to
+> each table for the exact `CREATE TABLE` / `CREATE POLICY` text.
 
 ---
 
@@ -178,6 +174,26 @@ Two tables are seeded (`0031`–`0032`, `0037`):
 
 ---
 
+## Grade sheets, posted grades & email
+
+Added in `0039`–`0040`. None of these tables store computed grades — `scores` and
+`src/lib/grading.ts` remain the only grade source.
+
+| Table                   | Holds                                                                                                   | Write access (RLS)                                    | Source |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------ |
+| `grade_sheet_configs`   | One row per subject: on-screen grid layout (`grid_view`) and `.xlsx` export columns (`export_layout`). jsonb, shape validated by `src/lib/gradeSheetConfig.ts`; `{}` means defaults. | Classroom owner or admin                              | `0039` |
+| `grade_import_presets`  | Saved column mappings for a class-record workbook, keyed by normalised header, so the next file in the same format maps itself. Unique per classroom + name. | Classroom owner or admin                              | `0039` |
+| `posted_grades`         | Finished Lecture / Laboratory / term grades imported from a teacher's sheet, unique per subject + student + term. Shown and emailed as-is, never recomputed. | Classroom owner or admin                              | `0040` |
+| `grade_email_log`       | One row per grade-email attempt (`sent` / `failed`, recipient, Resend id). Doubles as the per-teacher hourly send quota and the "already sent" check. | Owner: **select + insert only** (`sent_by = auth.uid()`); admin all | `0040` |
+
+`0040` also adds `classrooms.student_email_domain` (appended to
+`students.student_no` to form an address) and `grade_email_cc` / `grade_email_bcc`
+(at most 3 each), and a `unique (id, classroom_id)` on `students` so child tables
+can pin a student to the row's classroom with a composite FK — plain FK checks
+ignore RLS. See [EMAIL.md](EMAIL.md).
+
+---
+
 ## Views
 
 All three run `security_invoker = true` — the *caller's* RLS applies through the
@@ -227,6 +243,7 @@ listed — this is a map of *what exists and why*, not the implementation.
 | `module_storage_usage()` / `module_storage_quota_allows()` | RPC / storage policy               | reports and enforces the 500 MB-per-teacher Storage quota                                          | `0017`     |
 | `reconcile_notification_incident()`         | RPC, `authenticated`                               | creates or resolves a deduplicated notification incident                                          | `0018`     |
 | `save_subject_grade_combination()` / `delete_subject_grade_combination()` | RPC, `authenticated`         | validated create/delete of a multi-subject grade blend                                            | `0030`     |
+| `touch_grade_sheet_config_updated_at()`     | triggers, `grade_sheet_configs` / `grade_import_presets` / `posted_grades` | keeps `updated_at` honest on every edit                                                       | `0039`/`0040` |
 | ~~`create_default_grade_component()`~~      | —                                                   | **dropped in `0016`** — superseded by the subject-scoped version above; does not exist at HEAD    | —          |
 
 ---
@@ -258,4 +275,4 @@ supabase gen types typescript --local > src/lib/database.types.ts
 
 `src/types/domain.ts` derives friendly `Profile`/`Classroom`/`Student`/… aliases
 from that file. Any new table or column in a migration must land in both files, and
-in this doc's table, in the same PR — see [`.claude/CLAUDE.md` §3](../.claude/CLAUDE.md).
+in this doc's table, in the same PR — see [`CONTRIBUTING.md`](../CONTRIBUTING.md).

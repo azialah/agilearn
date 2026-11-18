@@ -4,7 +4,7 @@ export type Theme = 'system' | 'light' | 'white' | 'dark'
 
 const STORAGE_KEY = 'agilearn-theme'
 const META_DARK = '#17110d'
-const META_LIGHT = '#faf5ec'
+const META_LIGHT = '#fffaf6'
 
 export function getStoredTheme(): Theme {
   const v = localStorage.getItem(STORAGE_KEY)

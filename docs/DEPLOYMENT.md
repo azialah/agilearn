@@ -4,7 +4,8 @@ End-to-end setup: provision Supabase, load the schema, create your first admin,
 regenerate types, and deploy to Vercel. No credentials ship in this repo — you
 create your own.
 
-> For how the pieces fit together, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+> For how the pieces fit together, see [ARCHITECTURE.md](./ARCHITECTURE.md). For a
+> local-only setup, start with [GETTING_STARTED.md](./GETTING_STARTED.md).
 
 ## 1. Create the Supabase project
 
@@ -34,7 +35,8 @@ cp .env.example .env
 The ordered migrations in `supabase/migrations/` are the source of truth.
 
 **Option A — Dashboard SQL editor.** Open **SQL Editor** and run each file in
-order (`0001` → `0006`), pasting and executing one at a time.
+order (`0001` → `0040`), pasting and executing one at a time. The CLI (Option B)
+is strongly preferred — forty files by hand is error-prone.
 
 **Option B — Supabase CLI.**
 
@@ -77,7 +79,7 @@ editor fails).
 
 > **Note:** `johnneomanuel@gmail.com` is auto-provisioned as admin via
 > migration `0011_admin_bootstrap.sql` — signing up through the normal
-> `/signup` flow with that address bypasses the domain gate below and lands
+> `/teacher/signup` flow with that address bypasses the domain gate below and lands
 > with `role = 'admin'` automatically. It does not need the manual steps that
 > follow. The steps below remain the path for provisioning any **other**
 > future admin.
@@ -176,5 +178,6 @@ Confirm the policies actually isolate tenants:
 - [ ] A teacher can read and write only within their own classrooms
       (students, grades, attendance).
 - [ ] An admin can read every profile and classroom.
-- [ ] Any authenticated user can read the shared `teaching-modules` bucket, but
-      only the owning folder (or an admin) can upload/modify/delete.
+- [ ] A teacher can read and write only their own folder in the private
+      `teaching-modules` bucket (tightened to owner/admin in `0016`); an admin
+      can reach every folder.

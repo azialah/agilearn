@@ -1,321 +1,273 @@
-# Agilearn architecture
+# Architecture
 
-Agilearn is a single-page React app that talks directly to Supabase. There is no
-application server of our own: the browser holds the anon key, and **Postgres Row
-Level Security is the access-control boundary**. This keeps the moving parts few
-and the security model in one place — the database.
+Agilearn is a **static single-page app plus a managed database**. The browser talks
+to Supabase directly with the public anon key and the signed-in user's JWT, and
+**Postgres Row Level Security decides every read and write**. There is no
+application server to deploy, scale or secure.
 
-## System shape
+> [!IMPORTANT]
+> If you remember one rule: **the database is the security boundary**. A UI bug
+> may show a button it shouldn't — it can never return a row RLS forbids.
 
-```
-┌─────────────────────────────┐         ┌──────────────────────────────┐
-│  Browser (React SPA, PWA)   │         │           Supabase           │
-│                             │  HTTPS  │                              │
-│  routes → features          │ ──────▶ │  Auth   (email, no signup)   │
-│  TanStack Query (server     │  anon   │  Postgres + RLS (10 tables)  │
-│    state + cache)           │  key    │  Storage (teaching-modules)  │
-│  supabase-js client         │ ◀────── │                              │
-└─────────────────────────────┘         └──────────────────────────────┘
-        served as static assets by Vercel (SPA rewrite → /index.html)
-```
+---
 
-Every request from the browser carries the signed-in user's JWT. RLS policies
-decide what that user can read or write; the app never sees rows it isn't allowed
-to. There is no privileged backend path — no service-role key exists in this
-codebase.
+## System context
 
-The one server-side piece is the `send-grade-emails` Edge Function (Deno). It
-exists because sending email needs a secret (the Resend API key) that cannot ship
-to the browser. It is invoked with the teacher's JWT, builds its Supabase client
-from that JWT and the anon key (so RLS applies exactly as in the SPA), accepts
-only ids, and reads every address, grade and CC/BCC address from the database.
+```mermaid
+flowchart TB
+    T(["Teacher"]) & AD(["Admin"]) --> APP
 
-### Posted grades and grade emails (migration 0040)
+    subgraph Vercel
+        APP["Agilearn SPA<br/><sub>static assets + service worker</sub>"]
+    end
 
-- `posted_grades` holds finished Lecture / Laboratory / term grades imported from
-  a teacher's own sheet (`Last Name | First Name | SchoolID | Lecture |
-  Laboratory | Midterm Grade`), per subject + student + term. They are shown and
-  emailed as-is and never feed `scores` or the grade engine. A blank term grade is
-  filled in as `lecture × 40% + laboratory × 60%` by `midtermFromComponents()` in
-  `grading.ts`.
-- `classrooms.student_email_domain` + `students.student_no` form each student's
-  address (`202110190@gordoncollege.edu.ph`); `classrooms.grade_email_cc/_bcc`
-  are copied on every email.
-- The slideshow can present a posted set (subject + term), with the hint
-  "Actual Lecture × 40% + Actual Laboratory × 60% = Midterm Grade".
-- `grade_email_log` is the append-only send history; it also stops accidental
-  double sends unless the teacher opts to send again.
-- Mail goes from `grades.no-reply@agilearn.net` through Resend's batch API, with
-  `reply_to` set to the teacher's profile email.
+    subgraph Supabase["Supabase project"]
+        AUTH["Auth"]
+        DB[("Postgres + RLS")]
+        ST["Storage"]
+        FN["send-grade-emails<br/><sub>Deno Edge Function</sub>"]
+    end
 
-## Layers (and the rules between them)
-
-```
-src/
-  routes/**                  Thin. Wire params/loaders, render a feature. (routeTree.gen.ts is generated)
-    _auth/teacher/**          Authenticated core teaching surfaces (dashboard, classrooms, grades, attendance, modules, slideshow)
-    _auth/admin/**            Authenticated admin management surfaces (users, domain requests)
-    _auth/settings.tsx        Shared account settings (both roles)
-    teacher.signup*.tsx       Pre-auth teacher onboarding wizard (domain-gated self-signup)
-    login.tsx, forgot-password.tsx, index.tsx   Shared / public, ungrouped
-  features/
-    teacher/<name>/           Core teaching UI: onboarding, dashboard, classrooms, grades, attendance, modules, slideshow, io
-    admin/                    Admin management UI: users, domain requests
-    auth/                     Shared auth UI: LoginPage, ForgotPasswordFlow, shared schema/wizard-ui primitives
-    settings/, landing/       Shared / public UI, ungrouped
-  lib/queries/*        The ONLY place Supabase is read/written — TanStack Query hooks.
-  lib/queries/keys.ts  Query-key factory. Invalidation depends on it; no inline key tuples.
-  lib/grading.ts       Pure grade math. No Supabase imports. Unit-tested.
-  lib/supabase.ts      createClient<Database> singleton (typed, persists the session).
-  lib/database.types.ts  Mirrors supabase/migrations/*. Kept in sync by hand or `gen types`.
-  types/domain.ts      Friendly Row/Insert/Update/Enum aliases derived from database.types.
-  components/ui, layout  Design-system primitives + app shell.
+    APP -->|"HTTPS · anon key + JWT"| AUTH & DB & ST
+    APP -->|"HTTPS · JWT"| FN
+    FN -->|"caller's JWT"| DB
+    FN -->|"batch API"| RESEND["Resend"] --> INBOX(["Student inboxes"])
+    APP -.->|"errors + perf"| BUGSNAG["Bugsnag"]
 ```
 
-- **Routes stay thin, features stay fat.** A route file reads params and renders a
-  component from `src/features/`. It holds no data logic.
-- **Server state is TanStack Query, only.** Reads are `useQuery`, writes are
-  `useMutation` that invalidate the relevant `keys.*` on success. Remote data is
-  never copied into component state or a separate store.
-- **Grades are computed in exactly one place.** `src/lib/grading.ts` is pure and
-  covered by `grading.test.ts`, so weighting logic can't diverge across screens.
+| Component              | Runtime          | Holds secrets?                | Deployed by                  |
+| ---------------------- | ---------------- | ----------------------------- | ---------------------------- |
+| SPA                    | Browser / PWA    | No — anon key is public       | Vercel, on push              |
+| Postgres, Auth, Storage | Supabase        | Managed by Supabase           | `supabase db push`           |
+| `send-grade-emails`    | Supabase Edge (Deno) | `RESEND_API_KEY` only     | `supabase functions deploy`  |
+
+There is **no service-role key anywhere** — not in the SPA, not in the function.
+
+---
+
+## Layers inside the SPA
+
+```mermaid
+flowchart LR
+    subgraph routes["src/routes/** — thin"]
+        RT["params · loaders · auth guard"]
+    end
+    subgraph features["src/features/** — fat"]
+        UI["pages · dialogs · grids<br/>local UI state"]
+    end
+    subgraph lib["src/lib/**"]
+        QH["queries/*<br/><sub>useQuery / useMutation</sub>"]
+        K["queries/keys.ts"]
+        GR["grading.ts<br/><sub>pure</sub>"]
+        SB["supabase.ts<br/><sub>createClient&lt;Database&gt;</sub>"]
+        OF["offlineQueue.ts<br/>queryPersist.ts"]
+    end
+    RT --> UI --> QH --> SB
+    UI --> GR
+    QH --> K
+    QH <--> OF
+```
+
+| Layer           | Path                       | Rule                                                                                   |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------- |
+| Routes          | `src/routes/**`            | Read params, run guards, render a feature. No data logic. `routeTree.gen.ts` is generated. |
+| Features        | `src/features/<area>/`     | All UI and orchestration. Local, ephemeral UI state only.                              |
+| Data            | `src/lib/queries/*`        | The **only** code that calls Supabase. Reads are `useQuery`, writes are `useMutation` that invalidate `keys.*`. |
+| Query keys      | `src/lib/queries/keys.ts`  | The only source of key tuples, so invalidation can't drift.                            |
+| Grade math      | `src/lib/grading.ts`       | Pure, deterministic, no Supabase import. See [GRADING.md](GRADING.md).                 |
+| Types           | `src/lib/database.types.ts` → `src/types/domain.ts` | Generated schema types → friendly `Classroom`, `Student`, … aliases. |
+| Design system   | `src/components/ui/`, `src/styles/app.css` | Radix primitives + Tailwind v4 tokens under `@theme` (no config file).   |
+
+### State ownership
+
+| State                          | Owner                                  |
+| ------------------------------ | -------------------------------------- |
+| Anything that came from Supabase | TanStack Query — never copied into component state |
+| Auth session and token refresh | The Supabase client (`persistSession`) |
+| Writes made while offline      | IndexedDB queue (`offlineQueue.ts`)    |
+| Cache snapshot for offline reload | IndexedDB (`queryPersist.ts`)       |
+| Transient UI (open dialog, filters) | `useState` / Zustand inside the feature |
+| Per-device conveniences (theme, recent classrooms) | `localStorage`       |
+
+---
+
+## A write, end to end
+
+A teacher types a score into the gradebook.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor T as Teacher
+    participant G as GradeGrid
+    participant M as useMutation (queries/grades.ts)
+    participant Q as offlineQueue
+    participant DB as Postgres
+
+    T->>G: enters 18 / 20
+    G->>M: mutate({ activity_id, student_id, score })
+    alt online
+        M->>DB: upsert scores (anon key + JWT)
+        DB->>DB: RLS: owns_classroom(student's classroom)?
+        DB->>DB: trigger: 0 ≤ score ≤ activity.max_score
+        DB-->>M: row
+        M->>M: invalidate keys.* → refetch
+    else offline
+        M->>Q: enqueue (id, payload, baseUpdatedAt)
+        Note over Q: replayed on reconnect,<br/>server-wins conflict check
+    end
+    G-->>T: grid re-renders, grade recomputed by grading.ts
+```
+
+Nothing between step 2 and the database is ours to secure — the database
+enforces itself.
+
+---
+
+## Auth and roles
+
+```mermaid
+stateDiagram-v2
+    [*] --> SignUp: /teacher/signup
+    SignUp --> Rejected: email domain not in allowed_email_domains
+    SignUp --> VerifyOTP: handle_new_user() accepts
+    VerifyOTP --> Teacher: profiles row, role = teacher
+    Teacher --> Admin: promoted by an existing admin
+    Admin --> Teacher: demoted by an admin
+    note right of Teacher
+        enforce_role_change() blocks
+        self-promotion
+    end note
+```
+
+- **Sign-in:** email + password at `/login`; password reset by 6-digit OTP at
+  `/forgot-password`.
+- **Teacher sign-up:** a six-step wizard at `/teacher/signup`, gated in the
+  database by `handle_new_user()` against `allowed_email_domains`. Unknown schools
+  can file a domain request, which admins review.
+- **Admins** are never self-served. The very first admin is bootstrapped once by
+  migration `0035`; every later admin is promoted from the Users page.
+- **Session storage** honours "remember me" (localStorage vs sessionStorage),
+  except in an installed PWA, which always persists — the OS kills backgrounded
+  PWAs and would otherwise sign the user out on every app switch.
+- **Route guard:** `src/routes/_auth.tsx` redirects to `/login` without a session.
+  This is UX only; RLS is the real gate.
+
+The `_auth/teacher/**` and `_auth/admin/**` folders are organisational. Moving a
+route between them changes nothing about who can reach its data.
+
+---
 
 ## Feature map
 
-Route prefix → feature directory → what it's for. **Update this table in the
-same PR that adds a route/feature** — same discipline as keeping
-`database.types.ts` in sync, not a separate task.
+Update this table in the same PR that adds a route or feature.
 
-| Route prefix                                    | Feature dir                           | Purpose                                                  |
-| ----------------------------------------------- | ------------------------------------- | -------------------------------------------------------- |
-| `/`, `/about`, `/features`, `/privacy`, `/terms` | `features/landing`, `features/public` | Marketing landing + public legal/about/privacy/terms     |
-| `/login`                                        | `features/auth`                       | Email sign-in page                                       |
-| `/forgot-password`                              | `features/auth`                       | Password reset flow (OTP)                                |
-| `/teacher.signup.*` (steps 1–6)                 | `features/teacher/onboarding`         | Domain-gated self-serve teacher sign-up wizard (multi-step) |
-| `/_auth/teacher/dashboard`                      | `features/teacher/dashboard`          | Home dashboard (grades/attendance summary)               |
-| `/_auth/teacher/classrooms`                     | `features/teacher/classrooms`         | Classroom list                                           |
-| `/_auth/teacher/classrooms/$classroomId`        | `features/teacher/classrooms`         | Classroom detail (roster + metadata)                     |
-| `/_auth/teacher/classrooms/$classroomId/grades` | `features/teacher/grades`             | Weighted gradebook (spreadsheet grid)                    |
-| `/_auth/teacher/classrooms/$classroomId/attendance` | `features/teacher/attendance`     | Attendance session list + creation                       |
-| `/_auth/teacher/classrooms/$classroomId/attendance/$sessionId` | `features/teacher/attendance` | Attendance record page (mark students present/absent/late) |
-| `/_auth/teacher/classrooms/$classroomId/slideshow` | `features/teacher/slideshow`     | Classroom slideshow presentation (full-screen grades)    |
-| `/_auth/teacher/modules`                        | `features/teacher/modules`            | Teaching-modules library (Storage-backed files)          |
-| `/_auth/teacher/analytics`                      | `features/teacher/analytics`          | Per-classroom analytics (grade distribution, etc.)       |
-| `/_auth/teacher/calendar`                       | `features/teacher/calendar`           | Calendar view (sessions, grading periods)                |
-| `/_auth/teacher/profile`                        | `features/teacher/profile`            | Teacher profile editing                                  |
-| `/_auth/teacher/usage`                          | `features/teacher/usage`              | Usage statistics                                         |
-| `/_auth/admin/overview`                         | `features/admin`                      | School-wide analytics + admin overview dashboard         |
-| `/_auth/admin/users`                            | `features/admin`                      | User/role management + directory                         |
-| `/_auth/admin/domain-requests`                  | `features/admin`                      | Approve/manage allowed email domains                     |
-| `/_auth/admin/audit-log`                        | `features/admin`                      | Admin action audit trail                                 |
-| `/_auth/settings`                               | `features/settings`                   | Account settings (home)                                  |
-| `/_auth/settings/profile`                       | `features/settings/sections`          | Profile settings                                         |
-| `/_auth/settings/workspace`                     | `features/settings/sections`          | Workspace/classroom settings                             |
-| `/_auth/settings/privacy`                       | `features/settings/sections`          | Privacy settings                                         |
-| `/_auth/settings/about`                         | `features/settings/sections`          | About the app                                            |
-| `features/teacher/io`                           | —                                     | Import/export helpers (PDF/xlsx), not a route            |
-| `features/teacher/notifications`                | —                                     | Notification UI (toast/banner), not a route              |
+### Public and auth
 
-## Data model
+| Route                                     | Feature                    | Purpose                                 |
+| ----------------------------------------- | -------------------------- | --------------------------------------- |
+| `/` · `/features` · `/about`              | `features/landing`         | Marketing site                          |
+| `/privacy` · `/terms`                     | `features/public`          | Legal pages                             |
+| `/login`                                  | `features/auth`            | Email sign-in                           |
+| `/forgot-password`                        | `features/auth`            | OTP password reset                      |
+| `/teacher/signup/step-1 … step-6`         | `features/teacher/onboarding` | Domain-gated onboarding wizard       |
 
-Ten tables (see `supabase/migrations/0001`–`0006`):
+### Teacher
 
-| Table                 | Holds                                                                      |
-| --------------------- | -------------------------------------------------------------------------- |
-| `profiles`            | One row per auth user; `role` = `admin` \| `teacher`.                      |
-| `classrooms`          | A course offering (owner, name/code, year, block, weights).                |
-| `students`            | Roster entries, scoped to a classroom.                                     |
-| `grading_periods`     | Weighted periods within a classroom.                                       |
-| `activity_categories` | Categories per period component (`lecture` \| `laboratory`).               |
-| `activities`          | Graded items in a category (max score, date).                              |
-| `scores`              | A student's score on an activity (composite PK).                           |
-| `class_sessions`      | An attendance session for a classroom.                                     |
-| `attendance_records`  | A student's status per session (`present`/`absent`/`late`/`excused`).      |
-| `teaching_modules`    | Metadata for files in Storage (`lesson_plan`/`activity_story`/`resource`). |
+| Route                                          | Feature                       | Purpose                                     |
+| ---------------------------------------------- | ----------------------------- | ------------------------------------------- |
+| `/teacher/dashboard`                           | `teacher/dashboard`           | Today's classes, alerts, quick actions      |
+| `/teacher/classrooms`                          | `teacher/classrooms`          | Classroom list + creation wizard            |
+| `/teacher/classrooms/$id`                      | `teacher/classrooms`          | Roster, subjects, schedule                  |
+| `/teacher/classrooms/$id/grades`               | `teacher/grades`, `teacher/io`, `teacher/posted-grades` | Gradebook grid, import/export, posted grades, emails |
+| `/teacher/classrooms/$id/attendance`           | `teacher/attendance`          | Session list                                |
+| `/teacher/classrooms/$id/attendance/$sessionId` | `teacher/attendance`         | Mark present / absent / late / excused      |
+| `/teacher/classrooms/$id/slideshow`            | `teacher/slideshow`           | Full-screen grade presentation              |
+| `/teacher/modules`                             | `teacher/modules`             | Private teaching-modules library            |
+| `/teacher/analytics`                           | `teacher/analytics`           | Grade distribution, at-risk students        |
+| `/teacher/calendar`                            | `teacher/calendar`            | Meetings, events, holidays                  |
+| `/teacher/usage`                               | `teacher/usage`               | Storage quota meter                         |
+| `/teacher/profile`                             | `teacher/profile`             | Public profile + avatar                     |
 
-Plus the `v_class_roster` view (classroom ⋈ students, `security_invoker`) and two
-SECURITY DEFINER helper functions used inside policies:
+### Admin and settings
 
-- `public.is_admin()` — is the caller an admin?
-- `public.owns_classroom(cid uuid)` — does the caller own that classroom?
+| Route                      | Feature              | Purpose                               |
+| -------------------------- | -------------------- | ------------------------------------- |
+| `/admin/overview`          | `features/admin`     | School-wide numbers                   |
+| `/admin/users`             | `features/admin`     | Directory, roles                      |
+| `/admin/domain-requests`   | `features/admin`     | Allowlist + incoming requests         |
+| `/admin/audit-log`         | `features/admin`     | Role and data change history          |
+| `/settings/*`              | `features/settings`  | Profile, workspace, privacy, about    |
 
-**The grade model:** a classroom splits into weighted `grading_periods`; each
-period has `activity_categories` tagged `lecture` or `laboratory`; each category
-holds `activities`; each activity has per-student `scores`. `grading.ts` rolls
-these up per component, then combines lecture and laboratory by the classroom's
-`lecture_weight` / `laboratory_weight` (default 40 / 60) into a final grade.
+### Non-route modules
 
-## Auth & roles
+| Module                      | Purpose                                                       |
+| --------------------------- | ------------------------------------------------------------- |
+| `teacher/io`                | Excel class-record import (auto-mapped, saved presets), `.xlsx` and PDF export |
+| `teacher/posted-grades`     | Import finished term grades, send them by email               |
+| `teacher/notifications`     | Low-average and absence-streak alerts                         |
+| `components/layout`         | App shell, dock, command palette, breadcrumbs                 |
 
-- Email auth. **Teacher sign-up is self-serve but domain-gated**: the
-  `handle_new_user()` trigger rejects any email whose domain isn't in
-  `allowed_email_domains`. No admin self-sign-up — admins are provisioned
-  out-of-band.
-- A new auth user gets a `profiles` row via the `on_auth_user_created` trigger,
-  defaulting to `teacher`.
-- The `enforce_role_change()` trigger blocks a teacher from promoting themselves;
-  only an admin can change a role.
-- Teachers are isolated to classrooms they own (via `owns_classroom()`); admins
-  see everything (via `is_admin()`).
+---
 
-**Folder convention vs. security boundary.** Routes and features are grouped
-into `teacher/` (the core teaching product surface plus onboarding — used by
-both roles, since admins reach it too) and `admin/` (the management surface —
-users, domain requests) purely for organization. Both groupings sit behind the
-same single `_auth` pathless layout, and access within them is enforced
-identically by RLS regardless of which folder a route lives in. Moving a route
-from `_auth/dashboard.tsx` to `_auth/teacher/dashboard.tsx` changes nothing
-about who can reach it — `owns_classroom()` and `is_admin()` in Postgres are
-still the only real gate.
+## Data model in one picture
+
+```mermaid
+erDiagram
+    profiles ||--o{ academic_periods : owns
+    profiles ||--o{ classrooms : owns
+    academic_periods ||--o{ classrooms : groups
+    classrooms ||--o{ students : rosters
+    classrooms ||--o{ course_subjects : teaches
+    course_subjects ||--o{ grade_components : "splits into"
+    course_subjects ||--o{ grading_periods : "graded across"
+    grade_components ||--o{ activity_categories : has
+    activity_categories ||--o{ activities : contains
+    activities ||--o{ scores : records
+    students ||--o{ scores : earns
+    course_subjects ||--o{ class_sessions : meets
+    class_sessions ||--o{ attendance_records : logs
+    students ||--o{ attendance_records : attends
+    course_subjects ||--o{ posted_grades : publishes
+    students ||--o{ posted_grades : receives
+    course_subjects }o--o| transmutation_tables : "converts with"
+```
+
+30 tables, 3 `security_invoker` views, RLS on every table. The full catalogue —
+every policy, trigger and RPC — is in [DATABASE.md](DATABASE.md).
+
+---
 
 ## Storage
 
-Teaching-module files live in a **private** `teaching-modules` bucket. Storage RLS
-(migration `0005`) lets any authenticated user read, but only the owning folder or
-an admin can write or delete. The `teaching_modules` table stores the metadata
-(title, kind, path, size, mime) and points at the object.
+| Bucket             | Visibility | Layout                     | Rule                                                   |
+| ------------------ | ---------- | -------------------------- | ------------------------------------------------------ |
+| `teaching-modules` | private    | `<owner-uuid>/<file>`      | Owner or admin only; 500 MB per teacher, enforced in a storage policy |
+| `avatars`          | public     | `<owner-uuid>/<file>`      | Anyone reads; owner writes own folder                  |
 
-## Implementation structure
+Quota operations: [STORAGE_QUOTA_ADMIN_HANDOFF.md](STORAGE_QUOTA_ADMIN_HANDOFF.md).
 
-### `src/lib/queries/` — Data layer
+---
 
-The **only place** Supabase is read or written. Every table access is wrapped
-in a TanStack Query hook (`useQuery` for reads, `useMutation` for writes).
+## Build and delivery
 
-- **`keys.ts`** — Query-key factory. All invalidation depends on it; never
-  hand-write key tuples elsewhere.
-- **`classrooms.ts`, `students.ts`, `grades.ts`, `attendance.ts`, etc.** — One
-  file per major entity. Each file exports hooks like `useClassrooms()`,
-  `useCreateClassroom()`, `useUpdateClassroom()`, etc.
-- **`offlineSync.ts`** — Offline queue and sync mechanism (mutations queue when
-  offline, sync when reconnected).
-- **`profiles.ts`** — Auth user profile queries + mutations.
-
-Pattern (from `classrooms.ts`):
-```typescript
-export function useClassrooms() {
-  return useQuery({
-    queryKey: keys.classrooms(),
-    queryFn: async () => { /* Supabase .from().select() */ }
-  });
-}
-
-export function useCreateClassroom() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: InsertClassroom) => { /* POST */ },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.classrooms() })
-  });
-}
+```mermaid
+flowchart LR
+    PR["git push"] --> CI["GitHub Actions<br/><sub>format → typecheck → test → build</sub>"]
+    PR --> VB["Vercel build<br/><sub>pnpm run build</sub>"]
+    VB --> CDN["Vercel CDN<br/><sub>SPA rewrite → index.html</sub>"]
+    MIG["supabase db push"] --> DB[("Postgres")]
+    FD["supabase functions deploy"] --> FN["Edge Function"]
 ```
 
-### `src/lib/grading.ts` — Grade math
+Frontend and backend ship **independently**. A migration is never bundled into a
+frontend deploy, so apply schema changes before merging code that depends on them.
+Walkthrough: [DEPLOYMENT.md](DEPLOYMENT.md).
 
-Pure, no Supabase imports. Fully tested by `grading.test.ts` and related spec
-files (`grading.classrecord.test.ts`, `grading.policy.test.ts`,
-`grading.transmutation.test.ts`). Exports functions like:
+---
 
-- `computeActivityTotal(scores, maxScore)` — sum student's scores.
-- `computeCategoryComponent(activities)` — roll up activities by category.
-- `computeFinalGrade(lectureComponent, labComponent, weights)` — combine
-  components by lecture/lab weights.
+## Related
 
-Never compute grades elsewhere in the app; always call these functions.
-
-### `src/lib/` — Utilities
-
-- **`supabase.ts`** — `createClient<Database>()` typed singleton (persists auth
-  session).
-- **`database.types.ts`** — Mirrors `supabase/migrations/*`. Regenerate with
-  `supabase gen types typescript --local` after any migration.
-- **`theme.ts`** — Tailwind CSS v4 theme utilities (e.g. color/spacing lookups).
-- **`locale.tsx`** — i18n provider (basic; currently minimal).
-- **`queryClient.ts`** — TanStack Query client configuration (retry, stale time,
-  etc.).
-- **`queryPersist.ts`** — Persist Query cache to localStorage for offline PWA.
-- **`useNetworkStatus.ts`** — Hook to detect online/offline.
-- **`offlineQueue.ts`** — Offline-first mutation queue.
-- **`cn.ts`** — `clsx` wrapper for className merging.
-- **`nativeNotify.ts`** — Native browser notifications (for PWA).
-- **`safeRedirect.ts`** — Safely redirect after auth actions (avoid open redirects).
-- **`recentClassrooms.ts`** — Local storage tracker for recent classroom visits.
-- **`imageCrop.ts`** — Image cropping utility (profile picture upload).
-- **`classroomColor.ts`** — Deterministic color assignment for classrooms.
-
-### `src/types/domain.ts` — Friendly aliases
-
-Derives user-facing type aliases from `database.types.ts`:
-
-```typescript
-export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type Classroom = Database['public']['Tables']['classrooms']['Row'];
-export type Student = Database['public']['Tables']['students']['Row'];
-// ... etc.
-```
-
-### `src/components/` — Design system & layout
-
-- **`ui/`** — Reusable primitives built on Radix UI + Tailwind CSS. Examples:
-  - `Button.tsx`, `Input.tsx`, `Dialog.tsx`, `Select.tsx`, `Dropdown.tsx`,
-    `Label.tsx`, `Tooltip.tsx`
-  - Exported as single elements or compound components (e.g., Dialog/DialogTrigger/DialogContent/DialogClose)
-  - All styled with Tailwind utilities; no hardcoded inline styles.
-
-- **`layout/`** — App shell and layouts:
-  - `AppShell.tsx` — Main layout wrapper (sidebar + top bar + content area)
-  - `TopBar.tsx` — Header with user menu, notifications, breadcrumbs
-  - `PageHeader.tsx` — Page title + breadcrumb
-  - Organized by role / feature as needed
-
-- **`OfflineCache.tsx`** — Offline cache status indicator.
-- **`OfflineSyncBar.tsx`** — Shows when syncing queued mutations.
-- **`NetworkStatusWatcher.tsx`** — Monitors online/offline and refreshes queries.
-- **`CustomCursor.tsx`** — Custom UI cursor (if applicable).
-
-### `src/features/` — Feature bundles
-
-One directory per feature (teacher role, admin role, auth, settings, public).
-Each feature is self-contained: components, logic, local state (via `zustand`
-if needed), and hooks for data access (importing from `src/lib/queries/`).
-
-**Example structure (`teacher/grades/`):**
-```
-teacher/grades/
-  GradesPage.tsx           Route-level component (thin, render the page)
-  GradeGrid.tsx            Spreadsheet grid (TanStack Table + virtual scrolling)
-  GradeRow.tsx             Row renderer
-  StructurePanel.tsx       Grading structure editor (periods, categories, activities)
-  SummaryTable.tsx         Final grade rollup view
-  GradeReportDialog.tsx    Export / print grades
-  useGradeFilters.ts       Local state for filtering/sorting (zustand or useState)
-```
-
-No business logic in route files; they stay thin. All logic lives in feature
-components or is imported from `src/lib/queries/`.
-
-### Testing
-
-- **Unit:** `grading.test.ts` for grade math; utility tests (e.g., `offlineQueue.test.ts`).
-- **Component:** None currently (Vitest + RTL ready, but app tests may be in
-  progress). Test files co-located with source when added.
-- **CI gate:** `pnpm run test` (Vitest in run mode, no watch).
-
-### Generated files (do NOT edit manually)
-
-- **`src/routeTree.gen.ts`** — Auto-generated from `src/routes/**` by
-  `@tanstack/router-plugin`. Regenerates on dev/build. Never hand-edit.
-- **`src/lib/database.types.ts`** — Generated from `supabase/migrations/*` via
-  `supabase gen types typescript --local`. Hand-edits are okay if types drift,
-  but regeneration should be preferred. Any new table/column in a migration must
-  appear here.
-- **`dist/`** — Build output (Vite). Not committed; recreated per deployment.
-
-## Build, deploy, quality
-
-- **Build:** Vite (`tsc -b && vite build`), output to `dist/`. `vite-plugin-pwa`
-  emits the service worker and offline shell.
-- **Deploy:** Vercel, framework preset Vite. `vercel.json` sets a pnpm install/build
-  and an SPA rewrite (`/(.*) → /index.html`). Config is just the two `VITE_SUPABASE_*`
-  env vars. Full walkthrough in [DEPLOYMENT.md](./DEPLOYMENT.md).
-- **CI** (`.github/workflows/ci.yml`, pnpm): `prettier --check` → `typecheck` →
-  `vitest run` → `build`. There is no ESLint — Prettier is the only lint gate.
+- [Decision records](DECISIONS.md) — why it is shaped like this
+- [Security model](SECURITY.md) — what protects what
+- [Offline & PWA](OFFLINE.md) — the IndexedDB queue in detail

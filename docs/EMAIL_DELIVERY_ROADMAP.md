@@ -1,5 +1,10 @@
 # Future grade-email delivery
 
+> [!NOTE]
+> **Superseded.** Grade emails shipped in migration `0040` via the
+> `send-grade-emails` Edge Function — see [EMAIL.md](EMAIL.md). This page is kept as
+> the original design brief.
+
 Agilearn currently keeps grade delivery teacher-controlled: a teacher previews one
 learner's report and opens their own mail application. The browser never holds an
 SMTP password, Resend API key, or service-role credential.

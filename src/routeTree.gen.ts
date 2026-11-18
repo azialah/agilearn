@@ -10,10 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as GradeWeightsRouteImport } from './routes/grade-weights'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DeveloperRouteImport } from './routes/developer'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -53,6 +59,16 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestAccessRoute = RequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -63,6 +79,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GradeWeightsRoute = GradeWeightsRouteImport.update({
+  id: '/grade-weights',
+  path: '/grade-weights',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -71,6 +97,16 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const FeaturesRoute = FeaturesRouteImport.update({
   id: '/features',
   path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperRoute = DeveloperRouteImport.update({
+  id: '/developer',
+  path: '/developer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -253,10 +289,16 @@ const AuthTeacherClassroomsClassroomIdAttendanceSessionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/developer': typeof DeveloperRoute
+  '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/grade-weights': typeof GradeWeightsRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/request-access': typeof RequestAccessRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/settings': typeof AuthSettingsRouteWithChildren
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
@@ -292,10 +334,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/developer': typeof DeveloperRoute
+  '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/grade-weights': typeof GradeWeightsRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/request-access': typeof RequestAccessRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/admin/audit-log': typeof AuthAdminAuditLogRoute
   '/admin/domain-requests': typeof AuthAdminDomainRequestsRoute
@@ -331,10 +379,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/about': typeof AboutRoute
+  '/developer': typeof DeveloperRoute
+  '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/grade-weights': typeof GradeWeightsRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/request-access': typeof RequestAccessRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/_auth/settings': typeof AuthSettingsRouteWithChildren
   '/teacher/signup': typeof TeacherSignupRouteWithChildren
@@ -372,10 +426,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/developer'
+    | '/faq'
     | '/features'
     | '/forgot-password'
+    | '/grade-weights'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
+    | '/request-access'
+    | '/security'
     | '/terms'
     | '/settings'
     | '/teacher/signup'
@@ -411,10 +471,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/developer'
+    | '/faq'
     | '/features'
     | '/forgot-password'
+    | '/grade-weights'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
+    | '/request-access'
+    | '/security'
     | '/terms'
     | '/admin/audit-log'
     | '/admin/domain-requests'
@@ -449,10 +515,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/about'
+    | '/developer'
+    | '/faq'
     | '/features'
     | '/forgot-password'
+    | '/grade-weights'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
+    | '/request-access'
+    | '/security'
     | '/terms'
     | '/_auth/settings'
     | '/teacher/signup'
@@ -490,10 +562,16 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   AboutRoute: typeof AboutRoute
+  DeveloperRoute: typeof DeveloperRoute
+  FaqRoute: typeof FaqRoute
   FeaturesRoute: typeof FeaturesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GradeWeightsRoute: typeof GradeWeightsRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  RequestAccessRoute: typeof RequestAccessRoute
+  SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
   TeacherSignupRoute: typeof TeacherSignupRouteWithChildren
 }
@@ -505,6 +583,20 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request-access': {
+      id: '/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof RequestAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -521,6 +613,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grade-weights': {
+      id: '/grade-weights'
+      path: '/grade-weights'
+      fullPath: '/grade-weights'
+      preLoaderRoute: typeof GradeWeightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -533,6 +639,20 @@ declare module '@tanstack/react-router' {
       path: '/features'
       fullPath: '/features'
       preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer': {
+      id: '/developer'
+      path: '/developer'
+      fullPath: '/developer'
+      preLoaderRoute: typeof DeveloperRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -867,10 +987,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AboutRoute: AboutRoute,
+  DeveloperRoute: DeveloperRoute,
+  FaqRoute: FaqRoute,
   FeaturesRoute: FeaturesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GradeWeightsRoute: GradeWeightsRoute,
+  HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  RequestAccessRoute: RequestAccessRoute,
+  SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
   TeacherSignupRoute: TeacherSignupRouteWithChildren,
 }
